@@ -14,7 +14,7 @@ public class RoleConfiguration : IEntityTypeConfiguration<Role>
         builder.Property(r => r.Description).HasMaxLength(200);
         builder.HasIndex(r => r.RoleName).IsUnique();
 
-        // Seed all roles from CLAUDE.md
+        // Seed application roles
         builder.HasData(
             new Role { RoleId = 1, RoleName = "SuperAdmin",   Description = "Platform-level administrator" },
             new Role { RoleId = 2, RoleName = "Admin",        Description = "Hospital administrator" },
