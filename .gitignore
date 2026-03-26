@@ -1,0 +1,26 @@
+# Build output
+bin/
+obj/
+
+# Secrets — never commit these
+**/appsettings.Development.json
+**/appsettings.*.json
+!**/appsettings.json
+
+# User secrets
+**/.secrets/
+
+# Rider / VS / VS Code
+.vs/
+.vscode/
+*.user
+*.suo
+.idea/
+
+# NuGet
+*.nupkg
+.nuget/
+
+# OS
+.DS_Store
+Thumbs.db

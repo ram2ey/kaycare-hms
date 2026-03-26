@@ -32,7 +32,7 @@ export default function Layout() {
       {/* Sidebar */}
       <aside className="w-64 bg-blue-900 text-white flex flex-col">
         <div className="px-6 py-5 border-b border-blue-800">
-          <h1 className="text-xl font-bold tracking-wide">MediCloud EMR</h1>
+          <h1 className="text-xl font-bold tracking-wide">KayCare HMS</h1>
           <p className="text-blue-300 text-sm mt-1">{user?.tenantCode}</p>
         </div>
 
