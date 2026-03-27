@@ -89,8 +89,8 @@ public class TenantIsolationTests : IClassFixture<MediCloudWebAppFactory>
         Assert.Equal(HttpStatusCode.Created, respA.StatusCode);
         Assert.Equal(HttpStatusCode.Created, respB.StatusCode);
 
-        var mrnA = (await respA.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("mrn").GetString()!;
-        var mrnB = (await respB.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("mrn").GetString()!;
+        var mrnA = (await respA.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("medicalRecordNumber").GetString()!;
+        var mrnB = (await respB.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("medicalRecordNumber").GetString()!;
 
         Assert.Matches(@"^MRN-\d{4}-\d{5}$", mrnA);
         Assert.Matches(@"^MRN-\d{4}-\d{5}$", mrnB);

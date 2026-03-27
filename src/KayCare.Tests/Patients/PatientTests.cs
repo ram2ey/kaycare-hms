@@ -38,7 +38,7 @@ public class PatientTests : IClassFixture<MediCloudWebAppFactory>
         Assert.Equal(HttpStatusCode.Created, resp.StatusCode);
 
         var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
-        var mrn  = body.GetProperty("mrn").GetString();
+        var mrn  = body.GetProperty("medicalRecordNumber").GetString();
 
         Assert.False(string.IsNullOrEmpty(mrn));
         // Format: MRN-{YEAR}-{5-digit}
@@ -54,7 +54,7 @@ public class PatientTests : IClassFixture<MediCloudWebAppFactory>
         Assert.Equal(HttpStatusCode.Created, resp.StatusCode);
 
         var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
-        var mrn  = body.GetProperty("mrn").GetString()!;
+        var mrn  = body.GetProperty("medicalRecordNumber").GetString()!;
 
         var year = mrn.Split('-')[1];
         Assert.Equal(DateTime.UtcNow.Year.ToString(), year);
@@ -71,8 +71,8 @@ public class PatientTests : IClassFixture<MediCloudWebAppFactory>
         Assert.Equal(HttpStatusCode.Created, resp1.StatusCode);
         Assert.Equal(HttpStatusCode.Created, resp2.StatusCode);
 
-        var mrn1 = (await resp1.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("mrn").GetString()!;
-        var mrn2 = (await resp2.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("mrn").GetString()!;
+        var mrn1 = (await resp1.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("medicalRecordNumber").GetString()!;
+        var mrn2 = (await resp2.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("medicalRecordNumber").GetString()!;
 
         var seq1 = int.Parse(mrn1.Split('-')[2]);
         var seq2 = int.Parse(mrn2.Split('-')[2]);
@@ -96,15 +96,16 @@ public class PatientTests : IClassFixture<MediCloudWebAppFactory>
         });
         Assert.Equal(HttpStatusCode.Created, createResp.StatusCode);
 
-        var created    = await createResp.Content.ReadFromJsonAsync<JsonElement>();
-        var patientId  = created.GetProperty("patientId").GetString()!;
+        var created   = await createResp.Content.ReadFromJsonAsync<JsonElement>();
+        var patientId = created.GetProperty("patientId").GetString()!;
 
         var getResp = await client.GetAsync($"/api/patients/{patientId}");
         Assert.Equal(HttpStatusCode.OK, getResp.StatusCode);
 
-        var body = await getResp.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.Equal("Alice", body.GetProperty("firstName").GetString());
-        Assert.Equal("Smith", body.GetProperty("lastName").GetString());
+        var body     = await getResp.Content.ReadFromJsonAsync<JsonElement>();
+        var fullName = body.GetProperty("fullName").GetString();
+        Assert.Contains("Alice", fullName);
+        Assert.Contains("Smith", fullName);
     }
 
     [Fact]
@@ -141,8 +142,9 @@ public class PatientTests : IClassFixture<MediCloudWebAppFactory>
         Assert.True(items.GetArrayLength() >= 1);
 
         // Verify the returned patient has the correct name
-        var first = items[0];
-        Assert.Equal(uniqueName, first.GetProperty("lastName").GetString());
+        var first    = items[0];
+        var fullName = first.GetProperty("fullName").GetString();
+        Assert.Contains(uniqueName, fullName);
     }
 
     // ── Authorization ─────────────────────────────────────────────────────────
