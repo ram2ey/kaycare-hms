@@ -44,8 +44,8 @@ public class MediCloudWebAppFactory : WebApplicationFactory<Program>, IAsyncLife
                     Environment.GetEnvironmentVariable("TEST_DB_CONNECTION")
                     ?? @"Server=.\SQLEXPRESS;Database=KayCareTestDb;Integrated Security=True;TrustServerCertificate=True;",
                 ["Jwt:Key"]         = TestJwtKey,
-                ["Jwt:Issuer"]      = "MediCloud",
-                ["Jwt:Audience"]    = "MediCloud",
+                ["Jwt:Issuer"]      = "KayCare",
+                ["Jwt:Audience"]    = "KayCare",
                 ["Jwt:ExpiryHours"] = "8",
                 // Azurite dev connection string — blob operations not tested here
                 ["BlobStorage:ConnectionString"] =

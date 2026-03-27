@@ -122,7 +122,7 @@ public class BillingService : IBillingService
             ?? throw new NotFoundException(nameof(Bill), billId);
 
         if (bill.Status != BillStatus.Draft)
-            throw new AppException($"Cannot issue a bill with status '{bill.Status}'.", 400);
+            throw new AppException($"Cannot issue a bill with status '{bill.Status}'.", 409);
 
         bill.Status   = BillStatus.Issued;
         bill.IssuedAt = DateTime.UtcNow;
@@ -181,7 +181,7 @@ public class BillingService : IBillingService
             ?? throw new NotFoundException(nameof(Bill), billId);
 
         if (bill.Status != BillStatus.Draft && bill.Status != BillStatus.Issued)
-            throw new AppException($"Cannot cancel a bill with status '{bill.Status}'.", 400);
+            throw new AppException($"Cannot cancel a bill with status '{bill.Status}'.", 409);
 
         bill.Status = BillStatus.Cancelled;
         await _db.SaveChangesAsync(ct);
