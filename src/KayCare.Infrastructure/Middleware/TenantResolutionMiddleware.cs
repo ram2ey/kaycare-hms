@@ -53,8 +53,13 @@ public class TenantResolutionMiddleware
         var header = context.Request.Headers["X-Tenant-Code"].FirstOrDefault();
         if (!string.IsNullOrEmpty(header)) return header;
 
-        // Subdomain: stmarys.medicloud.com → "stmarys"
+        // Subdomain: stmarys.kaycare.com → "stmarys"
+        // Ignore Azure default domains (*.azurewebsites.net, *.azurestaticapps.net)
         var host = context.Request.Host.Host;
+        if (host.EndsWith(".azurewebsites.net", StringComparison.OrdinalIgnoreCase) ||
+            host.EndsWith(".azurestaticapps.net", StringComparison.OrdinalIgnoreCase))
+            return null;
+
         var parts = host.Split('.');
         if (parts.Length >= 3) return parts[0];
 
