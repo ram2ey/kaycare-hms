@@ -34,6 +34,19 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
+// ── CORS ──────────────────────────────────────────────────────────────────────
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.WithOrigins(
+                "http://localhost:5173",
+                "https://gray-field-08dd4ab0f.2.azurestaticapps.net")
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
 // ── Swagger with Bearer token support ────────────────────────────────────────
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -88,6 +101,7 @@ app.UseSwagger();
 app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
+app.UseCors();
 
 // Tenant must be resolved before authentication so TenantId is in scope
 app.UseMiddleware<TenantResolutionMiddleware>();
