@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getBill, issueBill, addPayment, cancelBill, voidBill, downloadInvoice, downloadReceipt } from '../../api/billing';
-import type { BillDetailResponse, AddPaymentRequest } from '../../types/billing';
+import { getBill, issueBill, addPayment, cancelBill, voidBill, downloadInvoice, downloadReceipt, applyDiscount } from '../../api/billing';
+import type { BillDetailResponse, AddPaymentRequest, ApplyDiscountRequest } from '../../types/billing';
 import { STATUS_COLORS, PAYMENT_METHODS } from '../../types/billing';
 import { useAuth } from '../../contexts/AuthContext';
 import { Roles } from '../../types';
@@ -22,6 +22,8 @@ export default function BillDetailPage() {
   const [acting, setActing] = useState('');
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentForm, setPaymentForm] = useState<AddPaymentRequest>(emptyPayment);
+  const [showDiscountModal, setShowDiscountModal] = useState(false);
+  const [discountForm, setDiscountForm] = useState<ApplyDiscountRequest>({ discountAmount: 0, discountReason: '' });
 
   useEffect(() => {
     if (!id) return;
@@ -80,16 +82,35 @@ export default function BillDetailPage() {
     finally { setActing(''); }
   }
 
+  async function handleDiscount(e: React.FormEvent) {
+    e.preventDefault();
+    if (!id) return;
+    setActing('discount');
+    try {
+      setBill(await applyDiscount(id, {
+        discountAmount: discountForm.discountAmount,
+        discountReason: discountForm.discountReason || undefined,
+      }));
+      setShowDiscountModal(false);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      alert(msg || 'Failed to apply discount.');
+    } finally {
+      setActing('');
+    }
+  }
+
   const canBill   = user && BILLING_ROLES.includes(user.role as never);
   const canAdmin  = user && [Roles.Admin, Roles.SuperAdmin].includes(user.role as never);
 
   if (loading) return <div className="p-8 text-gray-400">Loading…</div>;
   if (error || !bill) return <div className="p-8 text-red-600">{error || 'Bill not found.'}</div>;
 
-  const isIssuable  = bill.status === 'Draft';
-  const isPayable   = bill.status === 'Issued' || bill.status === 'PartiallyPaid';
-  const isCancellable = bill.status === 'Draft' || bill.status === 'Issued';
-  const isVoidable  = bill.status === 'Paid' || bill.status === 'PartiallyPaid';
+  const isIssuable     = bill.status === 'Draft';
+  const isPayable      = bill.status === 'Issued' || bill.status === 'PartiallyPaid';
+  const isDiscountable = bill.status === 'Draft' || bill.status === 'Issued';
+  const isCancellable  = bill.status === 'Draft' || bill.status === 'Issued';
+  const isVoidable     = bill.status === 'Paid' || bill.status === 'PartiallyPaid';
 
   return (
     <div className="p-6 max-w-4xl">
@@ -117,6 +138,17 @@ export default function BillDetailPage() {
             className="px-4 py-2 border border-gray-300 text-gray-600 hover:bg-gray-50 text-sm font-medium rounded-lg disabled:opacity-50 transition-colors">
             {acting === 'invoice' ? 'Downloading…' : 'Download Invoice'}
           </button>
+          {canAdmin && isDiscountable && (
+            <button
+              onClick={() => {
+                setDiscountForm({ discountAmount: bill.discountAmount, discountReason: bill.discountReason ?? '' });
+                setShowDiscountModal(true);
+              }}
+              disabled={!!acting}
+              className="px-4 py-2 border border-yellow-300 text-yellow-700 hover:bg-yellow-50 text-sm font-medium rounded-lg disabled:opacity-50 transition-colors">
+              {bill.discountAmount > 0 ? 'Edit Discount' : 'Apply Discount'}
+            </button>
+          )}
           {canBill && isIssuable && (
             <button onClick={() => doAction('issue', () => issueBill(id!))} disabled={!!acting}
               className="px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white text-sm font-medium rounded-lg disabled:opacity-50 transition-colors">
@@ -277,6 +309,70 @@ export default function BillDetailPage() {
           </div>
         </section>
       </div>
+
+      {/* Discount / Waiver modal */}
+      {showDiscountModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold text-gray-800 mb-1">Apply Discount / Waiver</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              Bill total: <span className="font-semibold text-gray-700">{fmt(bill.totalAmount)}</span>
+              {bill.paidAmount > 0 && (
+                <> · Already paid: <span className="font-semibold text-green-700">{fmt(bill.paidAmount)}</span></>
+              )}
+            </p>
+
+            {/* Quick waiver button */}
+            <button
+              type="button"
+              onClick={() => setDiscountForm((f) => ({ ...f, discountAmount: bill.totalAmount, discountReason: f.discountReason || 'Full waiver' }))}
+              className="w-full mb-4 py-2 text-sm font-medium border border-dashed border-yellow-400 text-yellow-700 hover:bg-yellow-50 rounded-lg transition-colors"
+            >
+              Full Waiver — set to {fmt(bill.totalAmount)}
+            </button>
+
+            <form onSubmit={handleDiscount} className="space-y-3">
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Discount Amount (GHS) *</label>
+                <input
+                  required
+                  type="number"
+                  step="0.01"
+                  min={0}
+                  max={bill.totalAmount}
+                  value={discountForm.discountAmount || ''}
+                  onChange={(e) => setDiscountForm((f) => ({ ...f, discountAmount: Number(e.target.value) }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                />
+                {discountForm.discountAmount > 0 && (
+                  <p className="text-xs text-gray-400 mt-1">
+                    Net payable: <span className="font-semibold text-gray-700">{fmt(Math.max(0, bill.totalAmount - discountForm.discountAmount))}</span>
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Reason</label>
+                <input
+                  value={discountForm.discountReason ?? ''}
+                  onChange={(e) => setDiscountForm((f) => ({ ...f, discountReason: e.target.value }))}
+                  placeholder="e.g. Staff discount, Charity care, NHIS waiver…"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                />
+              </div>
+              <div className="flex gap-3 justify-end pt-2">
+                <button type="button" onClick={() => setShowDiscountModal(false)}
+                  className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+                  Cancel
+                </button>
+                <button type="submit" disabled={acting === 'discount'}
+                  className="px-4 py-2 text-sm font-medium bg-yellow-500 hover:bg-yellow-600 disabled:opacity-50 text-white rounded-lg transition-colors">
+                  {acting === 'discount' ? 'Applying…' : 'Apply'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Payment modal */}
       {showPaymentModal && (

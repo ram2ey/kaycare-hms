@@ -4,6 +4,7 @@ import type {
   BillDetailResponse,
   CreateBillRequest,
   AddPaymentRequest,
+  ApplyDiscountRequest,
 } from '../types/billing';
 
 export const getOutstanding = () =>
@@ -29,6 +30,9 @@ export const cancelBill = (id: string) =>
 
 export const voidBill = (id: string) =>
   apiClient.post<BillDetailResponse>(`/bills/${id}/void`).then((r) => r.data);
+
+export const applyDiscount = (id: string, data: ApplyDiscountRequest) =>
+  apiClient.patch<BillDetailResponse>(`/bills/${id}/discount`, data).then((r) => r.data);
 
 export const downloadInvoice = (id: string) =>
   apiClient.get(`/bills/${id}/report`, { responseType: 'blob' }).then((r) => r.data as Blob);

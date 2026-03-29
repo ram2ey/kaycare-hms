@@ -181,6 +181,30 @@ public class BillingService : IBillingService
         return await LoadDetailAsync(billId, ct);
     }
 
+    // ── Discount / Waiver ─────────────────────────────────────────────────────
+
+    public async Task<BillDetailResponse> ApplyDiscountAsync(Guid billId, ApplyDiscountRequest req, CancellationToken ct = default)
+    {
+        var bill = await _db.Bills
+            .FirstOrDefaultAsync(b => b.BillId == billId, ct)
+            ?? throw new NotFoundException(nameof(Bill), billId);
+
+        if (bill.Status != BillStatus.Draft && bill.Status != BillStatus.Issued)
+            throw new AppException($"Cannot apply a discount to a bill with status '{bill.Status}'.", 409);
+
+        if (req.DiscountAmount > bill.TotalAmount)
+            throw new AppException($"Discount ({req.DiscountAmount:F2}) cannot exceed the bill total ({bill.TotalAmount:F2}).", 400);
+
+        if (req.DiscountAmount < bill.PaidAmount)
+            throw new AppException($"Discount ({req.DiscountAmount:F2}) cannot reduce the balance below zero — {bill.PaidAmount:F2} has already been paid.", 400);
+
+        bill.DiscountAmount = req.DiscountAmount;
+        bill.DiscountReason = req.DiscountReason?.Trim();
+        await _db.SaveChangesAsync(ct);
+
+        return await LoadDetailAsync(billId, ct);
+    }
+
     // ── Cancel ────────────────────────────────────────────────────────────────
 
     public async Task<BillDetailResponse> CancelAsync(Guid billId, CancellationToken ct = default)

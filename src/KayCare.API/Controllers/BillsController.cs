@@ -83,6 +83,18 @@ public class BillsController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>Apply or update a discount/waiver on a Draft or Issued bill.</summary>
+    [HttpPatch("{id:guid}/discount")]
+    [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
+    [ProducesResponseType(typeof(BillDetailResponse), 200)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(404)]
+    public async Task<IActionResult> ApplyDiscount(Guid id, [FromBody] ApplyDiscountRequest request, CancellationToken ct)
+    {
+        var result = await _billing.ApplyDiscountAsync(id, request, ct);
+        return Ok(result);
+    }
+
     /// <summary>Cancel a Draft or Issued bill. Status: Draft|Issued → Cancelled.</summary>
     [HttpPost("{id:guid}/cancel")]
     [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]

@@ -71,6 +71,11 @@ export interface AddPaymentRequest {
   notes?: string;
 }
 
+export interface ApplyDiscountRequest {
+  discountAmount: number;
+  discountReason?: string;
+}
+
 export const STATUS_COLORS: Record<string, string> = {
   Draft:         'bg-gray-100 text-gray-600',
   Issued:        'bg-blue-100 text-blue-700',
