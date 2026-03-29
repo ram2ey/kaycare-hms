@@ -152,6 +152,7 @@ export default function PatientDetailPage() {
         <section className="bg-white rounded-xl border border-gray-200 p-5">
           <h3 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Insurance</h3>
           <dl className="space-y-2.5">
+            <Row label="NHIS Number" value={patient.nhisNumber} />
             <Row label="Provider" value={patient.insuranceProvider} />
             <Row label="Policy #" value={patient.insurancePolicyNumber} />
             <Row label="Group #" value={patient.insuranceGroupNumber} />

@@ -16,10 +16,12 @@ public class BillConfiguration : IEntityTypeConfiguration<Bill>
         builder.Property(b => b.Notes).HasMaxLength(1000);
 
         builder.Property(b => b.TotalAmount).HasColumnType("decimal(12,2)");
+        builder.Property(b => b.DiscountAmount).HasColumnType("decimal(12,2)").HasDefaultValue(0m);
+        builder.Property(b => b.DiscountReason).HasMaxLength(500);
         builder.Property(b => b.PaidAmount).HasColumnType("decimal(12,2)");
         builder.Property(b => b.BalanceDue)
             .HasColumnType("decimal(12,2)")
-            .HasComputedColumnSql("[TotalAmount] - [PaidAmount]", stored: true);
+            .HasComputedColumnSql("[TotalAmount] - [DiscountAmount] - [PaidAmount]", stored: true);
 
         builder.Property(b => b.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
         builder.Property(b => b.UpdatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
@@ -37,5 +39,10 @@ public class BillConfiguration : IEntityTypeConfiguration<Bill>
             .WithMany()
             .HasForeignKey(b => b.CreatedByUserId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(b => b.Payer)
+            .WithMany()
+            .HasForeignKey(b => b.PayerId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

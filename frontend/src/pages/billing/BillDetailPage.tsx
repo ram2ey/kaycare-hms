@@ -146,11 +146,22 @@ export default function BillDetailPage() {
 
       <div className="space-y-5">
         {/* Summary cards */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className={`grid gap-4 ${bill.discountAmount > 0 ? 'grid-cols-4' : 'grid-cols-3'}`}>
           <SummaryCard label="Total Amount" value={fmt(bill.totalAmount)} color="text-gray-800" />
+          {bill.discountAmount > 0 && (
+            <SummaryCard label={`Discount${bill.discountReason ? ` — ${bill.discountReason}` : ''}`} value={`− ${fmt(bill.discountAmount)}`} color="text-green-600" />
+          )}
           <SummaryCard label="Paid" value={fmt(bill.paidAmount)} color="text-green-700" />
           <SummaryCard label="Balance Due" value={fmt(bill.balanceDue)} color={bill.balanceDue > 0 ? 'text-red-600' : 'text-gray-400'} />
         </div>
+
+        {/* Payer info */}
+        {bill.payerName && (
+          <section className="bg-blue-50 border border-blue-100 rounded-xl px-5 py-3 flex items-center gap-3">
+            <span className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Payer</span>
+            <span className="text-sm font-medium text-blue-800">{bill.payerName}</span>
+          </section>
+        )}
 
         {/* Line items */}
         <section className="bg-white rounded-xl border border-gray-200 overflow-hidden">

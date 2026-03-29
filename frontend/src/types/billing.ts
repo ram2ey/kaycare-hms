@@ -35,6 +35,7 @@ export interface BillResponse {
   medicalRecordNumber: string;
   status: string;
   totalAmount: number;
+  discountAmount: number;
   paidAmount: number;
   balanceDue: number;
   issuedAt: string | null;
@@ -43,6 +44,9 @@ export interface BillResponse {
 
 export interface BillDetailResponse extends BillResponse {
   consultationId: string | null;
+  payerId: string | null;
+  payerName: string | null;
+  discountReason: string | null;
   createdByName: string;
   notes: string | null;
   updatedAt: string;
@@ -53,6 +57,9 @@ export interface BillDetailResponse extends BillResponse {
 export interface CreateBillRequest {
   patientId: string;
   consultationId?: string;
+  payerId?: string;
+  discountAmount?: number;
+  discountReason?: string;
   notes?: string;
   items: BillItemRequest[];
 }

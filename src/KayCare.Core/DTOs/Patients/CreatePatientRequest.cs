@@ -49,7 +49,8 @@ public class CreatePatientRequest
     [MaxLength(50)]  public string? EmergencyContactRelation { get; set; }
 
     // Insurance
-    [MaxLength(200)] public string? InsuranceProvider { get; set; }
+    [MaxLength(20)]  public string? NhisNumber            { get; set; }
+    [MaxLength(200)] public string? InsuranceProvider     { get; set; }
     [MaxLength(100)] public string? InsurancePolicyNumber { get; set; }
-    [MaxLength(100)] public string? InsuranceGroupNumber { get; set; }
+    [MaxLength(100)] public string? InsuranceGroupNumber  { get; set; }
 }

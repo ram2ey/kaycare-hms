@@ -28,9 +28,10 @@ public class UpdatePatientRequest
     [MaxLength(20)]  public string? EmergencyContactPhone { get; set; }
     [MaxLength(50)]  public string? EmergencyContactRelation { get; set; }
 
-    [MaxLength(200)] public string? InsuranceProvider { get; set; }
+    [MaxLength(20)]  public string? NhisNumber            { get; set; }
+    [MaxLength(200)] public string? InsuranceProvider     { get; set; }
     [MaxLength(100)] public string? InsurancePolicyNumber { get; set; }
-    [MaxLength(100)] public string? InsuranceGroupNumber { get; set; }
+    [MaxLength(100)] public string? InsuranceGroupNumber  { get; set; }
 
     public bool? HasChronicConditions { get; set; }
 }

@@ -21,6 +21,7 @@ import BillingPage from './pages/billing/BillingPage';
 import BillDetailPage from './pages/billing/BillDetailPage';
 import CreateBillPage from './pages/billing/CreateBillPage';
 import ServiceCatalogPage from './pages/billing/ServiceCatalogPage';
+import PayersPage from './pages/billing/PayersPage';
 import DocumentsPage from './pages/documents/DocumentsPage';
 import LabResultsPage from './pages/lab-results/LabResultsPage';
 import LabResultDetailPage from './pages/lab-results/LabResultDetailPage';
@@ -59,6 +60,9 @@ export default function App() {
               <Route path="billing/new" element={<CreateBillPage />} />
               <Route path="billing/catalog" element={<ProtectedRoute allowedRoles={[Roles.Admin, Roles.SuperAdmin]} />}>
                 <Route index element={<ServiceCatalogPage />} />
+              </Route>
+              <Route path="billing/payers" element={<ProtectedRoute allowedRoles={[Roles.Admin, Roles.SuperAdmin]} />}>
+                <Route index element={<PayersPage />} />
               </Route>
               <Route path="billing/:id" element={<BillDetailPage />} />
               <Route path="documents" element={<DocumentsPage />} />

@@ -23,6 +23,7 @@ const empty: CreatePatientRequest = {
   emergencyContactName: '',
   emergencyContactPhone: '',
   emergencyContactRelation: '',
+  nhisNumber: '',
   insuranceProvider: '',
   insurancePolicyNumber: '',
   insuranceGroupNumber: '',
@@ -151,6 +152,12 @@ export default function CreatePatientPage() {
         {/* Insurance */}
         <section className="bg-white rounded-xl border border-gray-200 p-5">
           <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4">Insurance</h3>
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <Field label="NHIS Number">
+              <input value={form.nhisNumber} onChange={(e) => set('nhisNumber', e.target.value)}
+                placeholder="e.g. NHIS-1234567" className={input} />
+            </Field>
+          </div>
           <div className="grid grid-cols-3 gap-4">
             <Field label="Provider">
               <input value={form.insuranceProvider} onChange={(e) => set('insuranceProvider', e.target.value)} className={input} />

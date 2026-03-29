@@ -34,6 +34,7 @@ public class PatientConfiguration : IEntityTypeConfiguration<Patient>
         builder.Property(p => p.EmergencyContactPhone).HasMaxLength(20);
         builder.Property(p => p.EmergencyContactRelation).HasMaxLength(50);
 
+        builder.Property(p => p.NhisNumber).HasMaxLength(20);
         builder.Property(p => p.InsuranceProvider).HasMaxLength(200);
         builder.Property(p => p.InsurancePolicyNumber).HasMaxLength(100);
         builder.Property(p => p.InsuranceGroupNumber).HasMaxLength(100);

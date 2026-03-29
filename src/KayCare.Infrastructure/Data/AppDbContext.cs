@@ -28,6 +28,7 @@ public class AppDbContext : DbContext
     public DbSet<DispenseEvent>            DispenseEvents            => Set<DispenseEvent>();
     public DbSet<DispenseEventItem>        DispenseEventItems        => Set<DispenseEventItem>();
     public DbSet<ServiceCatalogItem> ServiceCatalogItems => Set<ServiceCatalogItem>();
+    public DbSet<Payer>            Payers            => Set<Payer>();
     public DbSet<Bill>             Bills             => Set<Bill>();
     public DbSet<BillItem>         BillItems         => Set<BillItem>();
     public DbSet<Payment>          Payments          => Set<Payment>();
@@ -61,6 +62,8 @@ public class AppDbContext : DbContext
             .HasQueryFilter(i => i.TenantId == _tenantContext.TenantId);
         modelBuilder.Entity<ServiceCatalogItem>()
             .HasQueryFilter(s => s.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<Payer>()
+            .HasQueryFilter(p => p.TenantId == _tenantContext.TenantId);
         modelBuilder.Entity<Bill>()
             .HasQueryFilter(b => b.TenantId == _tenantContext.TenantId);
         modelBuilder.Entity<BillItem>()

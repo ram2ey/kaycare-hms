@@ -16,7 +16,8 @@ public class PatientDetailResponse : PatientResponse
     public string? EmergencyContactName { get; set; }
     public string? EmergencyContactPhone { get; set; }
     public string? EmergencyContactRelation { get; set; }
-    public string? InsuranceProvider { get; set; }
+    public string? NhisNumber           { get; set; }
+    public string? InsuranceProvider    { get; set; }
     public string? InsurancePolicyNumber { get; set; }
     public string? InsuranceGroupNumber { get; set; }
     public bool HasChronicConditions { get; set; }

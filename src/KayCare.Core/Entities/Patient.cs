@@ -31,7 +31,8 @@ public class Patient : TenantEntity
     public string? EmergencyContactRelation { get; set; }
 
     // Insurance
-    public string? InsuranceProvider { get; set; }
+    public string? NhisNumber           { get; set; }
+    public string? InsuranceProvider    { get; set; }
     public string? InsurancePolicyNumber { get; set; }
     public string? InsuranceGroupNumber { get; set; }
 

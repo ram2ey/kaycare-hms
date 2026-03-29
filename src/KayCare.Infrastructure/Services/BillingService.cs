@@ -41,14 +41,23 @@ public class BillingService : IBillingService
 
         var billNumber = await GenerateBillNumberAsync(ct);
 
+        if (req.PayerId.HasValue)
+        {
+            var payerExists = await _db.Payers.AnyAsync(p => p.PayerId == req.PayerId.Value, ct);
+            if (!payerExists) throw new NotFoundException(nameof(Payer), req.PayerId.Value);
+        }
+
         var bill = new Bill
         {
             BillNumber      = billNumber,
             PatientId       = req.PatientId,
             ConsultationId  = req.ConsultationId,
+            PayerId         = req.PayerId,
             CreatedByUserId = _currentUser.UserId,
             Status          = BillStatus.Draft,
             Notes           = req.Notes,
+            DiscountAmount  = req.DiscountAmount,
+            DiscountReason  = req.DiscountReason,
             TotalAmount     = 0m,
             PaidAmount      = 0m
         };
@@ -163,7 +172,7 @@ public class BillingService : IBillingService
 
         bill.PaidAmount += req.Amount;
 
-        bill.Status = bill.PaidAmount >= bill.TotalAmount
+        bill.Status = bill.PaidAmount >= (bill.TotalAmount - bill.DiscountAmount)
             ? BillStatus.Paid
             : BillStatus.PartiallyPaid;
 
@@ -236,6 +245,7 @@ public class BillingService : IBillingService
         var b = await _db.Bills
             .Include(b => b.Patient)
             .Include(b => b.CreatedBy)
+            .Include(b => b.Payer)
             .Include(b => b.Items)
             .Include(b => b.Payments)
                 .ThenInclude(p => p.ReceivedBy)
@@ -255,6 +265,7 @@ public class BillingService : IBillingService
         MedicalRecordNumber = b.Patient.MedicalRecordNumber,
         Status              = b.Status,
         TotalAmount         = b.TotalAmount,
+        DiscountAmount      = b.DiscountAmount,
         PaidAmount          = b.PaidAmount,
         BalanceDue          = b.BalanceDue,
         IssuedAt            = b.IssuedAt,
@@ -270,11 +281,15 @@ public class BillingService : IBillingService
         MedicalRecordNumber = b.Patient.MedicalRecordNumber,
         Status              = b.Status,
         TotalAmount         = b.TotalAmount,
+        DiscountAmount      = b.DiscountAmount,
         PaidAmount          = b.PaidAmount,
         BalanceDue          = b.BalanceDue,
         IssuedAt            = b.IssuedAt,
         CreatedAt           = b.CreatedAt,
         ConsultationId      = b.ConsultationId,
+        PayerId             = b.PayerId,
+        PayerName           = b.Payer?.Name,
+        DiscountReason      = b.DiscountReason,
         CreatedByName       = $"{b.CreatedBy.FirstName} {b.CreatedBy.LastName}".Trim(),
         Notes               = b.Notes,
         UpdatedAt           = b.UpdatedAt,

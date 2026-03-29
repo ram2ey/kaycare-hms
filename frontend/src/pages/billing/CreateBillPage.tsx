@@ -3,9 +3,11 @@ import { useNavigate, Link } from 'react-router-dom';
 import { createBill } from '../../api/billing';
 import { getCatalog } from '../../api/serviceCatalog';
 import { searchPatients } from '../../api/patients';
+import { getPayers } from '../../api/payers';
 import type { CreateBillRequest, BillItemRequest } from '../../types/billing';
 import type { PatientResponse } from '../../types/patients';
 import type { ServiceCatalogItem } from '../../types/serviceCatalog';
+import type { PayerResponse } from '../../types/payers';
 import { BILL_CATEGORIES } from '../../types/billing';
 
 const inp = 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
@@ -21,6 +23,9 @@ export default function CreateBillPage() {
   const [patientResults, setPatientResults] = useState<PatientResponse[]>([]);
   const [searching, setSearching] = useState(false);
   const [notes, setNotes] = useState('');
+  const [payerId, setPayerId] = useState('');
+  const [discountAmount, setDiscountAmount] = useState(0);
+  const [discountReason, setDiscountReason] = useState('');
   const [items, setItems] = useState<BillItemRequest[]>([emptyItem()]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -30,8 +35,12 @@ export default function CreateBillPage() {
   const [showCatalog, setShowCatalog] = useState(false);
   const [catalogSearch, setCatalogSearch] = useState('');
 
+  // Payers
+  const [payers, setPayers] = useState<PayerResponse[]>([]);
+
   useEffect(() => {
     getCatalog(true).then(setCatalog).catch(() => {});
+    getPayers(true).then(setPayers).catch(() => {});
   }, []);
 
   async function searchForPatient() {
@@ -76,6 +85,7 @@ export default function CreateBillPage() {
     : catalog;
 
   const totalAmount = items.reduce((s, it) => s + it.quantity * it.unitPrice, 0);
+  const netAmount   = Math.max(0, totalAmount - discountAmount);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -83,9 +93,12 @@ export default function CreateBillPage() {
     setSaving(true);
     setError('');
     const payload: CreateBillRequest = {
-      patientId: selectedPatient.patientId,
-      notes: notes || undefined,
-      items: items.map((it) => ({ ...it, category: it.category || undefined })),
+      patientId:      selectedPatient.patientId,
+      payerId:        payerId || undefined,
+      discountAmount: discountAmount || undefined,
+      discountReason: discountReason || undefined,
+      notes:          notes || undefined,
+      items:          items.map((it) => ({ ...it, category: it.category || undefined })),
     };
     try {
       const bill = await createBill(payload);
@@ -150,6 +163,35 @@ export default function CreateBillPage() {
           )}
         </section>
 
+        {/* Payer & Discount */}
+        <section className="bg-white rounded-xl border border-gray-200 p-5">
+          <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4">Payer & Discount</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Payer / Insurance</label>
+              <select value={payerId} onChange={(e) => setPayerId(e.target.value)} className={inp}>
+                <option value="">— Self-pay —</option>
+                {payers.map((p) => (
+                  <option key={p.payerId} value={p.payerId}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Discount Amount (GHS)</label>
+              <input type="number" step="0.01" min={0} value={discountAmount || ''}
+                onChange={(e) => setDiscountAmount(Number(e.target.value))}
+                placeholder="0.00" className={inp} />
+            </div>
+          </div>
+          {discountAmount > 0 && (
+            <div className="mt-3">
+              <label className="block text-xs text-gray-500 mb-1">Discount Reason</label>
+              <input value={discountReason} onChange={(e) => setDiscountReason(e.target.value)}
+                placeholder="e.g. Staff discount, NHIS waiver…" className={inp} />
+            </div>
+          )}
+        </section>
+
         {/* Line items */}
         <section className="bg-white rounded-xl border border-gray-200 p-5">
           <div className="flex items-center justify-between mb-4">
@@ -208,9 +250,21 @@ export default function CreateBillPage() {
           </div>
 
           <div className="mt-4 pt-4 border-t border-gray-100 flex justify-end">
-            <div className="text-sm">
-              <span className="text-gray-500 mr-3">Total:</span>
-              <span className="text-xl font-bold text-gray-900">{fmt(totalAmount)}</span>
+            <div className="text-sm text-right space-y-1">
+              <div className="flex gap-6 justify-end">
+                <span className="text-gray-500">Subtotal:</span>
+                <span className="font-medium text-gray-800 w-24 text-right">{fmt(totalAmount)}</span>
+              </div>
+              {discountAmount > 0 && (
+                <div className="flex gap-6 justify-end text-green-700">
+                  <span>Discount:</span>
+                  <span className="font-medium w-24 text-right">− {fmt(discountAmount)}</span>
+                </div>
+              )}
+              <div className="flex gap-6 justify-end border-t border-gray-200 pt-1">
+                <span className="text-gray-700 font-semibold">Net Total:</span>
+                <span className="text-xl font-bold text-gray-900 w-24 text-right">{fmt(netAmount)}</span>
+              </div>
             </div>
           </div>
         </section>

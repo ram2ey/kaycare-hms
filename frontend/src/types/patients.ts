@@ -26,6 +26,7 @@ export interface PatientDetailResponse extends PatientResponse {
   emergencyContactName: string | null;
   emergencyContactPhone: string | null;
   emergencyContactRelation: string | null;
+  nhisNumber: string | null;
   insuranceProvider: string | null;
   insurancePolicyNumber: string | null;
   insuranceGroupNumber: string | null;
@@ -61,6 +62,7 @@ export interface CreatePatientRequest {
   emergencyContactName?: string;
   emergencyContactPhone?: string;
   emergencyContactRelation?: string;
+  nhisNumber?: string;
   insuranceProvider?: string;
   insurancePolicyNumber?: string;
   insuranceGroupNumber?: string;

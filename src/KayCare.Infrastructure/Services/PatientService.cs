@@ -52,6 +52,7 @@ public class PatientService : IPatientService
             EmergencyContactName     = req.EmergencyContactName,
             EmergencyContactPhone    = req.EmergencyContactPhone,
             EmergencyContactRelation = req.EmergencyContactRelation,
+            NhisNumber               = req.NhisNumber,
             InsuranceProvider        = req.InsuranceProvider,
             InsurancePolicyNumber    = req.InsurancePolicyNumber,
             InsuranceGroupNumber     = req.InsuranceGroupNumber,
@@ -141,6 +142,7 @@ public class PatientService : IPatientService
         if (req.EmergencyContactName is not null) patient.EmergencyContactName = req.EmergencyContactName;
         if (req.EmergencyContactPhone is not null) patient.EmergencyContactPhone = req.EmergencyContactPhone;
         if (req.EmergencyContactRelation is not null) patient.EmergencyContactRelation = req.EmergencyContactRelation;
+        if (req.NhisNumber is not null) patient.NhisNumber = req.NhisNumber;
         if (req.InsuranceProvider is not null) patient.InsuranceProvider = req.InsuranceProvider;
         if (req.InsurancePolicyNumber is not null) patient.InsurancePolicyNumber = req.InsurancePolicyNumber;
         if (req.InsuranceGroupNumber is not null) patient.InsuranceGroupNumber = req.InsuranceGroupNumber;
@@ -279,6 +281,7 @@ public class PatientService : IPatientService
         EmergencyContactName     = p.EmergencyContactName,
         EmergencyContactPhone    = p.EmergencyContactPhone,
         EmergencyContactRelation = p.EmergencyContactRelation,
+        NhisNumber               = p.NhisNumber,
         InsuranceProvider        = p.InsuranceProvider,
         InsurancePolicyNumber    = p.InsurancePolicyNumber,
         InsuranceGroupNumber     = p.InsuranceGroupNumber,
