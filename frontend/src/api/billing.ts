@@ -5,6 +5,8 @@ import type {
   CreateBillRequest,
   AddPaymentRequest,
   ApplyDiscountRequest,
+  AddAdjustmentRequest,
+  WriteOffRequest,
 } from '../types/billing';
 
 export const getOutstanding = () =>
@@ -33,6 +35,12 @@ export const voidBill = (id: string) =>
 
 export const applyDiscount = (id: string, data: ApplyDiscountRequest) =>
   apiClient.patch<BillDetailResponse>(`/bills/${id}/discount`, data).then((r) => r.data);
+
+export const addAdjustment = (id: string, data: AddAdjustmentRequest) =>
+  apiClient.post<BillDetailResponse>(`/bills/${id}/adjustments`, data).then((r) => r.data);
+
+export const writeOff = (id: string, data: WriteOffRequest) =>
+  apiClient.post<BillDetailResponse>(`/bills/${id}/write-off`, data).then((r) => r.data);
 
 export const downloadInvoice = (id: string) =>
   apiClient.get(`/bills/${id}/report`, { responseType: 'blob' }).then((r) => r.data as Blob);

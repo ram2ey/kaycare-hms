@@ -35,7 +35,9 @@ export interface BillResponse {
   medicalRecordNumber: string;
   status: string;
   totalAmount: number;
+  adjustmentTotal: number;
   discountAmount: number;
+  writeOffAmount: number;
   paidAmount: number;
   balanceDue: number;
   issuedAt: string | null;
@@ -47,11 +49,13 @@ export interface BillDetailResponse extends BillResponse {
   payerId: string | null;
   payerName: string | null;
   discountReason: string | null;
+  writeOffReason: string | null;
   createdByName: string;
   notes: string | null;
   updatedAt: string;
   items: BillItemResponse[];
   payments: PaymentResponse[];
+  adjustments: BillAdjustmentResponse[];
 }
 
 export interface CreateBillRequest {
@@ -76,6 +80,23 @@ export interface ApplyDiscountRequest {
   discountReason?: string;
 }
 
+export interface BillAdjustmentResponse {
+  billAdjustmentId: string;
+  amount: number;
+  reason: string;
+  adjustedByName: string;
+  adjustedAt: string;
+}
+
+export interface AddAdjustmentRequest {
+  amount: number;
+  reason: string;
+}
+
+export interface WriteOffRequest {
+  reason: string;
+}
+
 export const STATUS_COLORS: Record<string, string> = {
   Draft:         'bg-gray-100 text-gray-600',
   Issued:        'bg-blue-100 text-blue-700',
@@ -83,6 +104,7 @@ export const STATUS_COLORS: Record<string, string> = {
   Paid:          'bg-green-100 text-green-700',
   Cancelled:     'bg-gray-100 text-gray-400',
   Void:          'bg-red-100 text-red-500',
+  WrittenOff:    'bg-purple-100 text-purple-600',
 };
 
 export const PAYMENT_METHODS = [

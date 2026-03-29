@@ -31,6 +31,7 @@ public class AppDbContext : DbContext
     public DbSet<Payer>            Payers            => Set<Payer>();
     public DbSet<Bill>             Bills             => Set<Bill>();
     public DbSet<BillItem>         BillItems         => Set<BillItem>();
+    public DbSet<BillAdjustment>   BillAdjustments   => Set<BillAdjustment>();
     public DbSet<Payment>          Payments          => Set<Payment>();
     public DbSet<PatientDocument>  PatientDocuments  => Set<PatientDocument>();
     public DbSet<LabResult>        LabResults        => Set<LabResult>();
@@ -68,6 +69,8 @@ public class AppDbContext : DbContext
             .HasQueryFilter(b => b.TenantId == _tenantContext.TenantId);
         modelBuilder.Entity<BillItem>()
             .HasQueryFilter(i => i.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<BillAdjustment>()
+            .HasQueryFilter(a => a.TenantId == _tenantContext.TenantId);
         modelBuilder.Entity<Payment>()
             .HasQueryFilter(p => p.TenantId == _tenantContext.TenantId);
         modelBuilder.Entity<PatientDocument>()

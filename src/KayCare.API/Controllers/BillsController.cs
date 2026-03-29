@@ -95,6 +95,30 @@ public class BillsController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>Add a post-issuance adjustment (positive = extra charge, negative = credit).</summary>
+    [HttpPost("{id:guid}/adjustments")]
+    [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
+    [ProducesResponseType(typeof(BillDetailResponse), 200)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(404)]
+    public async Task<IActionResult> AddAdjustment(Guid id, [FromBody] AddAdjustmentRequest request, CancellationToken ct)
+    {
+        var result = await _billing.AddAdjustmentAsync(id, request, ct);
+        return Ok(result);
+    }
+
+    /// <summary>Write off the remaining balance as uncollectable. Status: Issued|PartiallyPaid → WrittenOff.</summary>
+    [HttpPost("{id:guid}/write-off")]
+    [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
+    [ProducesResponseType(typeof(BillDetailResponse), 200)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(404)]
+    public async Task<IActionResult> WriteOff(Guid id, [FromBody] WriteOffRequest request, CancellationToken ct)
+    {
+        var result = await _billing.WriteOffAsync(id, request, ct);
+        return Ok(result);
+    }
+
     /// <summary>Cancel a Draft or Issued bill. Status: Draft|Issued → Cancelled.</summary>
     [HttpPost("{id:guid}/cancel")]
     [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]

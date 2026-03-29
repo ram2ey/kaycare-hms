@@ -11,6 +11,8 @@ public interface IBillingService
     Task<BillDetailResponse> IssueAsync(Guid billId, CancellationToken ct = default);
     Task<BillDetailResponse> AddPaymentAsync(Guid billId, AddPaymentRequest request, CancellationToken ct = default);
     Task<BillDetailResponse> ApplyDiscountAsync(Guid billId, ApplyDiscountRequest request, CancellationToken ct = default);
+    Task<BillDetailResponse> AddAdjustmentAsync(Guid billId, AddAdjustmentRequest request, CancellationToken ct = default);
+    Task<BillDetailResponse> WriteOffAsync(Guid billId, WriteOffRequest request, CancellationToken ct = default);
     Task<BillDetailResponse> CancelAsync(Guid billId, CancellationToken ct = default);
     Task<BillDetailResponse> VoidAsync(Guid billId, CancellationToken ct = default);
 }

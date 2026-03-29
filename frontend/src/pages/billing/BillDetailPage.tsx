@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getBill, issueBill, addPayment, cancelBill, voidBill, downloadInvoice, downloadReceipt, applyDiscount } from '../../api/billing';
-import type { BillDetailResponse, AddPaymentRequest, ApplyDiscountRequest } from '../../types/billing';
+import { getBill, issueBill, addPayment, cancelBill, voidBill, downloadInvoice, downloadReceipt, applyDiscount, addAdjustment, writeOff } from '../../api/billing';
+import type { BillDetailResponse, AddPaymentRequest, ApplyDiscountRequest, AddAdjustmentRequest, WriteOffRequest } from '../../types/billing';
 import { STATUS_COLORS, PAYMENT_METHODS } from '../../types/billing';
 import { useAuth } from '../../contexts/AuthContext';
 import { Roles } from '../../types';
@@ -24,6 +24,10 @@ export default function BillDetailPage() {
   const [paymentForm, setPaymentForm] = useState<AddPaymentRequest>(emptyPayment);
   const [showDiscountModal, setShowDiscountModal] = useState(false);
   const [discountForm, setDiscountForm] = useState<ApplyDiscountRequest>({ discountAmount: 0, discountReason: '' });
+  const [showAdjustModal, setShowAdjustModal] = useState(false);
+  const [adjustForm, setAdjustForm] = useState<AddAdjustmentRequest>({ amount: 0, reason: '' });
+  const [showWriteOffModal, setShowWriteOffModal] = useState(false);
+  const [writeOffForm, setWriteOffForm] = useState<WriteOffRequest>({ reason: '' });
 
   useEffect(() => {
     if (!id) return;
@@ -100,6 +104,38 @@ export default function BillDetailPage() {
     }
   }
 
+  async function handleAdjustment(e: React.FormEvent) {
+    e.preventDefault();
+    if (!id) return;
+    setActing('adjust');
+    try {
+      setBill(await addAdjustment(id, adjustForm));
+      setShowAdjustModal(false);
+      setAdjustForm({ amount: 0, reason: '' });
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      alert(msg || 'Failed to add adjustment.');
+    } finally {
+      setActing('');
+    }
+  }
+
+  async function handleWriteOff(e: React.FormEvent) {
+    e.preventDefault();
+    if (!id) return;
+    setActing('writeoff');
+    try {
+      setBill(await writeOff(id, writeOffForm));
+      setShowWriteOffModal(false);
+      setWriteOffForm({ reason: '' });
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      alert(msg || 'Failed to write off bill.');
+    } finally {
+      setActing('');
+    }
+  }
+
   const canBill   = user && BILLING_ROLES.includes(user.role as never);
   const canAdmin  = user && [Roles.Admin, Roles.SuperAdmin].includes(user.role as never);
 
@@ -109,6 +145,8 @@ export default function BillDetailPage() {
   const isIssuable     = bill.status === 'Draft';
   const isPayable      = bill.status === 'Issued' || bill.status === 'PartiallyPaid';
   const isDiscountable = bill.status === 'Draft' || bill.status === 'Issued';
+  const isAdjustable   = bill.status === 'Issued' || bill.status === 'PartiallyPaid';
+  const isWriteOffable = (bill.status === 'Issued' || bill.status === 'PartiallyPaid') && bill.balanceDue > 0;
   const isCancellable  = bill.status === 'Draft' || bill.status === 'Issued';
   const isVoidable     = bill.status === 'Paid' || bill.status === 'PartiallyPaid';
 
@@ -159,6 +197,18 @@ export default function BillDetailPage() {
             <button onClick={() => setShowPaymentModal(true)}
               className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors">
               Record Payment
+            </button>
+          )}
+          {canAdmin && isAdjustable && (
+            <button onClick={() => { setAdjustForm({ amount: 0, reason: '' }); setShowAdjustModal(true); }} disabled={!!acting}
+              className="px-4 py-2 border border-indigo-300 text-indigo-700 hover:bg-indigo-50 text-sm font-medium rounded-lg disabled:opacity-50 transition-colors">
+              Adjustment
+            </button>
+          )}
+          {canAdmin && isWriteOffable && (
+            <button onClick={() => { setWriteOffForm({ reason: '' }); setShowWriteOffModal(true); }} disabled={!!acting}
+              className="px-4 py-2 border border-purple-300 text-purple-700 hover:bg-purple-50 text-sm font-medium rounded-lg disabled:opacity-50 transition-colors">
+              Write Off
             </button>
           )}
           {canAdmin && isCancellable && (
@@ -289,6 +339,52 @@ export default function BillDetailPage() {
           )}
         </section>
 
+        {/* Adjustments */}
+        {bill.adjustments.length > 0 && (
+          <section className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="px-5 py-3 border-b border-gray-100 bg-gray-50">
+              <h3 className="text-sm font-semibold text-gray-700">
+                Adjustments ({bill.adjustments.length})
+                <span className={`ml-2 font-mono text-xs ${bill.adjustmentTotal >= 0 ? 'text-red-600' : 'text-green-700'}`}>
+                  {bill.adjustmentTotal >= 0 ? '+' : ''}{fmt(bill.adjustmentTotal)}
+                </span>
+              </h3>
+            </div>
+            <table className="w-full text-sm">
+              <thead className="border-b border-gray-100">
+                <tr>
+                  <th className="text-left px-5 py-2.5 font-medium text-gray-500 text-xs uppercase">Date</th>
+                  <th className="text-left px-5 py-2.5 font-medium text-gray-500 text-xs uppercase">Reason</th>
+                  <th className="text-left px-5 py-2.5 font-medium text-gray-500 text-xs uppercase">By</th>
+                  <th className="text-right px-5 py-2.5 font-medium text-gray-500 text-xs uppercase">Amount</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {bill.adjustments.map((a) => (
+                  <tr key={a.billAdjustmentId}>
+                    <td className="px-5 py-3 text-gray-500 text-xs">
+                      {new Date(a.adjustedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </td>
+                    <td className="px-5 py-3 text-gray-700">{a.reason}</td>
+                    <td className="px-5 py-3 text-gray-500">{a.adjustedByName}</td>
+                    <td className={`px-5 py-3 text-right font-medium font-mono ${a.amount >= 0 ? 'text-red-600' : 'text-green-700'}`}>
+                      {a.amount >= 0 ? '+' : ''}{fmt(a.amount)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+        )}
+
+        {/* Write-off banner */}
+        {bill.status === 'WrittenOff' && (
+          <section className="bg-purple-50 border border-purple-200 rounded-xl px-5 py-3">
+            <p className="text-sm font-semibold text-purple-700">Written Off — {fmt(bill.writeOffAmount)}</p>
+            {bill.writeOffReason && <p className="text-xs text-purple-500 mt-0.5">{bill.writeOffReason}</p>}
+          </section>
+        )}
+
         {bill.notes && (
           <section className="bg-white rounded-xl border border-gray-200 p-5">
             <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-2">Notes</h3>
@@ -367,6 +463,93 @@ export default function BillDetailPage() {
                 <button type="submit" disabled={acting === 'discount'}
                   className="px-4 py-2 text-sm font-medium bg-yellow-500 hover:bg-yellow-600 disabled:opacity-50 text-white rounded-lg transition-colors">
                   {acting === 'discount' ? 'Applying…' : 'Apply'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Adjustment modal */}
+      {showAdjustModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold text-gray-800 mb-1">Post-Issuance Adjustment</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              Positive = extra charge &nbsp;·&nbsp; Negative = credit reduction
+            </p>
+            <form onSubmit={handleAdjustment} className="space-y-3">
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Amount (GHS) *</label>
+                <input
+                  required
+                  type="number"
+                  step="0.01"
+                  value={adjustForm.amount || ''}
+                  onChange={(e) => setAdjustForm((f) => ({ ...f, amount: Number(e.target.value) }))}
+                  placeholder="e.g. 50.00 or -20.00"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                />
+                {adjustForm.amount !== 0 && (
+                  <p className="text-xs text-gray-400 mt-1">
+                    New balance would be: <span className="font-semibold text-gray-700">{fmt(Math.max(0, bill.balanceDue + adjustForm.amount))}</span>
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Reason *</label>
+                <input
+                  required
+                  value={adjustForm.reason}
+                  onChange={(e) => setAdjustForm((f) => ({ ...f, reason: e.target.value }))}
+                  placeholder="e.g. Late fee, Overcharge correction…"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                />
+              </div>
+              <div className="flex gap-3 justify-end pt-2">
+                <button type="button" onClick={() => setShowAdjustModal(false)}
+                  className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+                  Cancel
+                </button>
+                <button type="submit" disabled={acting === 'adjust'}
+                  className="px-4 py-2 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg transition-colors">
+                  {acting === 'adjust' ? 'Saving…' : 'Save Adjustment'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Write-off modal */}
+      {showWriteOffModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold text-gray-800 mb-1">Write Off Balance</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              This will write off the remaining balance of{' '}
+              <span className="font-semibold text-purple-700">{fmt(bill.balanceDue)}</span> as uncollectable.
+              The bill will be marked <span className="font-semibold">WrittenOff</span>.
+            </p>
+            <form onSubmit={handleWriteOff} className="space-y-3">
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Reason *</label>
+                <input
+                  required
+                  value={writeOffForm.reason}
+                  onChange={(e) => setWriteOffForm({ reason: e.target.value })}
+                  placeholder="e.g. Patient deceased, Bad debt, Charity care…"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
+                />
+              </div>
+              <div className="flex gap-3 justify-end pt-2">
+                <button type="button" onClick={() => setShowWriteOffModal(false)}
+                  className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+                  Cancel
+                </button>
+                <button type="submit" disabled={acting === 'writeoff'}
+                  className="px-4 py-2 text-sm font-medium bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white rounded-lg transition-colors">
+                  {acting === 'writeoff' ? 'Processing…' : 'Confirm Write-Off'}
                 </button>
               </div>
             </form>

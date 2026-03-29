@@ -205,6 +205,66 @@ public class BillingService : IBillingService
         return await LoadDetailAsync(billId, ct);
     }
 
+    // ── Adjustment ───────────────────────────────────────────────────────────
+
+    public async Task<BillDetailResponse> AddAdjustmentAsync(Guid billId, AddAdjustmentRequest req, CancellationToken ct = default)
+    {
+        var bill = await _db.Bills
+            .FirstOrDefaultAsync(b => b.BillId == billId, ct)
+            ?? throw new NotFoundException(nameof(Bill), billId);
+
+        if (bill.Status != BillStatus.Issued && bill.Status != BillStatus.PartiallyPaid)
+            throw new AppException($"Cannot adjust a bill with status '{bill.Status}'.", 409);
+
+        if (req.Amount == 0)
+            throw new AppException("Adjustment amount cannot be zero.", 400);
+
+        // A credit adjustment cannot push the bill total below what's already been paid
+        var newTotal = bill.TotalAmount + bill.AdjustmentTotal + req.Amount;
+        if (newTotal - bill.DiscountAmount - bill.WriteOffAmount < bill.PaidAmount)
+            throw new AppException("Adjustment would make the balance negative.", 400);
+
+        var adjustment = new BillAdjustment
+        {
+            BillId           = billId,
+            TenantId         = _tenantContext.TenantId,
+            Amount           = req.Amount,
+            Reason           = req.Reason.Trim(),
+            AdjustedByUserId = _currentUser.UserId,
+            AdjustedAt       = DateTime.UtcNow
+        };
+
+        _db.BillAdjustments.Add(adjustment);
+
+        bill.AdjustmentTotal += req.Amount;
+        await _db.SaveChangesAsync(ct);
+
+        return await LoadDetailAsync(billId, ct);
+    }
+
+    // ── Write-off ─────────────────────────────────────────────────────────────
+
+    public async Task<BillDetailResponse> WriteOffAsync(Guid billId, WriteOffRequest req, CancellationToken ct = default)
+    {
+        var bill = await _db.Bills
+            .FirstOrDefaultAsync(b => b.BillId == billId, ct)
+            ?? throw new NotFoundException(nameof(Bill), billId);
+
+        if (bill.Status != BillStatus.Issued && bill.Status != BillStatus.PartiallyPaid)
+            throw new AppException($"Cannot write off a bill with status '{bill.Status}'.", 409);
+
+        if (bill.BalanceDue <= 0)
+            throw new AppException("This bill has no outstanding balance to write off.", 400);
+
+        bill.WriteOffAmount = bill.BalanceDue;   // write off the entire remaining balance
+        bill.WriteOffReason = req.Reason.Trim();
+        bill.Status         = BillStatus.WrittenOff;
+
+        await _db.SaveChangesAsync(ct);
+
+        return await LoadDetailAsync(billId, ct);
+    }
+
     // ── Cancel ────────────────────────────────────────────────────────────────
 
     public async Task<BillDetailResponse> CancelAsync(Guid billId, CancellationToken ct = default)
@@ -273,6 +333,8 @@ public class BillingService : IBillingService
             .Include(b => b.Items)
             .Include(b => b.Payments)
                 .ThenInclude(p => p.ReceivedBy)
+            .Include(b => b.Adjustments)
+                .ThenInclude(a => a.AdjustedBy)
             .AsNoTracking()
             .FirstOrDefaultAsync(b => b.BillId == billId, ct)
             ?? throw new NotFoundException(nameof(Bill), billId);
@@ -289,7 +351,9 @@ public class BillingService : IBillingService
         MedicalRecordNumber = b.Patient.MedicalRecordNumber,
         Status              = b.Status,
         TotalAmount         = b.TotalAmount,
+        AdjustmentTotal     = b.AdjustmentTotal,
         DiscountAmount      = b.DiscountAmount,
+        WriteOffAmount      = b.WriteOffAmount,
         PaidAmount          = b.PaidAmount,
         BalanceDue          = b.BalanceDue,
         IssuedAt            = b.IssuedAt,
@@ -305,7 +369,9 @@ public class BillingService : IBillingService
         MedicalRecordNumber = b.Patient.MedicalRecordNumber,
         Status              = b.Status,
         TotalAmount         = b.TotalAmount,
+        AdjustmentTotal     = b.AdjustmentTotal,
         DiscountAmount      = b.DiscountAmount,
+        WriteOffAmount      = b.WriteOffAmount,
         PaidAmount          = b.PaidAmount,
         BalanceDue          = b.BalanceDue,
         IssuedAt            = b.IssuedAt,
@@ -314,6 +380,7 @@ public class BillingService : IBillingService
         PayerId             = b.PayerId,
         PayerName           = b.Payer?.Name,
         DiscountReason      = b.DiscountReason,
+        WriteOffReason      = b.WriteOffReason,
         CreatedByName       = $"{b.CreatedBy.FirstName} {b.CreatedBy.LastName}".Trim(),
         Notes               = b.Notes,
         UpdatedAt           = b.UpdatedAt,
@@ -338,6 +405,16 @@ public class BillingService : IBillingService
             PaymentDate    = p.PaymentDate,
             Notes          = p.Notes,
             CreatedAt      = p.CreatedAt
-        }).ToList()
+        }).ToList(),
+        Adjustments = b.Adjustments
+            .OrderBy(a => a.AdjustedAt)
+            .Select(a => new BillAdjustmentResponse
+            {
+                BillAdjustmentId = a.BillAdjustmentId,
+                Amount           = a.Amount,
+                Reason           = a.Reason,
+                AdjustedByName   = $"{a.AdjustedBy.FirstName} {a.AdjustedBy.LastName}".Trim(),
+                AdjustedAt       = a.AdjustedAt
+            }).ToList()
     };
 }

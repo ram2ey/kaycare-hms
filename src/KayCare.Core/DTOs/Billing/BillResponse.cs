@@ -9,7 +9,9 @@ public class BillResponse
     public string    MedicalRecordNumber { get; set; } = string.Empty;
     public string    Status              { get; set; } = string.Empty;
     public decimal   TotalAmount         { get; set; }
+    public decimal   AdjustmentTotal     { get; set; }
     public decimal   DiscountAmount      { get; set; }
+    public decimal   WriteOffAmount      { get; set; }
     public decimal   PaidAmount          { get; set; }
     public decimal   BalanceDue          { get; set; }
     public DateTime? IssuedAt            { get; set; }
