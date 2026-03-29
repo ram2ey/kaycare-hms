@@ -170,7 +170,15 @@ export default function BillDetailPage() {
             <tbody className="divide-y divide-gray-50">
               {bill.items.map((item) => (
                 <tr key={item.itemId}>
-                  <td className="px-5 py-3 text-gray-800">{item.description}</td>
+                  <td className="px-5 py-3 text-gray-800">
+                    <span>{item.description}</span>
+                    {item.sourceType && (
+                      <span title={`Auto-captured from ${item.sourceType}`}
+                        className="ml-2 text-xs font-medium px-1.5 py-0.5 bg-indigo-50 text-indigo-600 border border-indigo-100">
+                        Auto
+                      </span>
+                    )}
+                  </td>
                   <td className="px-5 py-3 text-gray-500">{item.category ?? '—'}</td>
                   <td className="px-5 py-3 text-right text-gray-600">{item.quantity}</td>
                   <td className="px-5 py-3 text-right text-gray-600">{fmt(item.unitPrice)}</td>

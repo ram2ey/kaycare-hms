@@ -11,16 +11,18 @@ namespace KayCare.Infrastructure.Services;
 
 public class ConsultationService : IConsultationService
 {
-    private readonly AppDbContext _db;
-    private readonly ICurrentUserService _currentUser;
+    private readonly AppDbContext          _db;
+    private readonly ICurrentUserService   _currentUser;
+    private readonly IChargeCaptureService _chargeCapture;
 
     private static readonly JsonSerializerOptions JsonOpts =
         new() { PropertyNameCaseInsensitive = true };
 
-    public ConsultationService(AppDbContext db, ICurrentUserService currentUser)
+    public ConsultationService(AppDbContext db, ICurrentUserService currentUser, IChargeCaptureService chargeCapture)
     {
-        _db = db;
-        _currentUser = currentUser;
+        _db            = db;
+        _currentUser   = currentUser;
+        _chargeCapture = chargeCapture;
     }
 
     // ── Create ────────────────────────────────────────────────────────────────
@@ -151,6 +153,9 @@ public class ConsultationService : IConsultationService
             appointment.Status = AppointmentStatus.Completed;
 
         await _db.SaveChangesAsync(ct);
+
+        await _chargeCapture.CaptureConsultationChargeAsync(consultationId, ct);
+
         return await LoadDetailAsync(consultationId, ct);
     }
 

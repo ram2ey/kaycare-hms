@@ -285,7 +285,9 @@ public class BillingService : IBillingService
             Category    = i.Category,
             Quantity    = i.Quantity,
             UnitPrice   = i.UnitPrice,
-            TotalPrice  = i.TotalPrice
+            TotalPrice  = i.TotalPrice,
+            SourceType  = i.SourceType,
+            SourceId    = i.SourceId
         }).ToList(),
         Payments = b.Payments.Select(p => new PaymentResponse
         {

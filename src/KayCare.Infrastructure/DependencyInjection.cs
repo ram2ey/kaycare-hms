@@ -38,6 +38,7 @@ public static class DependencyInjection
         services.AddScoped<IPrescriptionTemplateService, PrescriptionTemplateService>();
         services.AddScoped<IBillingService, BillingService>();
         services.AddScoped<IServiceCatalogService, ServiceCatalogService>();
+        services.AddScoped<IChargeCaptureService, ChargeCaptureService>();
 
         // Azure Blob Storage — singleton client; per-request scoped service
         services.AddSingleton(_ =>

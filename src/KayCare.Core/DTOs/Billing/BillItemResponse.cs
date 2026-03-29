@@ -8,4 +8,6 @@ public class BillItemResponse
     public int     Quantity    { get; set; }
     public decimal UnitPrice   { get; set; }
     public decimal TotalPrice  { get; set; }
+    public string? SourceType  { get; set; }
+    public Guid?   SourceId    { get; set; }
 }

@@ -5,6 +5,7 @@ public class Prescription : TenantEntity
     public Guid      PrescriptionId     { get; set; }
     public Guid      ConsultationId     { get; set; }
     public Guid      PatientId          { get; set; }
+    public Guid?     BillId             { get; set; }
     public Guid      PrescribedByUserId { get; set; }
     public DateOnly  PrescriptionDate   { get; set; }
     public DateOnly? ExpiresAt          { get; set; }

@@ -12,6 +12,8 @@ export interface BillItemResponse {
   quantity: number;
   unitPrice: number;
   totalPrice: number;
+  sourceType: string | null;
+  sourceId: string | null;
 }
 
 export interface PaymentResponse {

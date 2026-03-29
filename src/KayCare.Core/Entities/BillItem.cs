@@ -11,5 +11,9 @@ public class BillItem
     public decimal  UnitPrice   { get; set; }
     public decimal  TotalPrice  { get; set; }   // computed: Quantity * UnitPrice
 
+    /// <summary>Identifies the clinical event that auto-generated this charge (null = manual entry).</summary>
+    public string? SourceType { get; set; }  // "Consultation" | "LabOrder" | "Prescription"
+    public Guid?   SourceId   { get; set; }  // ConsultationId | LabOrderItemId | DispenseEventItemId
+
     public Bill Bill { get; set; } = null!;
 }

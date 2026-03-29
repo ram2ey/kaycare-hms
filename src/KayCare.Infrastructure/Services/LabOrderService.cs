@@ -10,13 +10,15 @@ namespace KayCare.Infrastructure.Services;
 
 public class LabOrderService : ILabOrderService
 {
-    private readonly AppDbContext        _db;
-    private readonly ICurrentUserService _currentUser;
+    private readonly AppDbContext          _db;
+    private readonly ICurrentUserService   _currentUser;
+    private readonly IChargeCaptureService _chargeCapture;
 
-    public LabOrderService(AppDbContext db, ICurrentUserService currentUser)
+    public LabOrderService(AppDbContext db, ICurrentUserService currentUser, IChargeCaptureService chargeCapture)
     {
-        _db          = db;
-        _currentUser = currentUser;
+        _db            = db;
+        _currentUser   = currentUser;
+        _chargeCapture = chargeCapture;
     }
 
     // ── Test catalog ─────────────────────────────────────────────────────────
@@ -84,6 +86,8 @@ public class LabOrderService : ILabOrderService
         }
 
         await _db.SaveChangesAsync(ct);
+
+        await _chargeCapture.CaptureLabOrderChargesAsync(order.LabOrderId, ct);
 
         var result = await GetByIdAsync(order.LabOrderId, ct);
         return result!;

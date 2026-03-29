@@ -10,15 +10,17 @@ namespace KayCare.Infrastructure.Services;
 
 public class PrescriptionService : IPrescriptionService
 {
-    private readonly AppDbContext        _db;
-    private readonly ICurrentUserService _currentUser;
-    private readonly ITenantContext      _tenantContext;
+    private readonly AppDbContext          _db;
+    private readonly ICurrentUserService   _currentUser;
+    private readonly ITenantContext        _tenantContext;
+    private readonly IChargeCaptureService _chargeCapture;
 
-    public PrescriptionService(AppDbContext db, ICurrentUserService currentUser, ITenantContext tenantContext)
+    public PrescriptionService(AppDbContext db, ICurrentUserService currentUser, ITenantContext tenantContext, IChargeCaptureService chargeCapture)
     {
         _db            = db;
         _currentUser   = currentUser;
         _tenantContext = tenantContext;
+        _chargeCapture = chargeCapture;
     }
 
     // ── Create ────────────────────────────────────────────────────────────────
@@ -172,6 +174,9 @@ public class PrescriptionService : IPrescriptionService
                 : $"{prescription.Notes}\n[Dispensing note] {req.Notes}";
 
         await _db.SaveChangesAsync(ct);
+
+        await _chargeCapture.CaptureDispenseChargesAsync(prescriptionId, dispenseEvent.DispenseEventId, ct);
+
         return await LoadDetailAsync(prescriptionId, ct);
     }
 
@@ -248,6 +253,9 @@ public class PrescriptionService : IPrescriptionService
         }
 
         await _db.SaveChangesAsync(ct);
+
+        await _chargeCapture.CaptureDispenseChargesAsync(prescriptionId, dispenseEvent.DispenseEventId, ct);
+
         return await LoadDetailAsync(prescriptionId, ct);
     }
 
