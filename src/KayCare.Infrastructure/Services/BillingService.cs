@@ -335,6 +335,16 @@ public class BillingService : IBillingService
                 .ThenInclude(p => p.ReceivedBy)
             .Include(b => b.Adjustments)
                 .ThenInclude(a => a.AdjustedBy)
+            .Include(b => b.CreditNotes)
+                .ThenInclude(cn => cn.CreatedBy)
+            .Include(b => b.CreditNotes)
+                .ThenInclude(cn => cn.ApprovedBy)
+            .Include(b => b.Refunds)
+                .ThenInclude(r => r.CreatedBy)
+            .Include(b => b.Refunds)
+                .ThenInclude(r => r.ProcessedBy)
+            .Include(b => b.Refunds)
+                .ThenInclude(r => r.CreditNote)
             .AsNoTracking()
             .FirstOrDefaultAsync(b => b.BillId == billId, ct)
             ?? throw new NotFoundException(nameof(Bill), billId);
@@ -354,6 +364,7 @@ public class BillingService : IBillingService
         AdjustmentTotal     = b.AdjustmentTotal,
         DiscountAmount      = b.DiscountAmount,
         WriteOffAmount      = b.WriteOffAmount,
+        CreditNoteTotal     = b.CreditNoteTotal,
         PaidAmount          = b.PaidAmount,
         BalanceDue          = b.BalanceDue,
         IssuedAt            = b.IssuedAt,
@@ -372,6 +383,7 @@ public class BillingService : IBillingService
         AdjustmentTotal     = b.AdjustmentTotal,
         DiscountAmount      = b.DiscountAmount,
         WriteOffAmount      = b.WriteOffAmount,
+        CreditNoteTotal     = b.CreditNoteTotal,
         PaidAmount          = b.PaidAmount,
         BalanceDue          = b.BalanceDue,
         IssuedAt            = b.IssuedAt,
@@ -415,6 +427,53 @@ public class BillingService : IBillingService
                 Reason           = a.Reason,
                 AdjustedByName   = $"{a.AdjustedBy.FirstName} {a.AdjustedBy.LastName}".Trim(),
                 AdjustedAt       = a.AdjustedAt
+            }).ToList(),
+        CreditNotes = b.CreditNotes
+            .OrderByDescending(cn => cn.CreatedAt)
+            .Select(cn => new CreditNoteResponse
+            {
+                CreditNoteId     = cn.CreditNoteId,
+                CreditNoteNumber = cn.CreditNoteNumber,
+                BillId           = cn.BillId,
+                BillNumber       = b.BillNumber,
+                PatientId        = cn.PatientId,
+                PatientName      = $"{b.Patient.FirstName} {b.Patient.LastName}".Trim(),
+                PatientMrn       = b.Patient.MedicalRecordNumber,
+                Amount           = cn.Amount,
+                Reason           = cn.Reason,
+                Status           = cn.Status,
+                Notes            = cn.Notes,
+                CreatedByName    = $"{cn.CreatedBy.FirstName} {cn.CreatedBy.LastName}".Trim(),
+                ApprovedByName   = cn.ApprovedBy == null ? null : $"{cn.ApprovedBy.FirstName} {cn.ApprovedBy.LastName}".Trim(),
+                ApprovedAt       = cn.ApprovedAt,
+                AppliedAt        = cn.AppliedAt,
+                CreatedAt        = cn.CreatedAt,
+                UpdatedAt        = cn.UpdatedAt
+            }).ToList(),
+        Refunds = b.Refunds
+            .OrderByDescending(r => r.CreatedAt)
+            .Select(r => new RefundResponse
+            {
+                RefundId         = r.RefundId,
+                RefundNumber     = r.RefundNumber,
+                BillId           = r.BillId,
+                BillNumber       = b.BillNumber,
+                PatientId        = r.PatientId,
+                PatientName      = $"{b.Patient.FirstName} {b.Patient.LastName}".Trim(),
+                PatientMrn       = b.Patient.MedicalRecordNumber,
+                CreditNoteId     = r.CreditNoteId,
+                CreditNoteNumber = r.CreditNote?.CreditNoteNumber,
+                Amount           = r.Amount,
+                Reason           = r.Reason,
+                RefundMethod     = r.RefundMethod,
+                Reference        = r.Reference,
+                Status           = r.Status,
+                Notes            = r.Notes,
+                CreatedByName    = $"{r.CreatedBy.FirstName} {r.CreatedBy.LastName}".Trim(),
+                ProcessedByName  = r.ProcessedBy == null ? null : $"{r.ProcessedBy.FirstName} {r.ProcessedBy.LastName}".Trim(),
+                ProcessedAt      = r.ProcessedAt,
+                CreatedAt        = r.CreatedAt,
+                UpdatedAt        = r.UpdatedAt
             }).ToList()
     };
 }

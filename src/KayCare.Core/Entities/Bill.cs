@@ -16,8 +16,9 @@ public class Bill : TenantEntity
     public string?  DiscountReason   { get; set; }
     public decimal  WriteOffAmount   { get; set; }   // bad-debt write-off
     public string?  WriteOffReason   { get; set; }
+    public decimal  CreditNoteTotal  { get; set; }   // denormalized sum of applied credit notes
     public decimal  PaidAmount       { get; set; }
-    public decimal  BalanceDue       { get; set; }   // computed: TotalAmount + AdjustmentTotal - DiscountAmount - WriteOffAmount - PaidAmount
+    public decimal  BalanceDue       { get; set; }   // computed: TotalAmount + AdjustmentTotal - DiscountAmount - WriteOffAmount - CreditNoteTotal - PaidAmount
     public DateTime? IssuedAt         { get; set; }
 
     public Patient Patient   { get; set; } = null!;
@@ -27,4 +28,6 @@ public class Bill : TenantEntity
     public ICollection<BillItem>       Items       { get; set; } = [];
     public ICollection<Payment>        Payments    { get; set; } = [];
     public ICollection<BillAdjustment> Adjustments { get; set; } = [];
+    public ICollection<CreditNote>     CreditNotes { get; set; } = [];
+    public ICollection<Refund>         Refunds     { get; set; } = [];
 }

@@ -13,4 +13,6 @@ public class BillDetailResponse : BillResponse
     public List<BillItemResponse>       Items       { get; set; } = [];
     public List<PaymentResponse>        Payments    { get; set; } = [];
     public List<BillAdjustmentResponse> Adjustments { get; set; } = [];
+    public List<CreditNoteResponse>     CreditNotes { get; set; } = [];
+    public List<RefundResponse>         Refunds     { get; set; } = [];
 }

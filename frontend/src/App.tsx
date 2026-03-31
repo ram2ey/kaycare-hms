@@ -26,6 +26,10 @@ import ARAgingPage from './pages/billing/ARAgingPage';
 import RevenueDashboardPage from './pages/billing/RevenueDashboardPage';
 import InsuranceClaimsPage from './pages/billing/InsuranceClaimsPage';
 import ClaimDetailPage from './pages/billing/ClaimDetailPage';
+import CreditNotesPage from './pages/billing/CreditNotesPage';
+import CreditNoteDetailPage from './pages/billing/CreditNoteDetailPage';
+import RefundsPage from './pages/billing/RefundsPage';
+import RefundDetailPage from './pages/billing/RefundDetailPage';
 import DocumentsPage from './pages/documents/DocumentsPage';
 import LabResultsPage from './pages/lab-results/LabResultsPage';
 import LabResultDetailPage from './pages/lab-results/LabResultDetailPage';
@@ -76,6 +80,10 @@ export default function App() {
               </Route>
               <Route path="billing/claims" element={<InsuranceClaimsPage />} />
               <Route path="billing/claims/:id" element={<ClaimDetailPage />} />
+              <Route path="billing/credit-notes" element={<CreditNotesPage />} />
+              <Route path="billing/credit-notes/:id" element={<CreditNoteDetailPage />} />
+              <Route path="billing/refunds" element={<RefundsPage />} />
+              <Route path="billing/refunds/:id" element={<RefundDetailPage />} />
               <Route path="billing/:id" element={<BillDetailPage />} />
               <Route path="documents" element={<DocumentsPage />} />
               <Route path="lab-results" element={<LabResultsPage />} />

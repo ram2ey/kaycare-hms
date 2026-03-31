@@ -2,6 +2,10 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { getBill, issueBill, addPayment, cancelBill, voidBill, downloadInvoice, downloadReceipt, applyDiscount, addAdjustment, writeOff } from '../../api/billing';
 import { createClaim } from '../../api/claims';
+import { createCreditNote, approveCreditNote, applyCreditNote } from '../../api/creditNotes';
+import { createRefund } from '../../api/refunds';
+import { REFUND_METHODS, REFUND_METHOD_LABELS } from '../../types/refunds';
+import { CREDIT_NOTE_STATUS_LABELS } from '../../types/creditNotes';
 import type { BillDetailResponse, AddPaymentRequest, ApplyDiscountRequest, AddAdjustmentRequest, WriteOffRequest } from '../../types/billing';
 import { STATUS_COLORS, PAYMENT_METHODS } from '../../types/billing';
 import { useAuth } from '../../contexts/AuthContext';
@@ -32,6 +36,16 @@ export default function BillDetailPage() {
   const [showClaimModal, setShowClaimModal]   = useState(false);
   const [claimAmount, setClaimAmount]         = useState('');
   const [claimNotes, setClaimNotes]           = useState('');
+  const [showCnModal, setShowCnModal]         = useState(false);
+  const [cnAmount, setCnAmount]               = useState('');
+  const [cnReason, setCnReason]               = useState('');
+  const [cnNotes, setCnNotes]                 = useState('');
+  const [showRefundModal, setShowRefundModal] = useState(false);
+  const [refundAmount, setRefundAmount]       = useState('');
+  const [refundReason, setRefundReason]       = useState('');
+  const [refundMethod, setRefundMethod]       = useState('Cash');
+  const [refundRef, setRefundRef]             = useState('');
+  const [refundNotes, setRefundNotes]         = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -153,8 +167,10 @@ export default function BillDetailPage() {
   const isAdjustable   = bill.status === 'Issued' || bill.status === 'PartiallyPaid';
   const isWriteOffable = (bill.status === 'Issued' || bill.status === 'PartiallyPaid') && bill.balanceDue > 0;
   const isCancellable  = bill.status === 'Draft' || bill.status === 'Issued';
-  const isVoidable     = bill.status === 'Paid' || bill.status === 'PartiallyPaid';
-  const isClaimable    = !!bill.payerId && (bill.status === 'Issued' || bill.status === 'PartiallyPaid') && bill.balanceDue > 0;
+  const isVoidable       = bill.status === 'Paid' || bill.status === 'PartiallyPaid';
+  const isClaimable      = !!bill.payerId && (bill.status === 'Issued' || bill.status === 'PartiallyPaid') && bill.balanceDue > 0;
+  const isCreditNoteable = bill.status === 'Issued' || bill.status === 'PartiallyPaid' || bill.status === 'Paid';
+  const isRefundable     = bill.paidAmount > 0 && (bill.status === 'Issued' || bill.status === 'PartiallyPaid' || bill.status === 'Paid');
 
   return (
     <div className="p-6 max-w-4xl">
@@ -233,6 +249,18 @@ export default function BillDetailPage() {
             <button onClick={() => { setClaimAmount(bill.balanceDue.toFixed(2)); setClaimNotes(''); setShowClaimModal(true); }}
               className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors">
               Create Claim
+            </button>
+          )}
+          {canAdmin && isCreditNoteable && (
+            <button onClick={() => { setCnAmount(''); setCnReason(''); setCnNotes(''); setShowCnModal(true); }}
+              className="px-4 py-2 border border-orange-300 text-orange-700 hover:bg-orange-50 text-sm font-medium rounded-lg transition-colors">
+              Issue Credit Note
+            </button>
+          )}
+          {canAdmin && isRefundable && (
+            <button onClick={() => { setRefundAmount(''); setRefundReason(''); setRefundMethod('Cash'); setRefundRef(''); setRefundNotes(''); setShowRefundModal(true); }}
+              className="px-4 py-2 border border-teal-300 text-teal-700 hover:bg-teal-50 text-sm font-medium rounded-lg transition-colors">
+              Request Refund
             </button>
           )}
         </div>
@@ -382,6 +410,106 @@ export default function BillDetailPage() {
                     <td className={`px-5 py-3 text-right font-medium font-mono ${a.amount >= 0 ? 'text-red-600' : 'text-green-700'}`}>
                       {a.amount >= 0 ? '+' : ''}{fmt(a.amount)}
                     </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+        )}
+
+        {/* Credit Notes */}
+        {bill.creditNotes && bill.creditNotes.length > 0 && (
+          <section className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="px-5 py-3 border-b border-gray-100 bg-gray-50">
+              <h3 className="text-sm font-semibold text-gray-700">
+                Credit Notes ({bill.creditNotes.length})
+                <span className="ml-2 font-mono text-xs text-green-700">− {fmt(bill.creditNoteTotal)}</span>
+              </h3>
+            </div>
+            <table className="w-full text-sm">
+              <thead className="border-b border-gray-100">
+                <tr>
+                  <th className="text-left px-5 py-2.5 font-medium text-gray-500 text-xs uppercase">CN #</th>
+                  <th className="text-left px-5 py-2.5 font-medium text-gray-500 text-xs uppercase">Date</th>
+                  <th className="text-left px-5 py-2.5 font-medium text-gray-500 text-xs uppercase">Reason</th>
+                  <th className="text-left px-5 py-2.5 font-medium text-gray-500 text-xs uppercase">Status</th>
+                  <th className="text-right px-5 py-2.5 font-medium text-gray-500 text-xs uppercase">Amount</th>
+                  {canAdmin && <th className="px-5 py-2.5"></th>}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {bill.creditNotes.map((cn) => (
+                  <tr key={cn.creditNoteId}>
+                    <td className="px-5 py-3 font-mono text-blue-600">
+                      <Link to={`/billing/credit-notes/${cn.creditNoteId}`} className="hover:underline">{cn.creditNoteNumber}</Link>
+                    </td>
+                    <td className="px-5 py-3 text-gray-500 text-xs">
+                      {new Date(cn.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </td>
+                    <td className="px-5 py-3 text-gray-700">{cn.reason}</td>
+                    <td className="px-5 py-3">
+                      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                        {CREDIT_NOTE_STATUS_LABELS[cn.status] ?? cn.status}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3 text-right font-medium text-green-700">{fmt(cn.amount)}</td>
+                    {canAdmin && (
+                      <td className="px-5 py-3 text-right space-x-2">
+                        {cn.status === 'Draft' && (
+                          <button onClick={() => doAction('cn-approve', () => approveCreditNote(cn.creditNoteId).then(() => getBill(id!)))}
+                            disabled={!!acting} className="text-xs text-blue-600 hover:underline disabled:opacity-50">Approve</button>
+                        )}
+                        {cn.status === 'Approved' && (
+                          <button onClick={() => confirm('Apply this credit note to reduce the bill balance?') &&
+                            doAction('cn-apply', () => applyCreditNote(cn.creditNoteId).then(() => getBill(id!)))}
+                            disabled={!!acting} className="text-xs text-green-600 hover:underline disabled:opacity-50">Apply</button>
+                        )}
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+        )}
+
+        {/* Refunds */}
+        {bill.refunds && bill.refunds.length > 0 && (
+          <section className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="px-5 py-3 border-b border-gray-100 bg-gray-50">
+              <h3 className="text-sm font-semibold text-gray-700">Refunds ({bill.refunds.length})</h3>
+            </div>
+            <table className="w-full text-sm">
+              <thead className="border-b border-gray-100">
+                <tr>
+                  <th className="text-left px-5 py-2.5 font-medium text-gray-500 text-xs uppercase">REF #</th>
+                  <th className="text-left px-5 py-2.5 font-medium text-gray-500 text-xs uppercase">Date</th>
+                  <th className="text-left px-5 py-2.5 font-medium text-gray-500 text-xs uppercase">Reason</th>
+                  <th className="text-left px-5 py-2.5 font-medium text-gray-500 text-xs uppercase">Method</th>
+                  <th className="text-left px-5 py-2.5 font-medium text-gray-500 text-xs uppercase">Status</th>
+                  <th className="text-right px-5 py-2.5 font-medium text-gray-500 text-xs uppercase">Amount</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {bill.refunds.map((r) => (
+                  <tr key={r.refundId}>
+                    <td className="px-5 py-3 font-mono text-blue-600">
+                      <Link to={`/billing/refunds/${r.refundId}`} className="hover:underline">{r.refundNumber}</Link>
+                    </td>
+                    <td className="px-5 py-3 text-gray-500 text-xs">
+                      {new Date(r.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </td>
+                    <td className="px-5 py-3 text-gray-700">{r.reason}</td>
+                    <td className="px-5 py-3 text-gray-600">{REFUND_METHOD_LABELS[r.refundMethod] ?? r.refundMethod}</td>
+                    <td className="px-5 py-3">
+                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                        r.status === 'Processed' ? 'bg-green-100 text-green-700' :
+                        r.status === 'Pending' ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-gray-100 text-gray-500'}`}>
+                        {r.status}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3 text-right font-medium text-orange-600">{fmt(r.amount)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -618,6 +746,125 @@ export default function BillDetailPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Credit Note creation modal */}
+      {showCnModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold text-gray-800 mb-1">Issue Credit Note</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              Invoice <span className="font-mono font-semibold">{bill.billNumber}</span> · Balance: <span className="font-semibold text-red-600">{fmt(bill.balanceDue)}</span>
+            </p>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Amount (GHS) *</label>
+                <input type="number" min="0.01" step="0.01" value={cnAmount}
+                  onChange={(e) => setCnAmount(e.target.value)} required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Reason *</label>
+                <input value={cnReason} onChange={(e) => setCnReason(e.target.value)}
+                  placeholder="e.g. Billing error, Service not rendered…"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Notes</label>
+                <textarea value={cnNotes} onChange={(e) => setCnNotes(e.target.value)} rows={2}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+              </div>
+            </div>
+            <div className="flex gap-3 justify-end pt-4">
+              <button type="button" onClick={() => setShowCnModal(false)}
+                className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+              <button disabled={!!acting}
+                onClick={async () => {
+                  const amount = parseFloat(cnAmount);
+                  if (isNaN(amount) || amount <= 0) { alert('Enter a valid amount.'); return; }
+                  if (!cnReason.trim()) { alert('Reason is required.'); return; }
+                  setActing('cn');
+                  try {
+                    await createCreditNote({ billId: bill.billId, amount, reason: cnReason, notes: cnNotes || undefined });
+                    setShowCnModal(false);
+                    setBill(await getBill(id!));
+                  } catch (err: unknown) {
+                    const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+                    alert(msg || 'Failed to create credit note.');
+                  } finally { setActing(''); }
+                }}
+                className="px-4 py-2 text-sm font-medium bg-orange-500 hover:bg-orange-600 text-white rounded-lg disabled:opacity-50 transition-colors">
+                {acting === 'cn' ? 'Creating…' : 'Create Credit Note'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Refund creation modal */}
+      {showRefundModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold text-gray-800 mb-1">Request Refund</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              Invoice <span className="font-mono font-semibold">{bill.billNumber}</span> · Paid: <span className="font-semibold text-green-700">{fmt(bill.paidAmount)}</span>
+            </p>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Amount (GHS) *</label>
+                <input type="number" min="0.01" step="0.01" max={bill.paidAmount} value={refundAmount}
+                  onChange={(e) => setRefundAmount(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-400" />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Reason *</label>
+                <input value={refundReason} onChange={(e) => setRefundReason(e.target.value)}
+                  placeholder="e.g. Overpayment, Cancelled service…"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-400" />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Refund Method *</label>
+                <select value={refundMethod} onChange={(e) => setRefundMethod(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-400">
+                  {REFUND_METHODS.map((m) => <option key={m} value={m}>{REFUND_METHOD_LABELS[m] ?? m}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Reference</label>
+                <input value={refundRef} onChange={(e) => setRefundRef(e.target.value)}
+                  placeholder="e.g. transaction ID, cheque #"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-400" />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Notes</label>
+                <textarea value={refundNotes} onChange={(e) => setRefundNotes(e.target.value)} rows={2}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-400" />
+              </div>
+            </div>
+            <div className="flex gap-3 justify-end pt-4">
+              <button type="button" onClick={() => setShowRefundModal(false)}
+                className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+              <button disabled={!!acting}
+                onClick={async () => {
+                  const amount = parseFloat(refundAmount);
+                  if (isNaN(amount) || amount <= 0) { alert('Enter a valid amount.'); return; }
+                  if (!refundReason.trim()) { alert('Reason is required.'); return; }
+                  setActing('refund');
+                  try {
+                    await createRefund({ billId: bill.billId, amount, reason: refundReason, refundMethod, reference: refundRef || undefined, notes: refundNotes || undefined });
+                    setShowRefundModal(false);
+                    setBill(await getBill(id!));
+                  } catch (err: unknown) {
+                    const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+                    alert(msg || 'Failed to create refund.');
+                  } finally { setActing(''); }
+                }}
+                className="px-4 py-2 text-sm font-medium bg-teal-600 hover:bg-teal-700 text-white rounded-lg disabled:opacity-50 transition-colors">
+                {acting === 'refund' ? 'Creating…' : 'Request Refund'}
+              </button>
+            </div>
           </div>
         </div>
       )}

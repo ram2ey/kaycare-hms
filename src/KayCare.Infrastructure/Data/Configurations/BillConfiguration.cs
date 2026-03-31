@@ -21,10 +21,11 @@ public class BillConfiguration : IEntityTypeConfiguration<Bill>
         builder.Property(b => b.DiscountReason).HasMaxLength(500);
         builder.Property(b => b.WriteOffAmount).HasColumnType("decimal(12,2)").HasDefaultValue(0m);
         builder.Property(b => b.WriteOffReason).HasMaxLength(500);
+        builder.Property(b => b.CreditNoteTotal).HasColumnType("decimal(12,2)").HasDefaultValue(0m);
         builder.Property(b => b.PaidAmount).HasColumnType("decimal(12,2)");
         builder.Property(b => b.BalanceDue)
             .HasColumnType("decimal(12,2)")
-            .HasComputedColumnSql("[TotalAmount] + [AdjustmentTotal] - [DiscountAmount] - [WriteOffAmount] - [PaidAmount]", stored: true);
+            .HasComputedColumnSql("[TotalAmount] + [AdjustmentTotal] - [DiscountAmount] - [WriteOffAmount] - [CreditNoteTotal] - [PaidAmount]", stored: true);
 
         builder.Property(b => b.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
         builder.Property(b => b.UpdatedAt).HasDefaultValueSql("SYSUTCDATETIME()");

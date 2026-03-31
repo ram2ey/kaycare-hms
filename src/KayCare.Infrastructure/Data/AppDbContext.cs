@@ -40,6 +40,8 @@ public class AppDbContext : DbContext
     public DbSet<LabOrder>         LabOrders         => Set<LabOrder>();
     public DbSet<LabOrderItem>     LabOrderItems     => Set<LabOrderItem>();
     public DbSet<InsuranceClaim>    InsuranceClaims   => Set<InsuranceClaim>();
+    public DbSet<CreditNote>        CreditNotes       => Set<CreditNote>();
+    public DbSet<Refund>            Refunds           => Set<Refund>();
     public DbSet<AuditLog>         AuditLogs         => Set<AuditLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -96,6 +98,10 @@ public class AppDbContext : DbContext
             .HasQueryFilter(i => i.TenantId == _tenantContext.TenantId);
         modelBuilder.Entity<InsuranceClaim>()
             .HasQueryFilter(c => c.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<CreditNote>()
+            .HasQueryFilter(c => c.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<Refund>()
+            .HasQueryFilter(r => r.TenantId == _tenantContext.TenantId);
     }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

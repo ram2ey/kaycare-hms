@@ -12,6 +12,7 @@ public class BillResponse
     public decimal   AdjustmentTotal     { get; set; }
     public decimal   DiscountAmount      { get; set; }
     public decimal   WriteOffAmount      { get; set; }
+    public decimal   CreditNoteTotal     { get; set; }
     public decimal   PaidAmount          { get; set; }
     public decimal   BalanceDue          { get; set; }
     public DateTime? IssuedAt            { get; set; }

@@ -38,6 +38,7 @@ export interface BillResponse {
   adjustmentTotal: number;
   discountAmount: number;
   writeOffAmount: number;
+  creditNoteTotal: number;
   paidAmount: number;
   balanceDue: number;
   issuedAt: string | null;
@@ -56,6 +57,8 @@ export interface BillDetailResponse extends BillResponse {
   items: BillItemResponse[];
   payments: PaymentResponse[];
   adjustments: BillAdjustmentResponse[];
+  creditNotes: import('./creditNotes').CreditNoteResponse[];
+  refunds: import('./refunds').RefundResponse[];
 }
 
 export interface CreateBillRequest {
