@@ -9,6 +9,7 @@ public class PatientResponse
     public int Age { get; set; }
     public string Gender { get; set; } = string.Empty;
     public string? PhoneNumber { get; set; }
+    public string? NhisNumber { get; set; }
     public bool HasAllergies { get; set; }
     public bool IsActive { get; set; }
     public DateTime RegisteredAt { get; set; }

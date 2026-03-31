@@ -11,6 +11,7 @@ const navItems = [
   { to: '/billing', label: 'Billing', roles: [Roles.Admin, Roles.Receptionist, Roles.SuperAdmin] },
   { to: '/billing/catalog', label: 'Price Catalog', roles: [Roles.Admin, Roles.SuperAdmin] },
   { to: '/billing/payers', label: 'Payers', roles: [Roles.Admin, Roles.SuperAdmin] },
+  { to: '/billing/claims', label: 'Claims', roles: [Roles.Admin, Roles.SuperAdmin, Roles.Receptionist] },
   { to: '/billing/ar-aging', label: 'AR Aging', roles: [Roles.Admin, Roles.SuperAdmin] },
   { to: '/billing/revenue-dashboard', label: 'Revenue', roles: [Roles.Admin, Roles.SuperAdmin] },
   { to: '/documents', label: 'Documents', roles: null },

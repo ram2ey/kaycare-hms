@@ -250,6 +250,7 @@ public class PatientService : IPatientService
         Age                 = CalculateAge(p.DateOfBirth),
         Gender              = p.Gender,
         PhoneNumber         = p.PhoneNumber,
+        NhisNumber          = p.NhisNumber,
         HasAllergies        = p.HasAllergies,
         IsActive            = p.IsActive,
         RegisteredAt        = p.CreatedAt

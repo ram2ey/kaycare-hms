@@ -6,6 +6,7 @@ export interface PatientResponse {
   age: number;
   gender: string;
   phoneNumber: string | null;
+  nhisNumber: string | null;
   hasAllergies: boolean;
   isActive: boolean;
   registeredAt: string;

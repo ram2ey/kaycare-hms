@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { getBill, issueBill, addPayment, cancelBill, voidBill, downloadInvoice, downloadReceipt, applyDiscount, addAdjustment, writeOff } from '../../api/billing';
+import { createClaim } from '../../api/claims';
 import type { BillDetailResponse, AddPaymentRequest, ApplyDiscountRequest, AddAdjustmentRequest, WriteOffRequest } from '../../types/billing';
 import { STATUS_COLORS, PAYMENT_METHODS } from '../../types/billing';
 import { useAuth } from '../../contexts/AuthContext';
@@ -28,6 +29,10 @@ export default function BillDetailPage() {
   const [adjustForm, setAdjustForm] = useState<AddAdjustmentRequest>({ amount: 0, reason: '' });
   const [showWriteOffModal, setShowWriteOffModal] = useState(false);
   const [writeOffForm, setWriteOffForm] = useState<WriteOffRequest>({ reason: '' });
+  const [showClaimModal, setShowClaimModal]   = useState(false);
+  const [claimAmount, setClaimAmount]         = useState('');
+  const [claimNotes, setClaimNotes]           = useState('');
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!id) return;
@@ -149,6 +154,7 @@ export default function BillDetailPage() {
   const isWriteOffable = (bill.status === 'Issued' || bill.status === 'PartiallyPaid') && bill.balanceDue > 0;
   const isCancellable  = bill.status === 'Draft' || bill.status === 'Issued';
   const isVoidable     = bill.status === 'Paid' || bill.status === 'PartiallyPaid';
+  const isClaimable    = !!bill.payerId && (bill.status === 'Issued' || bill.status === 'PartiallyPaid') && bill.balanceDue > 0;
 
   return (
     <div className="p-6 max-w-4xl">
@@ -221,6 +227,12 @@ export default function BillDetailPage() {
             <button onClick={() => confirm('Void this bill?') && doAction('void', () => voidBill(id!))} disabled={!!acting}
               className="px-4 py-2 border border-red-300 text-red-600 hover:bg-red-50 text-sm font-medium rounded-lg disabled:opacity-50 transition-colors">
               {acting === 'void' ? 'Voiding…' : 'Void'}
+            </button>
+          )}
+          {canBill && isClaimable && (
+            <button onClick={() => { setClaimAmount(bill.balanceDue.toFixed(2)); setClaimNotes(''); setShowClaimModal(true); }}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors">
+              Create Claim
             </button>
           )}
         </div>
@@ -606,6 +618,56 @@ export default function BillDetailPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Create Claim modal */}
+      {showClaimModal && bill.payerId && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md">
+            <h2 className="text-lg font-bold mb-1">Create Insurance Claim</h2>
+            <p className="text-sm text-gray-500 mb-4">Claim against <strong>{bill.payerName}</strong> for invoice {bill.billNumber}</p>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Claim Amount (GHS) <span className="text-red-500">*</span></label>
+                <input type="number" min="0.01" step="0.01" value={claimAmount}
+                  onChange={(e) => setClaimAmount(e.target.value)}
+                  className="border border-gray-300 rounded px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <p className="text-xs text-gray-500 mt-1">Balance due: GHS {bill.balanceDue.toFixed(2)}</p>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Notes</label>
+                <textarea value={claimNotes} onChange={(e) => setClaimNotes(e.target.value)}
+                  rows={2} className="border border-gray-300 rounded px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-5 justify-end">
+              <button onClick={() => setShowClaimModal(false)}
+                className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  const amount = parseFloat(claimAmount);
+                  if (isNaN(amount) || amount <= 0) { alert('Enter a valid claim amount.'); return; }
+                  setActing('claim');
+                  try {
+                    const claim = await createClaim({ billId: bill.billId, payerId: bill.payerId!, claimAmount: amount, notes: claimNotes || undefined });
+                    setShowClaimModal(false);
+                    navigate(`/billing/claims/${claim.claimId}`);
+                  } catch (err: unknown) {
+                    const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+                    alert(msg || 'Failed to create claim.');
+                  } finally {
+                    setActing('');
+                  }
+                }}
+                disabled={!!acting}
+                className="px-4 py-2 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50 transition-colors">
+                {acting === 'claim' ? 'Creating…' : 'Create Claim'}
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -24,6 +24,8 @@ import ServiceCatalogPage from './pages/billing/ServiceCatalogPage';
 import PayersPage from './pages/billing/PayersPage';
 import ARAgingPage from './pages/billing/ARAgingPage';
 import RevenueDashboardPage from './pages/billing/RevenueDashboardPage';
+import InsuranceClaimsPage from './pages/billing/InsuranceClaimsPage';
+import ClaimDetailPage from './pages/billing/ClaimDetailPage';
 import DocumentsPage from './pages/documents/DocumentsPage';
 import LabResultsPage from './pages/lab-results/LabResultsPage';
 import LabResultDetailPage from './pages/lab-results/LabResultDetailPage';
@@ -72,6 +74,8 @@ export default function App() {
               <Route path="billing/revenue-dashboard" element={<ProtectedRoute allowedRoles={[Roles.Admin, Roles.SuperAdmin]} />}>
                 <Route index element={<RevenueDashboardPage />} />
               </Route>
+              <Route path="billing/claims" element={<InsuranceClaimsPage />} />
+              <Route path="billing/claims/:id" element={<ClaimDetailPage />} />
               <Route path="billing/:id" element={<BillDetailPage />} />
               <Route path="documents" element={<DocumentsPage />} />
               <Route path="lab-results" element={<LabResultsPage />} />

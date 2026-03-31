@@ -130,6 +130,9 @@ export default function CreateBillPage() {
               <div>
                 <p className="font-medium text-gray-800">{selectedPatient.fullName}</p>
                 <p className="text-xs text-blue-600 font-mono">{selectedPatient.medicalRecordNumber}</p>
+                {selectedPatient.nhisNumber && (
+                  <p className="text-xs text-indigo-700 mt-0.5">NHIS #: {selectedPatient.nhisNumber}</p>
+                )}
               </div>
               <button type="button" onClick={() => setSelectedPatient(null)} className="text-xs text-gray-500 hover:text-red-500">Change</button>
             </div>
@@ -151,10 +154,22 @@ export default function CreateBillPage() {
                 <div className="absolute top-full mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-10">
                   {patientResults.map((p) => (
                     <button key={p.patientId} type="button"
-                      onClick={() => { setSelectedPatient(p); setPatientResults([]); setPatientQuery(''); }}
+                      onClick={() => {
+                        setSelectedPatient(p);
+                        setPatientResults([]);
+                        setPatientQuery('');
+                        // Auto-suggest NHIS payer when patient has an NHIS number
+                        if (p.nhisNumber && !payerId) {
+                          const nhisPayer = payers.find((pr) => pr.type === 'NHIS');
+                          if (nhisPayer) setPayerId(nhisPayer.payerId);
+                        }
+                      }}
                       className="w-full text-left px-4 py-2.5 hover:bg-gray-50 text-sm border-b border-gray-100 last:border-0">
                       <span className="font-medium">{p.fullName}</span>
                       <span className="text-gray-400 font-mono text-xs ml-2">{p.medicalRecordNumber}</span>
+                      {p.nhisNumber && (
+                        <span className="ml-2 text-xs text-blue-600">NHIS</span>
+                      )}
                     </button>
                   ))}
                 </div>
