@@ -108,13 +108,9 @@ export default function TenantsPage() {
                       </span>
                     </td>
                     <td className="px-5 py-3 text-gray-500">{new Date(t.createdAt).toLocaleDateString()}</td>
-                    <td className="px-5 py-3 flex gap-3">
+                    <td className="px-5 py-3">
                       <button onClick={() => openEdit(t)}
                         className="text-blue-600 hover:text-blue-800 text-xs font-medium">Edit</button>
-                      <button onClick={() => handleToggle(t)}
-                        className={`text-xs font-medium ${t.isActive ? 'text-red-500 hover:text-red-700' : 'text-green-600 hover:text-green-800'}`}>
-                        {t.isActive ? 'Deactivate' : 'Activate'}
-                      </button>
                     </td>
                   </tr>
                 ))}
