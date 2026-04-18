@@ -1,0 +1,279 @@
+import { useEffect, useState } from 'react';
+import {
+  getTenants, createTenant, updateTenant, activateTenant, deactivateTenant,
+} from '../../api/tenants';
+import type { TenantResponse, CreateTenantRequest, UpdateTenantRequest } from '../../types/tenants';
+import {
+  TENANT_TYPE_OPTIONS, TENANT_TYPE_COLORS, SUBSCRIPTION_PLANS,
+} from '../../types/tenants';
+
+const DEFAULT_CREATE: CreateTenantRequest = {
+  tenantCode: '', tenantName: '', tenantType: 'HMS', subscriptionPlan: 'Standard',
+  maxUsers: 50, storageQuotaGB: 100,
+  adminEmail: '', adminFirstName: '', adminLastName: '',
+};
+
+export default function TenantsPage() {
+  const [tenants, setTenants] = useState<TenantResponse[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [modal, setModal] = useState<null | 'create' | TenantResponse>(null);
+  const [createForm, setCreateForm] = useState<CreateTenantRequest>(DEFAULT_CREATE);
+  const [editForm, setEditForm] = useState<UpdateTenantRequest>({ tenantName: '', tenantType: 'HMS', subscriptionPlan: 'Standard', maxUsers: 50, storageQuotaGB: 100 });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  async function load() {
+    setLoading(true);
+    try { setTenants(await getTenants()); }
+    finally { setLoading(false); }
+  }
+
+  useEffect(() => { load(); }, []);
+
+  function openCreate() {
+    setCreateForm(DEFAULT_CREATE); setError(''); setModal('create');
+  }
+
+  function openEdit(t: TenantResponse) {
+    setEditForm({ tenantName: t.tenantName, tenantType: t.tenantType, subscriptionPlan: t.subscriptionPlan, maxUsers: t.maxUsers, storageQuotaGB: t.storageQuotaGB });
+    setError(''); setModal(t);
+  }
+
+  async function handleCreate() {
+    if (!createForm.tenantCode.trim() || !createForm.tenantName.trim() || !createForm.adminEmail.trim()) {
+      setError('Tenant code, name, and admin email are required.'); return;
+    }
+    setSaving(true);
+    try {
+      await createTenant(createForm);
+      setModal(null); load();
+    } catch (e: unknown) {
+      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setError(msg ?? 'Failed to create tenant.');
+    } finally { setSaving(false); }
+  }
+
+  async function handleEdit() {
+    if (!editForm.tenantName.trim()) { setError('Tenant name is required.'); return; }
+    setSaving(true);
+    try {
+      await updateTenant((modal as TenantResponse).tenantId, editForm);
+      setModal(null); load();
+    } catch { setError('Failed to update tenant.'); }
+    finally { setSaving(false); }
+  }
+
+  async function handleToggle(t: TenantResponse) {
+    const action = t.isActive ? 'deactivate' : 'activate';
+    if (!confirm(`${t.isActive ? 'Deactivate' : 'Activate'} ${t.tenantName}?`)) return;
+    try {
+      t.isActive ? await deactivateTenant(t.tenantId) : await activateTenant(t.tenantId);
+      load();
+    } catch { alert(`Failed to ${action} tenant.`); }
+  }
+
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-800">Tenants</h1>
+          <p className="text-sm text-gray-500 mt-0.5">All customer accounts on this platform.</p>
+        </div>
+        <button onClick={openCreate}
+          className="px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white text-sm font-medium rounded-lg transition-colors">
+          + New Tenant
+        </button>
+      </div>
+
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        {loading ? <div className="p-8 text-center text-gray-400">Loading…</div> :
+          tenants.length === 0 ? <div className="p-8 text-center text-gray-400 text-sm">No tenants yet.</div> : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-200 text-left">
+                  {['Tenant', 'Code', 'Type', 'Plan', 'Users', 'Storage', 'Status', 'Created', ''].map(h => (
+                    <th key={h} className="px-5 py-3 font-medium text-gray-600 text-xs uppercase tracking-wide">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {tenants.map(t => (
+                  <tr key={t.tenantId} className="hover:bg-gray-50">
+                    <td className="px-5 py-3 font-medium text-gray-900">{t.tenantName}</td>
+                    <td className="px-5 py-3 font-mono text-xs text-gray-500">{t.tenantCode}</td>
+                    <td className="px-5 py-3">
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${TENANT_TYPE_COLORS[t.tenantType] ?? 'bg-gray-100 text-gray-600'}`}>
+                        {t.tenantType}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3 text-gray-600">{t.subscriptionPlan}</td>
+                    <td className="px-5 py-3 text-gray-600">{t.userCount} / {t.maxUsers}</td>
+                    <td className="px-5 py-3 text-gray-600">{t.storageQuotaGB} GB</td>
+                    <td className="px-5 py-3">
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${t.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
+                        {t.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3 text-gray-500">{new Date(t.createdAt).toLocaleDateString()}</td>
+                    <td className="px-5 py-3 flex gap-3">
+                      <button onClick={() => openEdit(t)}
+                        className="text-blue-600 hover:text-blue-800 text-xs font-medium">Edit</button>
+                      <button onClick={() => handleToggle(t)}
+                        className={`text-xs font-medium ${t.isActive ? 'text-red-500 hover:text-red-700' : 'text-green-600 hover:text-green-800'}`}>
+                        {t.isActive ? 'Deactivate' : 'Activate'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+      </div>
+
+      {/* Create modal */}
+      {modal === 'create' && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-lg w-full max-w-lg p-6 space-y-5 my-4">
+            <h2 className="text-lg font-semibold text-gray-900">New Tenant</h2>
+
+            <div className="space-y-1">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Account Details</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2">
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Tenant Name *</label>
+                  <input type="text" value={createForm.tenantName}
+                    onChange={e => setCreateForm(f => ({ ...f, tenantName: e.target.value }))}
+                    placeholder="e.g. City General Hospital"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Tenant Code * <span className="text-gray-400 font-normal">(unique, lowercase)</span></label>
+                  <input type="text" value={createForm.tenantCode}
+                    onChange={e => setCreateForm(f => ({ ...f, tenantCode: e.target.value.toLowerCase().replace(/\s/g, '') }))}
+                    placeholder="e.g. citygeneral"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Product</label>
+                  <select value={createForm.tenantType}
+                    onChange={e => setCreateForm(f => ({ ...f, tenantType: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    {TENANT_TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Plan</label>
+                  <select value={createForm.subscriptionPlan}
+                    onChange={e => setCreateForm(f => ({ ...f, subscriptionPlan: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    {SUBSCRIPTION_PLANS.map(p => <option key={p}>{p}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Max Users</label>
+                  <input type="number" min={1} value={createForm.maxUsers}
+                    onChange={e => setCreateForm(f => ({ ...f, maxUsers: parseInt(e.target.value) || 50 }))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Storage (GB)</label>
+                  <input type="number" min={1} value={createForm.storageQuotaGB}
+                    onChange={e => setCreateForm(f => ({ ...f, storageQuotaGB: parseInt(e.target.value) || 100 }))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-1 border-t border-gray-100 pt-4">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">First Admin User</p>
+              <p className="text-xs text-gray-400">A temporary password will be set — they must change it on first login.</p>
+              <div className="grid grid-cols-2 gap-3 mt-2">
+                <div className="col-span-2">
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Admin Email *</label>
+                  <input type="email" value={createForm.adminEmail}
+                    onChange={e => setCreateForm(f => ({ ...f, adminEmail: e.target.value }))}
+                    placeholder="admin@hospital.com"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">First Name</label>
+                  <input type="text" value={createForm.adminFirstName}
+                    onChange={e => setCreateForm(f => ({ ...f, adminFirstName: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Last Name</label>
+                  <input type="text" value={createForm.adminLastName}
+                    onChange={e => setCreateForm(f => ({ ...f, adminLastName: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+              </div>
+            </div>
+
+            {error && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>}
+            <div className="flex gap-3 justify-end pt-1">
+              <button onClick={() => setModal(null)} className="text-sm text-gray-600 hover:text-gray-800">Cancel</button>
+              <button onClick={handleCreate} disabled={saving}
+                className="px-5 py-2 bg-blue-700 hover:bg-blue-800 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50">
+                {saving ? 'Creating…' : 'Create Tenant'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit modal */}
+      {modal !== null && modal !== 'create' && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-lg w-full max-w-md p-6 space-y-4">
+            <h2 className="text-lg font-semibold text-gray-900">Edit — {(modal as TenantResponse).tenantName}</h2>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="col-span-2">
+                <label className="block text-xs font-medium text-gray-600 mb-1">Tenant Name *</label>
+                <input type="text" value={editForm.tenantName}
+                  onChange={e => setEditForm(f => ({ ...f, tenantName: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Product</label>
+                <select value={editForm.tenantType}
+                  onChange={e => setEditForm(f => ({ ...f, tenantType: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  {TENANT_TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Plan</label>
+                <select value={editForm.subscriptionPlan}
+                  onChange={e => setEditForm(f => ({ ...f, subscriptionPlan: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  {SUBSCRIPTION_PLANS.map(p => <option key={p}>{p}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Max Users</label>
+                <input type="number" min={1} value={editForm.maxUsers}
+                  onChange={e => setEditForm(f => ({ ...f, maxUsers: parseInt(e.target.value) || 50 }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Storage (GB)</label>
+                <input type="number" min={1} value={editForm.storageQuotaGB}
+                  onChange={e => setEditForm(f => ({ ...f, storageQuotaGB: parseInt(e.target.value) || 100 }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+            </div>
+            {error && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>}
+            <div className="flex gap-3 justify-end pt-1">
+              <button onClick={() => setModal(null)} className="text-sm text-gray-600 hover:text-gray-800">Cancel</button>
+              <button onClick={handleEdit} disabled={saving}
+                className="px-5 py-2 bg-blue-700 hover:bg-blue-800 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50">
+                {saving ? 'Saving…' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

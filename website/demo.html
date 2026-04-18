@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Book a Demo — KayCare HMS</title>
+  <meta name="description" content="Book a free demo of KayCare HMS. We'll walk you through every module with your own facility's data. No commitment, no sales pressure." />
+  <link rel="icon" href="assets/logo-icon.png" type="image/png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            navy: { DEFAULT: '#1a3d8f', light: '#2756c5', dark: '#122d6b' },
+            teal: { DEFAULT: '#3eb489', light: '#52c99d', dark: '#2d9070' },
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    html { scroll-behavior: smooth; }
+    .logo-gradient { background: linear-gradient(135deg, #4a9fd4 0%, #2756c5 50%, #1a3d8f 100%); }
+    .section-tag { display: inline-block; background: #e8f5ef; color: #2d9070; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.3rem 0.85rem; border-radius: 999px; }
+    .nav-link { color: #374151; font-size: 0.9rem; font-weight: 500; text-decoration: none; transition: color 0.15s; }
+    .nav-link:hover { color: #1a3d8f; }
+    .nav-link.active { color: #1a3d8f; font-weight: 600; }
+    .btn-primary { background: #1a3d8f; color: #fff; font-weight: 600; font-size: 0.9rem; padding: 0.65rem 1.5rem; border-radius: 8px; transition: background 0.15s; display: inline-block; text-decoration: none; }
+    .btn-primary:hover { background: #122d6b; }
+    .btn-outline { border: 1.5px solid #1a3d8f; color: #1a3d8f; font-weight: 600; font-size: 0.9rem; padding: 0.625rem 1.5rem; border-radius: 8px; transition: all 0.15s; display: inline-block; text-decoration: none; }
+    .btn-outline:hover { background: #1a3d8f; color: #fff; }
+    .btn-teal { background: #3eb489; color: #fff; font-weight: 600; font-size: 0.95rem; padding: 0.75rem 2rem; border-radius: 8px; transition: background 0.15s; display: inline-block; text-decoration: none; }
+    .btn-teal:hover { background: #2d9070; }
+    #mobile-menu { display: none; }
+    #mobile-menu.open { display: block; }
+    .fade-up { opacity: 0; transform: translateY(28px); transition: opacity 0.65s ease, transform 0.65s ease; }
+    .fade-up.visible { opacity: 1; transform: translateY(0); }
+    .fade-up.delay-1 { transition-delay: 0.15s; }
+    .fade-up.delay-2 { transition-delay: 0.3s; }
+    #form-success { display: none; }
+    #form-success.show { display: block; }
+  </style>
+</head>
+<body class="font-sans text-gray-800 antialiased">
+
+  <!-- ── NAV ──────────────────────────────────────────────────────────────── -->
+  <header class="bg-white border-b border-gray-100 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+      <a href="index.html" class="flex items-center gap-3">
+        <img src="assets/logo.png" alt="KayCare HMS" class="h-9" />
+      </a>
+      <div class="hidden md:flex items-center gap-5">
+        <a href="features.html" class="nav-link">KayCare HMS</a>
+        <a href="pharmos.html" class="nav-link">PharmOS</a>
+        <a href="kaycareLIS.html" class="nav-link">KayCareLIS</a>
+        <a href="pricing.html" class="nav-link">Pricing</a>
+        <a href="about.html" class="nav-link">About</a>
+        <a href="demo.html" class="btn-outline">Book a Demo</a>
+        <a href="https://gray-field-08dd4ab0f.2.azurestaticapps.net" target="_blank" class="btn-primary">Sign In →</a>
+      </div>
+      <button onclick="document.getElementById('mobile-menu').classList.toggle('open')" class="md:hidden p-2 text-gray-600">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+    </div>
+    <div id="mobile-menu" class="md:hidden bg-white border-t border-gray-100 px-6 py-4 space-y-3">
+      <a href="features.html" class="block nav-link py-1">KayCare HMS</a>
+      <a href="pharmos.html" class="block nav-link py-1">PharmOS</a>
+      <a href="kaycareLIS.html" class="block nav-link py-1">KayCareLIS</a>
+      <a href="pricing.html" class="block nav-link py-1">Pricing</a>
+      <a href="about.html" class="block nav-link py-1">About</a>
+      <div class="flex gap-3 pt-2">
+        <a href="https://gray-field-08dd4ab0f.2.azurestaticapps.net" target="_blank" class="btn-primary">Sign In →</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── MAIN ─────────────────────────────────────────────────────────────── -->
+  <section style="background:#f4f7fb" class="py-20 px-6 min-h-screen">
+    <div class="max-w-6xl mx-auto">
+
+      <div class="grid lg:grid-cols-2 gap-16 items-start">
+
+        <!-- Left: what to expect -->
+        <div class="fade-up">
+          <span class="section-tag">Book a demo</span>
+          <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 mt-5 mb-5 leading-tight">
+            See KayCare HMS<br />
+            <span style="color:#1a3d8f;">in your facility</span>
+          </h1>
+          <p class="text-lg text-gray-500 leading-relaxed mb-10">
+            Fill in the form and we'll reach out within one business day to schedule a live walkthrough — tailored to your facility type and the modules you care about most.
+          </p>
+
+          <!-- What to expect -->
+          <div class="space-y-6">
+            <div class="flex gap-4">
+              <div class="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center" style="background:#e8f0ff">
+                <svg class="w-5 h-5" style="color:#1a3d8f" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+              </div>
+              <div>
+                <div class="font-semibold text-gray-900 mb-1">We reach out within 1 business day</div>
+                <p class="text-sm text-gray-500 leading-relaxed">We'll contact you by phone or email to schedule a time that works for your team — no automated calendar link, a real person will call.</p>
+              </div>
+            </div>
+            <div class="flex gap-4">
+              <div class="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center" style="background:#e8f0ff">
+                <svg class="w-5 h-5" style="color:#1a3d8f" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+              </div>
+              <div>
+                <div class="font-semibold text-gray-900 mb-1">Live walkthrough — every module</div>
+                <p class="text-sm text-gray-500 leading-relaxed">We walk you through the system live using a demo environment seeded with realistic data — from patient registration through billing, lab results, and the pharmacy.</p>
+              </div>
+            </div>
+            <div class="flex gap-4">
+              <div class="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center" style="background:#e8f5ef">
+                <svg class="w-5 h-5" style="color:#3eb489" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              </div>
+              <div>
+                <div class="font-semibold text-gray-900 mb-1">Try it yourself — free demo tenant</div>
+                <p class="text-sm text-gray-500 leading-relaxed">After the walkthrough, we set up a demo tenant for your facility — your logo, your departments, your staff. Explore at your own pace before you decide.</p>
+              </div>
+            </div>
+            <div class="flex gap-4">
+              <div class="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center" style="background:#fef3c7">
+                <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+              </div>
+              <div>
+                <div class="font-semibold text-gray-900 mb-1">No commitment, no pressure</div>
+                <p class="text-sm text-gray-500 leading-relaxed">No credit card. No contract until you're ready. If KayCare isn't the right fit, we'll tell you honestly — we'd rather you start when it makes sense than feel pushed.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Social proof strip -->
+          <div class="mt-10 pt-8 border-t border-gray-200">
+            <p class="text-xs text-gray-400 uppercase font-semibold tracking-wide mb-4">What people are saying</p>
+            <blockquote class="text-gray-600 text-sm leading-relaxed italic">
+              "We were up and running within two days. The demo made it clear this was built for facilities like ours — not adapted for us as an afterthought."
+            </blockquote>
+            <div class="flex items-center gap-2 mt-3">
+              <div class="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold" style="background:#1a3d8f">AO</div>
+              <div class="text-xs text-gray-500">Dr. A. Owusu · Medical Director</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: form -->
+        <div class="fade-up delay-1">
+
+          <!-- Success message -->
+          <div id="form-success" class="bg-white border border-green-200 rounded-2xl p-10 text-center shadow-sm">
+            <div class="w-16 h-16 rounded-full mx-auto mb-5 flex items-center justify-center" style="background:#e8f5ef">
+              <svg class="w-8 h-8" style="color:#3eb489" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-900 mb-2">Request received!</h3>
+            <p class="text-gray-500">Thank you — we'll be in touch within one business day to arrange your demo.</p>
+            <a href="index.html" class="btn-outline mt-6 inline-block text-sm">← Back to home</a>
+          </div>
+
+          <!-- Form — powered by Formspree -->
+          <!-- Sign up at formspree.io, create a form, replace REPLACE_WITH_YOUR_ID below -->
+          <form
+            id="demo-form"
+            action="https://formspree.io/f/REPLACE_WITH_YOUR_ID"
+            method="POST"
+            onsubmit="handleSubmit(event)"
+            class="bg-white border border-gray-200 rounded-2xl p-8 space-y-5 shadow-sm">
+
+            <div>
+              <h2 class="text-2xl font-bold text-gray-900 mb-1">Book your free demo</h2>
+              <p class="text-sm text-gray-400">We respond within one business day.</p>
+            </div>
+
+            <div class="grid sm:grid-cols-2 gap-5">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Your name <span class="text-red-400">*</span></label>
+                <input type="text" name="name" placeholder="Dr. Kwame Mensah" required
+                  class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Facility name <span class="text-red-400">*</span></label>
+                <input type="text" name="facility" placeholder="Accra Central Hospital" required
+                  class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400" />
+              </div>
+            </div>
+
+            <div class="grid sm:grid-cols-2 gap-5">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Email <span class="text-red-400">*</span></label>
+                <input type="email" name="email" placeholder="you@hospital.com" required
+                  class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                <input type="tel" name="phone" placeholder="+1 / +44 / +233 ..."
+                  class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400" />
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Facility type</label>
+              <select name="type" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 bg-white">
+                <option value="">Select…</option>
+                <option>Clinic / Polyclinic</option>
+                <option>District Hospital</option>
+                <option>Regional Hospital</option>
+                <option>Teaching Hospital</option>
+                <option>Private Hospital</option>
+                <option>Maternity Home</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Modules you're most interested in</label>
+              <div class="grid grid-cols-2 gap-2">
+                <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                  <input type="checkbox" name="modules" value="Billing & NHIS" class="rounded border-gray-300" />
+                  Billing &amp; Insurance
+                </label>
+                <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                  <input type="checkbox" name="modules" value="Laboratory LIS" class="rounded border-gray-300" />
+                  Laboratory LIS
+                </label>
+                <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                  <input type="checkbox" name="modules" value="Pharmacy" class="rounded border-gray-300" />
+                  Pharmacy
+                </label>
+                <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                  <input type="checkbox" name="modules" value="Prescriptions" class="rounded border-gray-300" />
+                  Prescriptions
+                </label>
+                <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                  <input type="checkbox" name="modules" value="Appointments" class="rounded border-gray-300" />
+                  Appointments
+                </label>
+                <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                  <input type="checkbox" name="modules" value="Everything" class="rounded border-gray-300" />
+                  Everything / unsure
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Message (optional)</label>
+              <textarea name="message" rows="3" placeholder="Tell us about your facility or any specific requirements…"
+                class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 resize-none"></textarea>
+            </div>
+
+            <button type="submit" id="submit-btn" class="w-full btn-teal text-center py-3.5 text-sm font-semibold">
+              Send Request →
+            </button>
+            <p class="text-center text-xs text-gray-400">We respond within one business day. No spam, no automated sequences.</p>
+          </form>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FOOTER ────────────────────────────────────────────────────────────── -->
+  <footer style="background:#111827" class="px-6 py-12">
+    <div class="max-w-6xl mx-auto">
+      <div class="flex flex-col md:flex-row justify-between gap-8 pb-10 border-b border-gray-700">
+        <div class="max-w-xs">
+          <div class="flex items-center gap-2 mb-3">
+            <div class="w-8 h-8 rounded-lg logo-gradient flex items-center justify-center"><svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg></div>
+            <span class="text-white text-xl font-bold">KayCare<span style="color:#3eb489">HMS</span></span>
+          </div>
+          <p class="text-gray-400 text-sm leading-relaxed">A complete, cloud-based Hospital Management System built for healthcare facilities in emerging markets worldwide.</p>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-8 text-sm">
+          <div><div class="text-gray-300 font-semibold mb-3">Product</div><ul class="space-y-2 text-gray-400"><li><a href="features.html" class="hover:text-white transition-colors">Features</a></li><li><a href="pricing.html" class="hover:text-white transition-colors">Pricing</a></li><li><a href="demo.html" class="hover:text-white transition-colors">Book a Demo</a></li></ul></div>
+          <div><div class="text-gray-300 font-semibold mb-3">Modules</div><ul class="space-y-2 text-gray-400"><li>Patient Management</li><li>Billing &amp; Insurance</li><li>Laboratory LIS</li><li>Pharmacy</li><li>Prescriptions</li></ul></div>
+          <div><div class="text-gray-300 font-semibold mb-3">Contact</div><ul class="space-y-2 text-gray-400"><li><a href="mailto:admin@kaycarehms.com" class="hover:text-white transition-colors">admin@kaycarehms.com</a></li><li><a href="demo.html" class="hover:text-white transition-colors">Book a Demo</a></li><li><a href="https://gray-field-08dd4ab0f.2.azurestaticapps.net" target="_blank" class="hover:text-white transition-colors">Sign In</a></li></ul></div>
+        </div>
+      </div>
+      <div class="pt-6 flex flex-col sm:flex-row justify-between items-center gap-3">
+        <p class="text-gray-500 text-sm">© 2026 KayCare HMS. All rights reserved. &nbsp;·&nbsp; <a href="cookie-policy.html" class="hover:text-gray-400 transition-colors">Cookie Policy</a></p>
+        <p class="text-gray-600 text-xs">Secure cloud hosting · Data stored within Africa</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+
+    async function handleSubmit(e) {
+      e.preventDefault();
+      const form = document.getElementById('demo-form');
+      const btn = document.getElementById('submit-btn');
+      btn.textContent = 'Sending…';
+      btn.disabled = true;
+      try {
+        const res = await fetch(form.action, {
+          method: 'POST',
+          body: new FormData(form),
+          headers: { Accept: 'application/json' }
+        });
+        if (res.ok) {
+          form.style.display = 'none';
+          document.getElementById('form-success').classList.add('show');
+        } else {
+          btn.textContent = 'Send Request →';
+          btn.disabled = false;
+          alert('Something went wrong. Please email us at admin@kaycarehms.com');
+        }
+      } catch {
+        btn.textContent = 'Send Request →';
+        btn.disabled = false;
+        alert('Something went wrong. Please email us at admin@kaycarehms.com');
+      }
+    }
+  </script>
+
+  <!-- ── COOKIE BANNER ────────────────────────────────────────────────────── -->
+  <div id="cookie-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#111827;border-top:1px solid #374151;padding:1rem 1.5rem;">
+    <div style="max-width:72rem;margin:0 auto;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:1rem;">
+      <p style="color:#d1d5db;font-size:0.875rem;line-height:1.5;margin:0;">
+        We use essential cookies to keep this site working. No tracking or advertising cookies are used.
+        <a href="cookie-policy.html" style="color:#fff;text-decoration:underline;margin-left:4px;">Cookie Policy</a>
+      </p>
+      <button onclick="dismissCookies()" style="flex-shrink:0;background:#3eb489;color:#fff;font-weight:600;font-size:0.875rem;padding:0.5rem 1.25rem;border-radius:8px;border:none;cursor:pointer;">Got it</button>
+    </div>
+  </div>
+  <script>
+    if (!localStorage.getItem('kc-cookies')) document.getElementById('cookie-banner').style.display = 'block';
+    function dismissCookies() { localStorage.setItem('kc-cookies', '1'); document.getElementById('cookie-banner').style.display = 'none'; }
+  </script>
+</body>
+</html>

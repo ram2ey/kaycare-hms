@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pricing — KayCare HMS</title>
+  <meta name="description" content="Simple, transparent pricing for KayCare HMS. Per-facility monthly plans for clinics, hospitals, and multi-facility networks in emerging markets." />
+  <link rel="icon" href="assets/logo-icon.png" type="image/png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            navy: { DEFAULT: '#1a3d8f', light: '#2756c5', dark: '#122d6b' },
+            teal: { DEFAULT: '#3eb489', light: '#52c99d', dark: '#2d9070' },
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    html { scroll-behavior: smooth; }
+    .logo-gradient { background: linear-gradient(135deg, #4a9fd4 0%, #2756c5 50%, #1a3d8f 100%); }
+    .section-tag { display: inline-block; background: #e8f5ef; color: #2d9070; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.3rem 0.85rem; border-radius: 999px; }
+    .nav-link { color: #374151; font-size: 0.9rem; font-weight: 500; text-decoration: none; transition: color 0.15s; }
+    .nav-link:hover { color: #1a3d8f; }
+    .nav-link.active { color: #1a3d8f; font-weight: 600; }
+    .btn-primary { background: #1a3d8f; color: #fff; font-weight: 600; font-size: 0.9rem; padding: 0.65rem 1.5rem; border-radius: 8px; transition: background 0.15s; display: inline-block; text-decoration: none; }
+    .btn-primary:hover { background: #122d6b; }
+    .btn-outline { border: 1.5px solid #1a3d8f; color: #1a3d8f; font-weight: 600; font-size: 0.9rem; padding: 0.625rem 1.5rem; border-radius: 8px; transition: all 0.15s; display: inline-block; text-decoration: none; }
+    .btn-outline:hover { background: #1a3d8f; color: #fff; }
+    .btn-teal { background: #3eb489; color: #fff; font-weight: 600; font-size: 0.95rem; padding: 0.75rem 2rem; border-radius: 8px; transition: background 0.15s; display: inline-block; text-decoration: none; }
+    .btn-teal:hover { background: #2d9070; }
+    #mobile-menu { display: none; }
+    #mobile-menu.open { display: block; }
+    .fade-up { opacity: 0; transform: translateY(28px); transition: opacity 0.65s ease, transform 0.65s ease; }
+    .fade-up.visible { opacity: 1; transform: translateY(0); }
+    .fade-up.delay-1 { transition-delay: 0.1s; }
+    .fade-up.delay-2 { transition-delay: 0.2s; }
+    .fade-up.delay-3 { transition-delay: 0.3s; }
+    .fade-up.delay-4 { transition-delay: 0.4s; }
+    .faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+    .faq-answer.open { max-height: 220px; }
+    .faq-chevron { transition: transform 0.3s ease; flex-shrink: 0; }
+    .faq-item.open .faq-chevron { transform: rotate(180deg); }
+  </style>
+</head>
+<body class="font-sans text-gray-800 antialiased">
+
+  <!-- ── NAV ──────────────────────────────────────────────────────────────── -->
+  <header class="bg-white border-b border-gray-100 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+      <a href="index.html" class="flex items-center gap-3">
+        <img src="assets/logo.png" alt="KayCare HMS" class="h-9" />
+      </a>
+      <div class="hidden md:flex items-center gap-5">
+        <a href="features.html" class="nav-link">KayCare HMS</a>
+        <a href="pharmos.html" class="nav-link">PharmOS</a>
+        <a href="kaycareLIS.html" class="nav-link">KayCareLIS</a>
+        <a href="pricing.html" class="nav-link active">Pricing</a>
+        <a href="about.html" class="nav-link">About</a>
+        <a href="demo.html" class="btn-outline">Book a Demo</a>
+        <a href="https://gray-field-08dd4ab0f.2.azurestaticapps.net" target="_blank" class="btn-primary">Sign In →</a>
+      </div>
+      <button onclick="document.getElementById('mobile-menu').classList.toggle('open')" class="md:hidden p-2 text-gray-600">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+    </div>
+    <div id="mobile-menu" class="md:hidden bg-white border-t border-gray-100 px-6 py-4 space-y-3">
+      <a href="features.html" class="block nav-link py-1">KayCare HMS</a>
+      <a href="pharmos.html" class="block nav-link py-1">PharmOS</a>
+      <a href="kaycareLIS.html" class="block nav-link py-1">KayCareLIS</a>
+      <a href="pricing.html" class="block nav-link active py-1">Pricing</a>
+      <a href="about.html" class="block nav-link py-1">About</a>
+      <div class="flex gap-3 pt-2">
+        <a href="demo.html" class="btn-outline">Book a Demo</a>
+        <a href="https://gray-field-08dd4ab0f.2.azurestaticapps.net" target="_blank" class="btn-primary">Sign In →</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── PAGE HERO ─────────────────────────────────────────────────────────── -->
+  <section style="background:#f4f7fb" class="pt-20 pb-16 px-6 text-center">
+    <div class="max-w-2xl mx-auto fade-up">
+      <span class="section-tag">Pricing</span>
+      <h1 class="text-5xl font-extrabold text-gray-900 mt-5 mb-5">Simple, transparent pricing</h1>
+      <p class="text-xl text-gray-500 leading-relaxed">Per facility per month. Every feature included in every plan. No per-user fees, no module add-ons, no hidden costs.</p>
+    </div>
+  </section>
+
+  <!-- ── PRICING TIERS ─────────────────────────────────────────────────────── -->
+  <section class="py-20 px-6 bg-white">
+    <div class="max-w-5xl mx-auto">
+      <div class="grid md:grid-cols-3 gap-6">
+
+        <!-- Clinic -->
+        <div class="border border-gray-200 rounded-2xl p-8 text-left flex flex-col fade-up">
+          <div class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-1">Clinic</div>
+          <div class="text-4xl font-extrabold text-gray-900 mt-2 mb-1">$49<span class="text-lg font-normal text-gray-400">/mo</span></div>
+          <p class="text-sm text-gray-400 mb-6">Up to 5 staff accounts · 1 facility</p>
+          <ul class="space-y-2.5 text-sm text-gray-600 flex-1 mb-8">
+            <li class="flex gap-2.5 items-start"><span class="mt-0.5 flex-shrink-0" style="color:#3eb489">✓</span><span><strong class="text-gray-800">All clinical modules</strong> — patients, appointments, consultations, prescriptions</span></li>
+            <li class="flex gap-2.5 items-start"><span class="mt-0.5 flex-shrink-0" style="color:#3eb489">✓</span><span>Billing &amp; payment tracking</span></li>
+            <li class="flex gap-2.5 items-start"><span class="mt-0.5 flex-shrink-0" style="color:#3eb489">✓</span><span>Insurance / payer claim tracking</span></li>
+            <li class="flex gap-2.5 items-start"><span class="mt-0.5 flex-shrink-0" style="color:#3eb489">✓</span><span>PDF invoices, receipts &amp; prescriptions</span></li>
+            <li class="flex gap-2.5 items-start"><span class="mt-0.5 flex-shrink-0" style="color:#3eb489">✓</span><span>Document storage</span></li>
+            <li class="flex gap-2.5 items-start"><span class="mt-0.5 flex-shrink-0" style="color:#3eb489">✓</span><span>Facility settings &amp; branding</span></li>
+            <li class="flex gap-2.5 items-start"><span class="mt-0.5 flex-shrink-0" style="color:#3eb489">✓</span><span>Audit logs</span></li>
+            <li class="flex gap-2.5 items-start"><span class="mt-0.5 flex-shrink-0" style="color:#3eb489">✓</span><span>Email support</span></li>
+          </ul>
+          <a href="demo.html" class="block text-center btn-outline py-3 text-sm">Get Started</a>
+        </div>
+
+        <!-- Hospital (featured) -->
+        <div class="border-2 rounded-2xl p-8 text-left relative flex flex-col fade-up delay-2" style="border-color:#1a3d8f; box-shadow: 0 8px 32px rgba(26,61,143,0.12);">
+          <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 text-xs font-bold px-4 py-1 rounded-full text-white" style="background:#1a3d8f">Most Popular</div>
+          <div class="text-sm font-semibold uppercase tracking-wide mb-1" style="color:#1a3d8f">Hospital</div>
+          <div class="text-4xl font-extrabold text-gray-900 mt-2 mb-1">$149<span class="text-lg font-normal text-gray-400">/mo</span></div>
+          <p class="text-sm text-gray-400 mb-6">Up to 25 staff accounts · 1 facility</p>
+          <ul class="space-y-2.5 text-sm text-gray-600 flex-1 mb-8">
+            <li class="flex gap-2.5 items-start"><span class="mt-0.5 flex-shrink-0" style="color:#3eb489">✓</span><span><strong class="text-gray-800">Everything in Clinic</strong></span></li>
+            <li class="flex gap-2.5 items-start"><span class="mt-0.5 flex-shrink-0" style="color:#3eb489">✓</span><span>Laboratory LIS (HL7 instrument integration)</span></li>
+            <li class="flex gap-2.5 items-start"><span class="mt-0.5 flex-shrink-0" style="color:#3eb489">✓</span><span>Pharmacy inventory + reorder alerts</span></li>
+            <li class="flex gap-2.5 items-start"><span class="mt-0.5 flex-shrink-0" style="color:#3eb489">✓</span><span>Revenue dashboard + AR aging report</span></li>
+            <li class="flex gap-2.5 items-start"><span class="mt-0.5 flex-shrink-0" style="color:#3eb489">✓</span><span>Auto charge capture</span></li>
+            <li class="flex gap-2.5 items-start"><span class="mt-0.5 flex-shrink-0" style="color:#3eb489">✓</span><span>Discounts, credit notes &amp; refunds</span></li>
+            <li class="flex gap-2.5 items-start"><span class="mt-0.5 flex-shrink-0" style="color:#3eb489">✓</span><span>Bill templates / service packages</span></li>
+            <li class="flex gap-2.5 items-start"><span class="mt-0.5 flex-shrink-0" style="color:#3eb489">✓</span><span>Priority support</span></li>
+          </ul>
+          <a href="demo.html" class="block text-center btn-primary py-3 text-sm">Get Started</a>
+        </div>
+
+        <!-- Network -->
+        <div class="border border-gray-200 rounded-2xl p-8 text-left flex flex-col fade-up delay-4">
+          <div class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-1">Network</div>
+          <div class="text-4xl font-extrabold text-gray-900 mt-2 mb-1">Custom</div>
+          <p class="text-sm text-gray-400 mb-6">Multiple facilities · Unlimited staff</p>
+          <ul class="space-y-2.5 text-sm text-gray-600 flex-1 mb-8">
+            <li class="flex gap-2.5 items-start"><span class="mt-0.5 flex-shrink-0" style="color:#3eb489">✓</span><span><strong class="text-gray-800">Everything in Hospital</strong></span></li>
+            <li class="flex gap-2.5 items-start"><span class="mt-0.5 flex-shrink-0" style="color:#3eb489">✓</span><span>Unlimited staff accounts</span></li>
+            <li class="flex gap-2.5 items-start"><span class="mt-0.5 flex-shrink-0" style="color:#3eb489">✓</span><span>Multi-facility management</span></li>
+            <li class="flex gap-2.5 items-start"><span class="mt-0.5 flex-shrink-0" style="color:#3eb489">✓</span><span>Dedicated onboarding &amp; training</span></li>
+            <li class="flex gap-2.5 items-start"><span class="mt-0.5 flex-shrink-0" style="color:#3eb489">✓</span><span>SLA guarantee</span></li>
+            <li class="flex gap-2.5 items-start"><span class="mt-0.5 flex-shrink-0" style="color:#3eb489">✓</span><span>Data migration assistance</span></li>
+            <li class="flex gap-2.5 items-start"><span class="mt-0.5 flex-shrink-0" style="color:#3eb489">✓</span><span>Dedicated account manager</span></li>
+          </ul>
+          <a href="demo.html" class="block text-center btn-outline py-3 text-sm">Contact Us</a>
+        </div>
+
+      </div>
+
+      <!-- Free trial note -->
+      <div class="mt-10 bg-gray-50 border border-gray-200 rounded-2xl p-6 text-center fade-up">
+        <p class="text-gray-700 font-medium mb-1">Not sure which plan is right for you?</p>
+        <p class="text-gray-500 text-sm">Book a free demo — we'll set up a fully working demo environment for your facility at no cost. No credit card required.</p>
+        <a href="demo.html" class="btn-teal mt-4 inline-block text-sm px-6 py-2.5">Book a Free Demo</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FAQ ───────────────────────────────────────────────────────────────── -->
+  <section style="background:#f4f7fb" class="py-24 px-6">
+    <div class="max-w-3xl mx-auto">
+      <div class="text-center mb-14 fade-up">
+        <span class="section-tag">Common questions</span>
+        <h2 class="text-4xl font-bold text-gray-900 mt-4 mb-4">Frequently asked questions</h2>
+        <p class="text-gray-500 text-lg">Everything hospitals ask before they sign up.</p>
+      </div>
+
+      <div class="space-y-3 fade-up">
+
+        <div class="faq-item bg-white border border-gray-200 rounded-2xl overflow-hidden">
+          <button onclick="toggleFaq(this)" class="w-full text-left px-6 py-5 flex items-center justify-between gap-4">
+            <span class="font-medium text-gray-900">Where is my patient data stored?</span>
+            <svg class="faq-chevron w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+          <div class="faq-answer px-6">
+            <p class="text-gray-500 text-sm leading-relaxed pb-5">Your data is stored in secure, geographically distributed cloud data centres. We select regions closest to your facility to minimise latency. All data is encrypted at rest and in transit and never shared with third parties.</p>
+          </div>
+        </div>
+
+        <div class="faq-item bg-white border border-gray-200 rounded-2xl overflow-hidden">
+          <button onclick="toggleFaq(this)" class="w-full text-left px-6 py-5 flex items-center justify-between gap-4">
+            <span class="font-medium text-gray-900">Does KayCare support insurance and payer billing?</span>
+            <svg class="faq-chevron w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+          <div class="faq-answer px-6">
+            <p class="text-gray-500 text-sm leading-relaxed pb-5">Yes. Every bill can be linked to a payer — national health scheme, private insurer, or corporate employer. Staff record the approved amount, and the system splits the bill between the insurance portion and what the patient owes. KayCare supports any payer model; you are not locked to a single country's scheme.</p>
+          </div>
+        </div>
+
+        <div class="faq-item bg-white border border-gray-200 rounded-2xl overflow-hidden">
+          <button onclick="toggleFaq(this)" class="w-full text-left px-6 py-5 flex items-center justify-between gap-4">
+            <span class="font-medium text-gray-900">How long does onboarding take?</span>
+            <svg class="faq-chevron w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+          <div class="faq-answer px-6">
+            <p class="text-gray-500 text-sm leading-relaxed pb-5">For a typical clinic or small hospital, we can have your environment live within <strong>24–48 hours</strong> of signing up. We set up your tenant, create staff accounts, upload your logo, and configure departments. Staff training on core workflows typically takes half a day.</p>
+          </div>
+        </div>
+
+        <div class="faq-item bg-white border border-gray-200 rounded-2xl overflow-hidden">
+          <button onclick="toggleFaq(this)" class="w-full text-left px-6 py-5 flex items-center justify-between gap-4">
+            <span class="font-medium text-gray-900">Do we need IT staff to manage it?</span>
+            <svg class="faq-chevron w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+          <div class="faq-answer px-6">
+            <p class="text-gray-500 text-sm leading-relaxed pb-5">No. KayCare is fully cloud-hosted — there is no server to manage, no software to install, and no database to back up. Your Admin user can manage staff accounts, departments, and facility settings directly in the application. We handle all infrastructure and updates.</p>
+          </div>
+        </div>
+
+        <div class="faq-item bg-white border border-gray-200 rounded-2xl overflow-hidden">
+          <button onclick="toggleFaq(this)" class="w-full text-left px-6 py-5 flex items-center justify-between gap-4">
+            <span class="font-medium text-gray-900">What happens if our internet goes down?</span>
+            <svg class="faq-chevron w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+          <div class="faq-answer px-6">
+            <p class="text-gray-500 text-sm leading-relaxed pb-5">KayCare requires an internet connection to operate. We recommend facilities maintain a primary connection plus a mobile data backup (a 4G router on a separate SIM is a low-cost and reliable solution). Our platform uptime SLA is 99.95%, so downtime on our end is extremely rare.</p>
+          </div>
+        </div>
+
+        <div class="faq-item bg-white border border-gray-200 rounded-2xl overflow-hidden">
+          <button onclick="toggleFaq(this)" class="w-full text-left px-6 py-5 flex items-center justify-between gap-4">
+            <span class="font-medium text-gray-900">Is there a free trial?</span>
+            <svg class="faq-chevron w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+          <div class="faq-answer px-6">
+            <p class="text-gray-500 text-sm leading-relaxed pb-5">Yes — book a demo and we will set up a fully working demo environment for your facility at no cost. You can explore every module with real (demo) data before committing. We do not require a credit card for the demo period.</p>
+          </div>
+        </div>
+
+        <div class="faq-item bg-white border border-gray-200 rounded-2xl overflow-hidden">
+          <button onclick="toggleFaq(this)" class="w-full text-left px-6 py-5 flex items-center justify-between gap-4">
+            <span class="font-medium text-gray-900">Can we migrate our existing patient records?</span>
+            <svg class="faq-chevron w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+          <div class="faq-answer px-6">
+            <p class="text-gray-500 text-sm leading-relaxed pb-5">Yes. If your records are in Excel, a CSV export from another system, or a structured paper register, we can work with you to import them. The scope and timeline depend on data quality and volume — reach out via the contact form and we'll assess what's possible for your facility.</p>
+          </div>
+        </div>
+
+        <div class="faq-item bg-white border border-gray-200 rounded-2xl overflow-hidden">
+          <button onclick="toggleFaq(this)" class="w-full text-left px-6 py-5 flex items-center justify-between gap-4">
+            <span class="font-medium text-gray-900">Can I change plans later?</span>
+            <svg class="faq-chevron w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+          <div class="faq-answer px-6">
+            <p class="text-gray-500 text-sm leading-relaxed pb-5">Yes. You can upgrade or downgrade your plan at any time. Upgrades take effect immediately. Downgrades take effect at the start of your next billing cycle. Your data is never affected by a plan change.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ── CTA ──────────────────────────────────────────────────────────────── -->
+  <section style="background:#1a3d8f" class="py-20 px-6">
+    <div class="max-w-3xl mx-auto text-center fade-up">
+      <h2 class="text-4xl font-bold text-white mb-4">Still have questions?</h2>
+      <p class="text-blue-200 text-lg mb-8">Book a free demo and we'll walk you through pricing, modules, and answer everything before you commit.</p>
+      <a href="demo.html" class="btn-teal text-base px-10 py-4">Book a Free Demo</a>
+    </div>
+  </section>
+
+  <!-- ── FOOTER ────────────────────────────────────────────────────────────── -->
+  <footer style="background:#111827" class="px-6 py-12">
+    <div class="max-w-6xl mx-auto">
+      <div class="flex flex-col md:flex-row justify-between gap-8 pb-10 border-b border-gray-700">
+        <div class="max-w-xs">
+          <div class="flex items-center gap-2 mb-3">
+            <div class="w-8 h-8 rounded-lg logo-gradient flex items-center justify-center"><svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg></div>
+            <span class="text-white text-xl font-bold">KayCare<span style="color:#3eb489">HMS</span></span>
+          </div>
+          <p class="text-gray-400 text-sm leading-relaxed">A complete, cloud-based Hospital Management System built for healthcare facilities in emerging markets worldwide.</p>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-8 text-sm">
+          <div><div class="text-gray-300 font-semibold mb-3">Product</div><ul class="space-y-2 text-gray-400"><li><a href="features.html" class="hover:text-white transition-colors">Features</a></li><li><a href="pricing.html" class="hover:text-white transition-colors">Pricing</a></li><li><a href="demo.html" class="hover:text-white transition-colors">Book a Demo</a></li></ul></div>
+          <div><div class="text-gray-300 font-semibold mb-3">Modules</div><ul class="space-y-2 text-gray-400"><li>Patient Management</li><li>Billing &amp; Insurance</li><li>Laboratory LIS</li><li>Pharmacy</li><li>Prescriptions</li></ul></div>
+          <div><div class="text-gray-300 font-semibold mb-3">Contact</div><ul class="space-y-2 text-gray-400"><li><a href="mailto:admin@kaycarehms.com" class="hover:text-white transition-colors">admin@kaycarehms.com</a></li><li><a href="demo.html" class="hover:text-white transition-colors">Book a Demo</a></li><li><a href="https://gray-field-08dd4ab0f.2.azurestaticapps.net" target="_blank" class="hover:text-white transition-colors">Sign In</a></li></ul></div>
+        </div>
+      </div>
+      <div class="pt-6 flex flex-col sm:flex-row justify-between items-center gap-3">
+        <p class="text-gray-500 text-sm">© 2026 KayCare HMS. All rights reserved. &nbsp;·&nbsp; <a href="cookie-policy.html" class="hover:text-gray-400 transition-colors">Cookie Policy</a></p>
+        <p class="text-gray-600 text-xs">Secure cloud hosting · Data stored within Africa</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+
+    function toggleFaq(btn) {
+      const item = btn.closest('.faq-item');
+      const answer = item.querySelector('.faq-answer');
+      const isOpen = item.classList.contains('open');
+      document.querySelectorAll('.faq-item.open').forEach(o => { o.classList.remove('open'); o.querySelector('.faq-answer').classList.remove('open'); });
+      if (!isOpen) { item.classList.add('open'); answer.classList.add('open'); }
+    }
+  </script>
+
+  <!-- ── COOKIE BANNER ────────────────────────────────────────────────────── -->
+  <div id="cookie-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#111827;border-top:1px solid #374151;padding:1rem 1.5rem;">
+    <div style="max-width:72rem;margin:0 auto;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:1rem;">
+      <p style="color:#d1d5db;font-size:0.875rem;line-height:1.5;margin:0;">
+        We use essential cookies to keep this site working. No tracking or advertising cookies are used.
+        <a href="cookie-policy.html" style="color:#fff;text-decoration:underline;margin-left:4px;">Cookie Policy</a>
+      </p>
+      <button onclick="dismissCookies()" style="flex-shrink:0;background:#3eb489;color:#fff;font-weight:600;font-size:0.875rem;padding:0.5rem 1.25rem;border-radius:8px;border:none;cursor:pointer;">Got it</button>
+    </div>
+  </div>
+  <script>
+    if (!localStorage.getItem('kc-cookies')) document.getElementById('cookie-banner').style.display = 'block';
+    function dismissCookies() { localStorage.setItem('kc-cookies', '1'); document.getElementById('cookie-banner').style.display = 'none'; }
+  </script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+@MediCloud.API_HostAddress = http://localhost:5012
+
+GET {{MediCloud.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

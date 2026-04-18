@@ -1,0 +1,180 @@
+using KayCare.Core.Entities;
+using KayCare.Core.Interfaces;
+using Microsoft.EntityFrameworkCore;
+
+namespace KayCare.Infrastructure.Data;
+
+public class AppDbContext : DbContext
+{
+    private readonly ITenantContext _tenantContext;
+
+    public AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext tenantContext)
+        : base(options)
+    {
+        _tenantContext = tenantContext;
+    }
+
+    public DbSet<Tenant>           Tenants           => Set<Tenant>();
+    public DbSet<FacilitySettings> FacilitySettings  => Set<FacilitySettings>();
+    public DbSet<Role> Roles => Set<Role>();
+    public DbSet<User> Users => Set<User>();
+    public DbSet<Patient> Patients => Set<Patient>();
+    public DbSet<PatientAllergy> PatientAllergies => Set<PatientAllergy>();
+    public DbSet<Appointment>      Appointments      => Set<Appointment>();
+    public DbSet<Consultation>     Consultations     => Set<Consultation>();
+    public DbSet<Prescription>             Prescriptions             => Set<Prescription>();
+    public DbSet<PrescriptionItem>         PrescriptionItems         => Set<PrescriptionItem>();
+    public DbSet<PrescriptionTemplate>     PrescriptionTemplates     => Set<PrescriptionTemplate>();
+    public DbSet<PrescriptionTemplateItem> PrescriptionTemplateItems => Set<PrescriptionTemplateItem>();
+    public DbSet<DispenseEvent>            DispenseEvents            => Set<DispenseEvent>();
+    public DbSet<DispenseEventItem>        DispenseEventItems        => Set<DispenseEventItem>();
+    public DbSet<ServiceCatalogItem>  ServiceCatalogItems  => Set<ServiceCatalogItem>();
+    public DbSet<BillTemplate>        BillTemplates        => Set<BillTemplate>();
+    public DbSet<BillTemplateItem>    BillTemplateItems    => Set<BillTemplateItem>();
+    public DbSet<Payer>            Payers            => Set<Payer>();
+    public DbSet<Bill>             Bills             => Set<Bill>();
+    public DbSet<BillItem>         BillItems         => Set<BillItem>();
+    public DbSet<BillAdjustment>   BillAdjustments   => Set<BillAdjustment>();
+    public DbSet<Payment>          Payments          => Set<Payment>();
+    public DbSet<PatientDocument>  PatientDocuments  => Set<PatientDocument>();
+    public DbSet<LabResult>        LabResults        => Set<LabResult>();
+    public DbSet<LabObservation>   LabObservations   => Set<LabObservation>();
+    public DbSet<LabTestCatalog>   LabTestCatalog    => Set<LabTestCatalog>();
+    public DbSet<LabOrder>         LabOrders         => Set<LabOrder>();
+    public DbSet<LabOrderItem>     LabOrderItems     => Set<LabOrderItem>();
+    public DbSet<InsuranceClaim>    InsuranceClaims   => Set<InsuranceClaim>();
+    public DbSet<CreditNote>        CreditNotes       => Set<CreditNote>();
+    public DbSet<Refund>            Refunds           => Set<Refund>();
+    public DbSet<DrugInventory>    DrugInventory     => Set<DrugInventory>();
+    public DbSet<StockMovement>    StockMovements    => Set<StockMovement>();
+    public DbSet<Supplier>         Suppliers         => Set<Supplier>();
+    public DbSet<PurchaseOrder>    PurchaseOrders    => Set<PurchaseOrder>();
+    public DbSet<PurchaseOrderItem> PurchaseOrderItems => Set<PurchaseOrderItem>();
+    public DbSet<Ward>              Wards              => Set<Ward>();
+    public DbSet<Bed>               Beds               => Set<Bed>();
+    public DbSet<Admission>         Admissions         => Set<Admission>();
+    public DbSet<AdmissionTransfer> AdmissionTransfers => Set<AdmissionTransfer>();
+    public DbSet<InpatientCharge>          InpatientCharges          => Set<InpatientCharge>();
+    public DbSet<VitalSigns>               VitalSigns                => Set<VitalSigns>();
+    public DbSet<NursingNote>              NursingNotes              => Set<NursingNote>();
+    public DbSet<MedicationAdministration> MedicationAdministrations => Set<MedicationAdministration>();
+    public DbSet<Referral>                 Referrals                 => Set<Referral>();
+    public DbSet<IcdCode>                  IcdCodes                  => Set<IcdCode>();
+    public DbSet<AuditLog>                 AuditLogs                 => Set<AuditLog>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+
+        // Global tenant isolation — every tenant-scoped entity gets this filter
+        modelBuilder.Entity<User>()
+            .HasQueryFilter(u => u.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<Patient>()
+            .HasQueryFilter(p => p.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<PatientAllergy>()
+            .HasQueryFilter(a => a.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<Appointment>()
+            .HasQueryFilter(a => a.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<Consultation>()
+            .HasQueryFilter(c => c.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<Prescription>()
+            .HasQueryFilter(p => p.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<PrescriptionItem>()
+            .HasQueryFilter(i => i.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<ServiceCatalogItem>()
+            .HasQueryFilter(s => s.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<Payer>()
+            .HasQueryFilter(p => p.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<Bill>()
+            .HasQueryFilter(b => b.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<BillItem>()
+            .HasQueryFilter(i => i.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<BillAdjustment>()
+            .HasQueryFilter(a => a.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<Payment>()
+            .HasQueryFilter(p => p.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<PatientDocument>()
+            .HasQueryFilter(d => d.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<LabResult>()
+            .HasQueryFilter(r => r.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<LabObservation>()
+            .HasQueryFilter(o => o.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<LabOrder>()
+            .HasQueryFilter(o => o.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<LabOrderItem>()
+            .HasQueryFilter(i => i.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<AuditLog>()
+            .HasQueryFilter(a => a.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<PrescriptionTemplate>()
+            .HasQueryFilter(t => t.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<PrescriptionTemplateItem>()
+            .HasQueryFilter(i => i.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<DispenseEvent>()
+            .HasQueryFilter(e => e.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<DispenseEventItem>()
+            .HasQueryFilter(i => i.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<InsuranceClaim>()
+            .HasQueryFilter(c => c.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<CreditNote>()
+            .HasQueryFilter(c => c.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<Refund>()
+            .HasQueryFilter(r => r.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<FacilitySettings>()
+            .HasQueryFilter(f => f.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<BillTemplate>()
+            .HasQueryFilter(t => t.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<BillTemplateItem>()
+            .HasQueryFilter(i => i.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<DrugInventory>()
+            .HasQueryFilter(d => d.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<StockMovement>()
+            .HasQueryFilter(m => m.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<Supplier>()
+            .HasQueryFilter(s => s.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<PurchaseOrder>()
+            .HasQueryFilter(po => po.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<PurchaseOrderItem>()
+            .HasQueryFilter(i => i.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<Ward>()
+            .HasQueryFilter(w => w.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<Bed>()
+            .HasQueryFilter(b => b.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<Admission>()
+            .HasQueryFilter(a => a.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<AdmissionTransfer>()
+            .HasQueryFilter(t => t.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<InpatientCharge>()
+            .HasQueryFilter(c => c.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<VitalSigns>()
+            .HasQueryFilter(v => v.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<NursingNote>()
+            .HasQueryFilter(n => n.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<MedicationAdministration>()
+            .HasQueryFilter(m => m.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<Referral>()
+            .HasQueryFilter(r => r.TenantId == _tenantContext.TenantId);
+    }
+
+    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        var now = DateTime.UtcNow;
+
+        foreach (var entry in ChangeTracker.Entries<TenantEntity>())
+        {
+            switch (entry.State)
+            {
+                case EntityState.Added:
+                    entry.Entity.TenantId = _tenantContext.TenantId;
+                    entry.Entity.CreatedAt = now;
+                    entry.Entity.UpdatedAt = now;
+                    break;
+                case EntityState.Modified:
+                    entry.Entity.UpdatedAt = now;
+                    break;
+            }
+        }
+
+        return await base.SaveChangesAsync(cancellationToken);
+    }
+}

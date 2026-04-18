@@ -1,0 +1,20 @@
+namespace KayCare.Core.Entities;
+
+public class PrescriptionTemplateItem
+{
+    public Guid    TemplateItemId        { get; set; }
+    public Guid    TenantId              { get; set; }
+    public Guid    TemplateId            { get; set; }
+    public string  MedicationName        { get; set; } = string.Empty;
+    public string? GenericName           { get; set; }
+    public string  Strength              { get; set; } = string.Empty;
+    public string  DosageForm            { get; set; } = string.Empty;
+    public string  Frequency             { get; set; } = string.Empty;
+    public int     DurationDays          { get; set; }
+    public int     Quantity              { get; set; }
+    public int     Refills               { get; set; }
+    public string? Instructions          { get; set; }
+    public bool    IsControlledSubstance { get; set; }
+
+    public PrescriptionTemplate Template { get; set; } = null!;
+}
