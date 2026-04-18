@@ -76,6 +76,7 @@ export default function App() {
           <Route element={<ProtectedRoute allowedRoles={[Roles.SuperAdmin]} />}>
             <Route element={<SuperAdminLayout />}>
               <Route path="platform/tenants" element={<TenantsPage />} />
+              <Route path="platform/users" element={<UsersPage />} />
               <Route path="platform/audit-logs" element={<AuditLogsPage />} />
             </Route>
           </Route>

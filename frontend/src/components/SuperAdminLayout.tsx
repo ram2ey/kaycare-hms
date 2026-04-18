@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 const navItems = [
   { to: '/platform/tenants', label: 'Tenants' },
+  { to: '/platform/users', label: 'Platform Users' },
   { to: '/platform/audit-logs', label: 'Audit Logs' },
 ];
 
