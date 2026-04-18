@@ -5,7 +5,7 @@ import { login as apiLogin } from '../api/auth';
 
 interface AuthContextValue {
   user: AuthUser | null;
-  login: (req: LoginRequest) => Promise<void>;
+  login: (req: LoginRequest) => Promise<AuthUser>;
   logout: () => void;
 }
 
@@ -19,11 +19,12 @@ function loadUser(): AuthUser | null {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(loadUser);
 
-  const login = useCallback(async (req: LoginRequest) => {
+  const login = useCallback(async (req: LoginRequest): Promise<AuthUser> => {
     const res = await apiLogin(req);
     const auth: AuthUser = { ...res, tenantCode: req.tenantCode };
     localStorage.setItem('auth', JSON.stringify(auth));
     setUser(auth);
+    return auth;
   }, []);
 
   const logout = useCallback(() => {

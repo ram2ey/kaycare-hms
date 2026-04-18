@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { Roles } from '../../types';
 
 export default function LoginPage() {
   const { login, user } = useAuth();
@@ -12,7 +13,7 @@ export default function LoginPage() {
 
   // Already logged in
   if (user) {
-    navigate('/patients', { replace: true });
+    navigate(user.role === Roles.SuperAdmin ? '/platform/tenants' : '/patients', { replace: true });
     return null;
   }
 
@@ -25,8 +26,8 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      await login(form);
-      navigate('/patients');
+      const res = await login(form);
+      navigate(res?.role === Roles.SuperAdmin ? '/platform/tenants' : '/patients');
     } catch (err: unknown) {
       const status = (err as { response?: { status?: number; data?: { message?: string } } })?.response?.status;
       if (status === 423) {

@@ -33,7 +33,6 @@ const navItems = [
   { to: '/admin/users', label: 'Staff Users', roles: [Roles.SuperAdmin, Roles.Admin] },
   { to: '/admin/departments', label: 'Departments', roles: [Roles.SuperAdmin, Roles.Admin] },
   { to: '/admin/settings', label: 'Facility Settings', roles: [Roles.SuperAdmin, Roles.Admin] },
-  { to: '/admin/tenants', label: 'Tenants', roles: [Roles.SuperAdmin] },
 ];
 
 export default function Layout() {

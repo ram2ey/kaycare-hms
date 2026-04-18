@@ -3,12 +3,10 @@ import {
   getTenants, createTenant, updateTenant, activateTenant, deactivateTenant,
 } from '../../api/tenants';
 import type { TenantResponse, CreateTenantRequest, UpdateTenantRequest } from '../../types/tenants';
-import {
-  TENANT_TYPE_OPTIONS, TENANT_TYPE_COLORS, SUBSCRIPTION_PLANS,
-} from '../../types/tenants';
+import { SUBSCRIPTION_PLANS } from '../../types/tenants';
 
 const DEFAULT_CREATE: CreateTenantRequest = {
-  tenantCode: '', tenantName: '', tenantType: 'HMS', subscriptionPlan: 'Standard',
+  tenantCode: '', tenantName: '', subscriptionPlan: 'Standard',
   maxUsers: 50, storageQuotaGB: 100,
   adminEmail: '', adminFirstName: '', adminLastName: '',
 };
@@ -18,7 +16,7 @@ export default function TenantsPage() {
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState<null | 'create' | TenantResponse>(null);
   const [createForm, setCreateForm] = useState<CreateTenantRequest>(DEFAULT_CREATE);
-  const [editForm, setEditForm] = useState<UpdateTenantRequest>({ tenantName: '', tenantType: 'HMS', subscriptionPlan: 'Standard', maxUsers: 50, storageQuotaGB: 100 });
+  const [editForm, setEditForm] = useState<UpdateTenantRequest>({ tenantName: '', subscriptionPlan: 'Standard', maxUsers: 50, storageQuotaGB: 100 });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -35,7 +33,7 @@ export default function TenantsPage() {
   }
 
   function openEdit(t: TenantResponse) {
-    setEditForm({ tenantName: t.tenantName, tenantType: t.tenantType, subscriptionPlan: t.subscriptionPlan, maxUsers: t.maxUsers, storageQuotaGB: t.storageQuotaGB });
+    setEditForm({ tenantName: t.tenantName, subscriptionPlan: t.subscriptionPlan, maxUsers: t.maxUsers, storageQuotaGB: t.storageQuotaGB });
     setError(''); setModal(t);
   }
 
@@ -91,7 +89,7 @@ export default function TenantsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200 text-left">
-                  {['Tenant', 'Code', 'Type', 'Plan', 'Users', 'Storage', 'Status', 'Created', ''].map(h => (
+                  {['Tenant', 'Code', 'Plan', 'Users', 'Storage', 'Status', 'Created', ''].map(h => (
                     <th key={h} className="px-5 py-3 font-medium text-gray-600 text-xs uppercase tracking-wide">{h}</th>
                   ))}
                 </tr>
@@ -101,11 +99,6 @@ export default function TenantsPage() {
                   <tr key={t.tenantId} className="hover:bg-gray-50">
                     <td className="px-5 py-3 font-medium text-gray-900">{t.tenantName}</td>
                     <td className="px-5 py-3 font-mono text-xs text-gray-500">{t.tenantCode}</td>
-                    <td className="px-5 py-3">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${TENANT_TYPE_COLORS[t.tenantType] ?? 'bg-gray-100 text-gray-600'}`}>
-                        {t.tenantType}
-                      </span>
-                    </td>
                     <td className="px-5 py-3 text-gray-600">{t.subscriptionPlan}</td>
                     <td className="px-5 py-3 text-gray-600">{t.userCount} / {t.maxUsers}</td>
                     <td className="px-5 py-3 text-gray-600">{t.storageQuotaGB} GB</td>
@@ -152,14 +145,6 @@ export default function TenantsPage() {
                     onChange={e => setCreateForm(f => ({ ...f, tenantCode: e.target.value.toLowerCase().replace(/\s/g, '') }))}
                     placeholder="e.g. citygeneral"
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Product</label>
-                  <select value={createForm.tenantType}
-                    onChange={e => setCreateForm(f => ({ ...f, tenantType: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    {TENANT_TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Plan</label>
@@ -233,14 +218,6 @@ export default function TenantsPage() {
                 <input type="text" value={editForm.tenantName}
                   onChange={e => setEditForm(f => ({ ...f, tenantName: e.target.value }))}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Product</label>
-                <select value={editForm.tenantType}
-                  onChange={e => setEditForm(f => ({ ...f, tenantType: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  {TENANT_TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Plan</label>

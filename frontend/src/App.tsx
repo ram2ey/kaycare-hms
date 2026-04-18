@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
+import SuperAdminLayout from './components/SuperAdminLayout';
 import LoginPage from './pages/auth/LoginPage';
 import PatientsListPage from './pages/patients/PatientsListPage';
 import PatientDetailPage from './pages/patients/PatientDetailPage';
@@ -70,6 +71,14 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+
+          {/* SuperAdmin platform portal — completely separate layout */}
+          <Route element={<ProtectedRoute allowedRoles={[Roles.SuperAdmin]} />}>
+            <Route element={<SuperAdminLayout />}>
+              <Route path="platform/tenants" element={<TenantsPage />} />
+              <Route path="platform/audit-logs" element={<AuditLogsPage />} />
+            </Route>
+          </Route>
 
           <Route element={<ProtectedRoute />}>
             <Route element={<Layout />}>
@@ -193,12 +202,6 @@ export default function App() {
                 element={<ProtectedRoute allowedRoles={[Roles.SuperAdmin, Roles.Admin]} />}
               >
                 <Route index element={<FacilitySettingsPage />} />
-              </Route>
-              <Route
-                path="admin/tenants"
-                element={<ProtectedRoute allowedRoles={[Roles.SuperAdmin]} />}
-              >
-                <Route index element={<TenantsPage />} />
               </Route>
               <Route path="change-password" element={<ChangePasswordPage />} />
             </Route>
