@@ -9,5 +9,4 @@ public class LoginResponse
     public string FullName { get; set; } = string.Empty;
     public string Role { get; set; } = string.Empty;
     public bool MustChangePassword { get; set; }
-    public string TenantType { get; set; } = string.Empty;
 }

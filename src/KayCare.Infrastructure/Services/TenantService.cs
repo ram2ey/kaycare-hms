@@ -53,7 +53,6 @@ public class TenantService(AppDbContext db) : ITenantService
             TenantCode       = code,
             TenantName       = req.TenantName.Trim(),
             Subdomain        = code,
-            TenantType       = req.TenantType,
             SubscriptionPlan = req.SubscriptionPlan,
             IsActive         = true,
             MaxUsers         = req.MaxUsers,
@@ -103,7 +102,6 @@ public class TenantService(AppDbContext db) : ITenantService
             ?? throw new NotFoundException("Tenant", id);
 
         tenant.TenantName       = req.TenantName.Trim();
-        tenant.TenantType       = req.TenantType;
         tenant.SubscriptionPlan = req.SubscriptionPlan;
         tenant.MaxUsers         = req.MaxUsers;
         tenant.StorageQuotaGB   = req.StorageQuotaGB;
@@ -134,7 +132,6 @@ public class TenantService(AppDbContext db) : ITenantService
         TenantCode       = t.TenantCode,
         TenantName       = t.TenantName,
         Subdomain        = t.Subdomain,
-        TenantType       = t.TenantType,
         SubscriptionPlan = t.SubscriptionPlan,
         IsActive         = t.IsActive,
         MaxUsers         = t.MaxUsers,

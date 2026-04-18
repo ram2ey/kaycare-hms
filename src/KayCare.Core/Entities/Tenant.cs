@@ -7,7 +7,6 @@ public class Tenant
     public string TenantName { get; set; } = string.Empty;
     public string Subdomain { get; set; } = string.Empty;
     public string SubscriptionPlan { get; set; } = "standard";
-    public string TenantType { get; set; } = Constants.TenantType.HMS;
     public bool IsActive { get; set; } = true;
     public int MaxUsers { get; set; } = 50;
     public int StorageQuotaGB { get; set; } = 100;

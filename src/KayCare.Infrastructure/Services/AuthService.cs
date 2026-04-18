@@ -67,7 +67,6 @@ public class AuthService : IAuthService
             FullName           = $"{user.FirstName} {user.LastName}",
             Role               = user.Role.RoleName,
             MustChangePassword = user.MustChangePassword,
-            TenantType         = tenant?.TenantType ?? Core.Constants.TenantType.HMS,
         };
     }
 
