@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import {
-  getTenants, createTenant, updateTenant, activateTenant, deactivateTenant,
+  getTenants, createTenant, updateTenant, activateTenant, deactivateTenant, deleteTenant,
 } from '../../api/tenants';
+import { useAuth } from '../../contexts/AuthContext';
 import type { TenantResponse, CreateTenantRequest, UpdateTenantRequest } from '../../types/tenants';
 import { SUBSCRIPTION_PLANS } from '../../types/tenants';
 
@@ -12,6 +13,7 @@ const DEFAULT_CREATE: CreateTenantRequest = {
 };
 
 export default function TenantsPage() {
+  const { user } = useAuth();
   const [tenants, setTenants] = useState<TenantResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState<null | 'create' | TenantResponse>(null);
@@ -70,6 +72,17 @@ export default function TenantsPage() {
     } catch { alert(`Failed to ${action} tenant.`); }
   }
 
+  async function handleDelete(t: TenantResponse) {
+    if (!confirm(`Permanently delete "${t.tenantName}" and ALL its data? This cannot be undone.`)) return;
+    if (!confirm(`Second confirmation: delete all patients, records, and users for "${t.tenantName}"?`)) return;
+    try {
+      await deleteTenant(t.tenantId);
+      load();
+    } catch { alert('Failed to delete tenant.'); }
+  }
+
+  const isOwnTenant = (t: TenantResponse) => t.tenantCode === user?.tenantCode;
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -108,9 +121,21 @@ export default function TenantsPage() {
                       </span>
                     </td>
                     <td className="px-5 py-3 text-gray-500">{new Date(t.createdAt).toLocaleDateString()}</td>
-                    <td className="px-5 py-3">
+                    <td className="px-5 py-3 flex gap-3 items-center">
                       <button onClick={() => openEdit(t)}
                         className="text-blue-600 hover:text-blue-800 text-xs font-medium">Edit</button>
+                      {!isOwnTenant(t) && (
+                        <>
+                          <button onClick={() => handleToggle(t)}
+                            className={`text-xs font-medium ${t.isActive ? 'text-amber-600 hover:text-amber-800' : 'text-green-600 hover:text-green-800'}`}>
+                            {t.isActive ? 'Deactivate' : 'Activate'}
+                          </button>
+                          <button onClick={() => handleDelete(t)}
+                            className="text-red-500 hover:text-red-700 text-xs font-medium">
+                            Delete
+                          </button>
+                        </>
+                      )}
                     </td>
                   </tr>
                 ))}

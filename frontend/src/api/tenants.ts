@@ -18,3 +18,6 @@ export const activateTenant = (id: string) =>
 
 export const deactivateTenant = (id: string) =>
   apiClient.post<TenantResponse>(`/tenants/${id}/deactivate`).then(r => r.data);
+
+export const deleteTenant = (id: string) =>
+  apiClient.delete(`/tenants/${id}`);
