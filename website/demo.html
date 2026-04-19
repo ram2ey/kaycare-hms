@@ -40,6 +40,11 @@
     .fade-up.delay-2 { transition-delay: 0.3s; }
     #form-success { display: none; }
     #form-success.show { display: block; }
+    .signin-dropdown { display: none; position: absolute; top: 100%; right: 0; background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.10); min-width: 200px; padding: 0.5rem 0; z-index: 100; margin-top: 6px; }
+    .signin-wrapper:hover .signin-dropdown { display: block; }
+    .signin-item { display: flex; align-items: center; gap: 10px; padding: 0.6rem 1rem; text-decoration: none; color: #374151; font-size: 0.875rem; font-weight: 500; transition: background 0.12s; }
+    .signin-item:hover { background: #f3f4f6; }
+    .signin-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
   </style>
 </head>
 <body class="font-sans text-gray-800 antialiased">
@@ -47,8 +52,9 @@
   <!-- ── NAV ──────────────────────────────────────────────────────────────── -->
   <header class="bg-white border-b border-gray-100 sticky top-0 z-50">
     <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-      <a href="index.html" class="flex items-center gap-3">
-        <img src="assets/logo.png" alt="KayCare HMS" class="h-9" />
+      <a href="index.html" class="flex items-center gap-2">
+        <img src="assets/logo.png" alt="KayCare Systems" class="h-9" onerror="this.style.display='none';this.nextElementSibling.style.display='block'" />
+        <span style="display:none;font-weight:700;font-size:1.1rem;color:#1a3d8f;">KayCare Systems</span>
       </a>
       <div class="hidden md:flex items-center gap-5">
         <a href="features.html" class="nav-link">KayCare HMS</a>
@@ -57,7 +63,20 @@
         <a href="pricing.html" class="nav-link">Pricing</a>
         <a href="about.html" class="nav-link">About</a>
         <a href="demo.html" class="btn-outline">Book a Demo</a>
-        <a href="https://gray-field-08dd4ab0f.2.azurestaticapps.net" target="_blank" class="btn-primary">Sign In →</a>
+        <div class="signin-wrapper relative">
+          <button class="btn-primary">Sign In ▾</button>
+          <div class="signin-dropdown">
+            <a href="https://gray-field-08dd4ab0f.2.azurestaticapps.net" target="_blank" class="signin-item">
+              <span class="signin-dot" style="background:#1a3d8f"></span> KayCare HMS
+            </a>
+            <a href="https://brave-water-0a1ed5e0f.7.azurestaticapps.net" target="_blank" class="signin-item">
+              <span class="signin-dot" style="background:#16a34a"></span> PharmOS
+            </a>
+            <span class="signin-item" style="color:#9ca3af;cursor:default;">
+              <span class="signin-dot" style="background:#9ca3af"></span> KayCareLIS <span style="font-size:0.7rem;margin-left:4px;">(coming soon)</span>
+            </span>
+          </div>
+        </div>
       </div>
       <button onclick="document.getElementById('mobile-menu').classList.toggle('open')" class="md:hidden p-2 text-gray-600">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
@@ -70,7 +89,20 @@
       <a href="pricing.html" class="block nav-link py-1">Pricing</a>
       <a href="about.html" class="block nav-link py-1">About</a>
       <div class="flex gap-3 pt-2">
-        <a href="https://gray-field-08dd4ab0f.2.azurestaticapps.net" target="_blank" class="btn-primary">Sign In →</a>
+        <div class="signin-wrapper relative">
+          <button class="btn-primary">Sign In ▾</button>
+          <div class="signin-dropdown">
+            <a href="https://gray-field-08dd4ab0f.2.azurestaticapps.net" target="_blank" class="signin-item">
+              <span class="signin-dot" style="background:#1a3d8f"></span> KayCare HMS
+            </a>
+            <a href="https://brave-water-0a1ed5e0f.7.azurestaticapps.net" target="_blank" class="signin-item">
+              <span class="signin-dot" style="background:#16a34a"></span> PharmOS
+            </a>
+            <span class="signin-item" style="color:#9ca3af;cursor:default;">
+              <span class="signin-dot" style="background:#9ca3af"></span> KayCareLIS <span style="font-size:0.7rem;margin-left:4px;">(coming soon)</span>
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   </header>
