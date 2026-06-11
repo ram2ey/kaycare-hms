@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { getLabResultById } from '../../api/labResults';
 import type { LabResultDetailResponse } from '../../types/labResults';
+import { getLabInterpreter } from '../../api/ai';
 
 const ABNORMAL_COLORS: Record<string, string> = {
   H:  'text-red-600 font-semibold',
@@ -17,6 +18,11 @@ export default function LabResultDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // AI Interpretation state
+  const [interpreterOpen, setInterpreterOpen] = useState(false);
+  const [interpretation, setInterpretation] = useState('');
+  const [interpretationLoading, setInterpretationLoading] = useState(false);
+
   useEffect(() => {
     if (!id) return;
     getLabResultById(id)
@@ -24,6 +30,28 @@ export default function LabResultDetailPage() {
       .catch(() => setError('Failed to load lab result.'))
       .finally(() => setLoading(false));
   }, [id]);
+
+  async function handleInterpret() {
+    if (!result) return;
+    setInterpreterOpen(true);
+    setInterpretationLoading(true);
+    try {
+      const obsItems = result.observations.map(o => ({
+        testCode: o.testCode,
+        testName: o.testName,
+        value: o.value ?? '',
+        unit: o.units ?? '',
+        refRange: o.referenceRange ?? '',
+        flag: o.abnormalFlag ?? '',
+      }));
+      const data = await getLabInterpreter(result.patientName, result.orderName ?? 'Laboratory Results', obsItems);
+      setInterpretation(data.interpretation);
+    } catch (err) {
+      setInterpretation('Failed to interpret lab results. Please ensure results are fully verified.');
+    } finally {
+      setInterpretationLoading(false);
+    }
+  }
 
   if (loading) return <div className="p-8 text-gray-400">Loading…</div>;
   if (error || !result) return <div className="p-8 text-red-600">{error || 'Not found.'}</div>;
@@ -49,6 +77,12 @@ export default function LabResultDetailPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={handleInterpret}
+            className="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-3 py-1.5 rounded-lg border border-indigo-200 transition-colors flex items-center gap-1.5 cursor-pointer"
+          >
+            <span>✨ AI Insights</span>
+          </button>
           {hasAbnormal && (
             <span className="bg-red-100 text-red-700 text-xs font-semibold px-3 py-1.5 rounded-full">
               Abnormal Results
@@ -137,6 +171,41 @@ export default function LabResultDetailPage() {
           )}
         </section>
       </div>
+
+      {/* AI Interpretation Modal */}
+      {interpreterOpen && (
+        <div className="fixed inset-0 bg-black/45 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[85vh] shadow-2xl overflow-hidden flex flex-col animate-scale-up">
+            <div className="bg-indigo-600 p-5 text-white flex justify-between items-center">
+              <div>
+                <h3 className="font-extrabold text-base flex items-center gap-2">
+                  <span>🧪</span> AI Laboratory Interpretation
+                </h3>
+                <p className="text-indigo-100 text-xs mt-0.5">Automated clinical review of laboratory test observations.</p>
+              </div>
+              <button onClick={() => setInterpreterOpen(false)} className="text-white hover:text-indigo-105 text-2xl font-bold cursor-pointer">×</button>
+            </div>
+            <div className="flex-1 p-6 overflow-y-auto prose max-w-none text-sm text-gray-700">
+              {interpretationLoading ? (
+                <div className="flex flex-col items-center justify-center py-12 space-y-3">
+                  <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                  <p className="text-gray-400 font-medium text-xs">Analyzing lab values and reference markers...</p>
+                </div>
+              ) : (
+                <div className="whitespace-pre-line leading-relaxed">{interpretation}</div>
+              )}
+            </div>
+            <div className="bg-gray-50 border-t border-gray-100 p-4 flex justify-end gap-3">
+              <button
+                onClick={() => setInterpreterOpen(false)}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -149,3 +218,4 @@ function Row({ label, value, mono }: { label: string; value: string | null | und
     </div>
   );
 }
+

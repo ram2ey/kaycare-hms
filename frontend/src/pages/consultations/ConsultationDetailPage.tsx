@@ -4,6 +4,7 @@ import { getConsultation, updateConsultation, signConsultation } from '../../api
 import type { ConsultationDetailResponse, UpdateConsultationRequest, DiagnosisDto } from '../../types/consultations';
 import { useAuth } from '../../contexts/AuthContext';
 import { Roles } from '../../types';
+import { getSoapCopilot, getPatientSummary } from '../../api/ai';
 
 const inputCls = 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500';
 const textareaCls = `${inputCls} resize-none`;
@@ -27,6 +28,17 @@ export default function ConsultationDetailPage() {
   const [primaryCode, setPrimaryCode] = useState('');
   const [primaryDesc, setPrimaryDesc] = useState('');
   const [secondaryDx, setSecondaryDx] = useState<DiagnosisDto[]>([]);
+
+  // AI & Speech recognition states
+  const [recordingField, setRecordingField] = useState<'s' | 'o' | 'a' | 'p' | null>(null);
+  const [copilotOpen, setCopilotOpen] = useState(false);
+  const [unstructuredText, setUnstructuredText] = useState('');
+  const [copilotLoading, setCopilotLoading] = useState(false);
+  const [copilotError, setCopilotError] = useState('');
+
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [patientSummary, setPatientSummary] = useState('');
 
   const populate = useCallback((c: ConsultationDetailResponse) => {
     setSoap({
@@ -123,6 +135,89 @@ export default function ConsultationDetailPage() {
     markDirty();
   }
 
+  const startDictation = (field: 's' | 'o' | 'a' | 'p') => {
+    const SpeechObj = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechObj) {
+      alert("Speech recognition is not supported in this browser. Please use Chrome or Edge.");
+      return;
+    }
+    if (recordingField) {
+      stopDictation();
+      return;
+    }
+    const rec = new SpeechObj();
+    rec.continuous = true;
+    rec.interimResults = true;
+    rec.lang = 'en-US';
+    rec.onresult = (event: any) => {
+      let transcript = '';
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          transcript += event.results[i][0].transcript;
+        }
+      }
+      if (transcript) {
+        setSoap((s) => ({ ...s, [field]: (s[field] + ' ' + transcript).trim() }));
+        setDirty(true);
+      }
+    };
+    rec.onend = () => {
+      setRecordingField(null);
+    };
+    rec.onerror = () => {
+      setRecordingField(null);
+    };
+    rec.start();
+    (window as any).activeSpeechRec = rec;
+    setRecordingField(field);
+  };
+
+  const stopDictation = () => {
+    if ((window as any).activeSpeechRec) {
+      (window as any).activeSpeechRec.stop();
+      (window as any).activeSpeechRec = null;
+    }
+    setRecordingField(null);
+  };
+
+  async function handleSoapCopilot() {
+    if (!unstructuredText.trim()) return;
+    setCopilotLoading(true);
+    setCopilotError('');
+    try {
+      const data = await getSoapCopilot(unstructuredText);
+      setSoap({
+        s: data.subjective,
+        o: data.objective,
+        a: data.assessment,
+        p: data.plan,
+      });
+      setPrimaryCode(data.primaryCode);
+      setPrimaryDesc(data.primaryDesc);
+      setSecondaryDx(data.secondary);
+      setDirty(true);
+      setCopilotOpen(false);
+      setUnstructuredText('');
+    } catch (err) {
+      setCopilotError('AI processing failed. Please try again.');
+    } finally {
+      setCopilotLoading(false);
+    }
+  }
+
+  async function handleGenerateSummary() {
+    setSummaryOpen(true);
+    setSummaryLoading(true);
+    try {
+      const data = await getPatientSummary(soap.s, soap.o, soap.a, soap.p);
+      setPatientSummary(data.summary);
+    } catch (err) {
+      setPatientSummary('Failed to generate patient instructions. Please ensure notes are completed.');
+    } finally {
+      setSummaryLoading(false);
+    }
+  }
+
   const isSigned = consultation?.status === 'Signed';
   const canSign = user && [Roles.Doctor, Roles.SuperAdmin, Roles.Admin].includes(user.role as never);
   const canEdit = user && [Roles.Doctor, Roles.Nurse, Roles.SuperAdmin, Roles.Admin].includes(user.role as never);
@@ -151,6 +246,12 @@ export default function ConsultationDetailPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <button
+            onClick={handleGenerateSummary}
+            className="px-3 py-1.5 border border-amber-500 text-amber-700 rounded-lg hover:bg-amber-50 text-sm font-medium flex items-center gap-1.5 cursor-pointer"
+          >
+            <span>📋 Take-Home Instructions</span>
+          </button>
           <Link to={`/referrals/new?patientId=${consultation.patientId}&consultationId=${consultation.consultationId}`}
             className="px-3 py-1.5 border border-indigo-500 text-indigo-700 rounded-lg hover:bg-indigo-50 text-sm font-medium">
             + Referral
@@ -186,13 +287,39 @@ export default function ConsultationDetailPage() {
       <div className="space-y-5">
         {/* SOAP Notes */}
         <section className="bg-white rounded-xl border border-gray-200 p-5">
-          <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4">SOAP Notes</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">SOAP Notes</h3>
+            {!isSigned && canEdit && (
+              <button
+                type="button"
+                onClick={() => setCopilotOpen(true)}
+                className="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-3 py-1.5 rounded-lg border border-indigo-200 transition-colors flex items-center gap-1.5 cursor-pointer"
+              >
+                <span>✨ AI SOAP Copilot</span>
+              </button>
+            )}
+          </div>
           <div className="space-y-4">
             {(['s', 'o', 'a', 'p'] as const).map((key) => {
               const labels = { s: 'Subjective', o: 'Objective', a: 'Assessment', p: 'Plan' };
               return (
                 <div key={key}>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">{labels[key]}</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-semibold text-gray-500 uppercase">{labels[key]}</label>
+                    {!isSigned && canEdit && (
+                      <button
+                        type="button"
+                        onClick={() => recordingField === key ? stopDictation() : startDictation(key)}
+                        className={`text-[10px] flex items-center gap-1 px-2 py-0.5 rounded-full border transition-all cursor-pointer ${
+                          recordingField === key
+                            ? 'bg-red-500 text-white border-red-500 animate-pulse'
+                            : 'bg-gray-50 hover:bg-gray-100 text-gray-600 border-gray-200'
+                        }`}
+                      >
+                        {recordingField === key ? '🛑 Stop' : '🎙️ Dictate'}
+                      </button>
+                    )}
+                  </div>
                   <textarea
                     rows={3}
                     disabled={isSigned || !canEdit}
@@ -321,6 +448,92 @@ export default function ConsultationDetailPage() {
           </div>
         </section>
       </div>
+
+      {/* Sidebar Copilot Drawer */}
+      {copilotOpen && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex justify-end">
+          <div className="bg-white w-full max-w-md h-full shadow-2xl flex flex-col p-6 animate-slide-in">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-4 mb-4">
+              <h3 className="font-bold text-gray-800 text-lg flex items-center gap-2">
+                <span>✨</span> AI Clinical SOAP Copilot
+              </h3>
+              <button onClick={() => setCopilotOpen(false)} className="text-gray-400 hover:text-gray-600 text-2xl font-bold cursor-pointer">×</button>
+            </div>
+            <div className="flex-1 flex flex-col space-y-4 overflow-y-auto">
+              <p className="text-xs text-gray-500">
+                Enter your rough consultation notes, patient comments, or clinical observations below. The AI will structure them into Subjective, Objective, Assessment, and Plan fields and suggest matching diagnosis codes.
+              </p>
+              <textarea
+                rows={10}
+                value={unstructuredText}
+                onChange={(e) => setUnstructuredText(e.target.value)}
+                placeholder="e.g., patient has a dry cough and throat pain for 3 days, temp is 38.1C, tonsils swollen and red. suspect strep pharyngitis. rx amoxicillin, gargle salt water, follow up in a week..."
+                className="w-full flex-1 p-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
+              />
+              {copilotError && <p className="text-xs text-red-600 bg-red-50 p-2.5 rounded-lg font-semibold">{copilotError}</p>}
+            </div>
+            <div className="border-t border-gray-100 pt-4 flex gap-3">
+              <button
+                type="button"
+                onClick={() => setCopilotOpen(false)}
+                className="flex-1 py-2.5 border border-gray-300 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-50 transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={copilotLoading || !unstructuredText.trim()}
+                onClick={handleSoapCopilot}
+                className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all cursor-pointer"
+              >
+                {copilotLoading ? 'Structuring Notes...' : 'Apply AI Formatting'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Patient Summary Modal */}
+      {summaryOpen && (
+        <div className="fixed inset-0 bg-black/45 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[85vh] shadow-2xl overflow-hidden flex flex-col animate-scale-up">
+            <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-5 text-white flex justify-between items-center">
+              <div>
+                <h3 className="font-extrabold text-base flex items-center gap-2">
+                  <span>📋</span> Patient Take-Home Instructions
+                </h3>
+                <p className="text-amber-50 text-xs mt-0.5">Simplified, patient-friendly guidance based on clinical notes.</p>
+              </div>
+              <button onClick={() => setSummaryOpen(false)} className="text-white hover:text-amber-105 text-2xl font-bold cursor-pointer">×</button>
+            </div>
+            <div className="flex-1 p-6 overflow-y-auto prose max-w-none text-sm text-gray-700">
+              {summaryLoading ? (
+                <div className="flex flex-col items-center justify-center py-12 space-y-3">
+                  <div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+                  <p className="text-gray-400 font-medium text-xs">Translating medical notes into plain English...</p>
+                </div>
+              ) : (
+                <div className="whitespace-pre-line leading-relaxed">{patientSummary}</div>
+              )}
+            </div>
+            <div className="bg-gray-50 border-t border-gray-100 p-4 flex justify-end gap-3">
+              <button
+                onClick={() => window.print()}
+                disabled={summaryLoading}
+                className="px-4 py-2 border border-gray-300 text-gray-600 hover:bg-gray-100 rounded-xl text-xs font-semibold cursor-pointer"
+              >
+                🖨️ Print Instructions
+              </button>
+              <button
+                onClick={() => setSummaryOpen(false)}
+                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-semibold cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

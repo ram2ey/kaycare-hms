@@ -10,6 +10,7 @@ import type { PrescriptionDetailResponse, PartialDispenseItemRequest } from '../
 import { STATUS_COLORS } from '../../types/prescriptions';
 import { useAuth } from '../../contexts/AuthContext';
 import { Roles } from '../../types';
+import { getDrugSafety } from '../../api/ai';
 
 export default function PrescriptionDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -22,6 +23,11 @@ export default function PrescriptionDetailPage() {
   const [downloading, setDownloading]     = useState(false);
   const [showDispenseModal, setShowDispenseModal] = useState(false);
   const [showHistory, setShowHistory]     = useState(false);
+
+  // AI Safety Checker state
+  const [safetyOpen, setSafetyOpen] = useState(false);
+  const [safetyLoading, setSafetyLoading] = useState(false);
+  const [safetyReport, setSafetyReport] = useState('');
 
   useEffect(() => {
     if (!id) return;
@@ -63,6 +69,26 @@ export default function PrescriptionDetailPage() {
     }
   }
 
+  async function handleSafetyCheck() {
+    if (!rx) return;
+    setSafetyOpen(true);
+    setSafetyLoading(true);
+    try {
+      const drugItems = rx.items.map(i => ({
+        drugName: i.medicationName,
+        genericName: i.genericName ?? '',
+        dosage: `${i.strength} ${i.dosageForm}`,
+        quantity: i.quantity,
+      }));
+      const data = await getDrugSafety(drugItems);
+      setSafetyReport(data.interactions);
+    } catch (err) {
+      setSafetyReport('Failed to generate safety report. Please verify drug details.');
+    } finally {
+      setSafetyLoading(false);
+    }
+  }
+
   const canDispense = user && [Roles.Pharmacist, Roles.Admin, Roles.SuperAdmin].includes(user.role as never);
   const canCancel   = user && [Roles.Doctor, Roles.Admin, Roles.SuperAdmin].includes(user.role as never);
 
@@ -98,6 +124,12 @@ export default function PrescriptionDetailPage() {
           <span className={`text-sm font-medium px-3 py-1.5 rounded-full ${STATUS_COLORS[rx.status] ?? 'bg-gray-100 text-gray-600'}`}>
             {rx.status === 'PartiallyDispensed' ? 'Partially Dispensed' : rx.status}
           </span>
+          <button
+            onClick={handleSafetyCheck}
+            className="px-4 py-2 border border-rose-300 text-rose-600 hover:bg-rose-50 text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
+          >
+            <span>✨ Run Safety Check</span>
+          </button>
           <button
             onClick={handleDownload}
             disabled={downloading}
@@ -227,7 +259,7 @@ export default function PrescriptionDetailPage() {
           <section className="bg-white rounded-xl border border-gray-200 overflow-hidden">
             <button
               onClick={() => setShowHistory((v) => !v)}
-              className="w-full px-5 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between hover:bg-gray-100 transition-colors"
+              className="w-full px-5 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between hover:bg-gray-100 transition-colors cursor-pointer"
             >
               <h3 className="text-sm font-semibold text-gray-700">
                 Dispense History ({rx.dispenseHistory.length} event{rx.dispenseHistory.length !== 1 ? 's' : ''})
@@ -282,6 +314,41 @@ export default function PrescriptionDetailPage() {
           onDone={(updated) => { setRx(updated); setShowDispenseModal(false); }}
           onClose={() => setShowDispenseModal(false)}
         />
+      )}
+
+      {/* AI Safety Checker Modal */}
+      {safetyOpen && (
+        <div className="fixed inset-0 bg-black/45 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[85vh] shadow-2xl overflow-hidden flex flex-col animate-scale-up">
+            <div className="bg-rose-600 p-5 text-white flex justify-between items-center">
+              <div>
+                <h3 className="font-extrabold text-base flex items-center gap-2">
+                  <span>✨</span> Prescription Safety Check
+                </h3>
+                <p className="text-rose-105 text-xs mt-0.5">Automated screening for drug interactions and counseling rules.</p>
+              </div>
+              <button onClick={() => setSafetyOpen(false)} className="text-white hover:text-rose-105 text-2xl font-bold cursor-pointer">×</button>
+            </div>
+            <div className="flex-1 p-6 overflow-y-auto prose max-w-none text-sm text-gray-700">
+              {safetyLoading ? (
+                <div className="flex flex-col items-center justify-center py-12 space-y-3">
+                  <div className="w-8 h-8 border-4 border-rose-600 border-t-transparent rounded-full animate-spin"></div>
+                  <p className="text-gray-400 font-medium text-xs">Screening for drug-drug interactions and dosage warnings...</p>
+                </div>
+              ) : (
+                <div className="whitespace-pre-line leading-relaxed">{safetyReport}</div>
+              )}
+            </div>
+            <div className="bg-gray-50 border-t border-gray-100 p-4 flex justify-end gap-3">
+              <button
+                onClick={() => setSafetyOpen(false)}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -398,3 +465,4 @@ function Row({ label, value }: { label: string; value: string | null | undefined
     </div>
   );
 }
+
