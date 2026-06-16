@@ -24,6 +24,8 @@ export interface LabResultResponse {
   status: string;
   observationCount: number;
   createdAt: string;
+  labOrderId?: string | null;
+  rawHl7?: string | null;
 }
 
 export interface LabResultDetailResponse extends LabResultResponse {

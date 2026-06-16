@@ -4,6 +4,7 @@ import type {
   LabOrder,
   LabOrderDetail,
   LabOrderItem,
+  LabOrderItemResponse,
 } from '../types/labOrders';
 
 export const getTestCatalog = () =>
@@ -48,3 +49,11 @@ export const downloadLabReport = (orderId: string) =>
 
 export const signItem = (itemId: string) =>
   client.patch<LabOrderItem>(`/api/lab-orders/items/${itemId}/sign`).then(r => r.data);
+
+export const getLabOrder = getLabOrderById;
+
+export const getCriticalAlerts = () =>
+  client.get<LabOrderItemResponse[]>('/api/lab-orders/critical-alerts').then(r => r.data);
+
+export const recordCriticalCallLog = (itemId: string, req: { recipientName: string; notes?: string }) =>
+  client.post<LabOrderItemResponse>(`/api/lab-orders/items/${itemId}/critical-log`, req).then(r => r.data);

@@ -847,6 +847,58 @@ namespace KayCare.Infrastructure.Data.Migrations
                     b.ToTable("CreditNotes");
                 });
 
+            modelBuilder.Entity("KayCare.Core.Entities.CriticalCallLog", b =>
+                {
+                    b.Property<Guid>("CriticalCallLogId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+
+                    b.Property<DateTime>("CalledAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CalledByName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<Guid>("LabOrderItemId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Notes")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("RecipientName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.HasKey("CriticalCallLogId");
+
+                    b.HasIndex("LabOrderItemId")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId", "LabOrderItemId")
+                        .IsUnique();
+
+                    b.ToTable("CriticalCallLogs");
+                });
+
             modelBuilder.Entity("KayCare.Core.Entities.DispenseEvent", b =>
                 {
                     b.Property<Guid>("DispenseEventId")
@@ -1062,6 +1114,164 @@ namespace KayCare.Infrastructure.Data.Migrations
                     b.HasIndex("Description");
 
                     b.ToTable("IcdCodes");
+                });
+
+            modelBuilder.Entity("KayCare.Core.Entities.ImagingProcedure", b =>
+                {
+                    b.Property<Guid>("ImagingProcedureId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+
+                    b.Property<string>("BodyPart")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Department")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Modality")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("ProcedureCode")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("ProcedureName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("TatHours")
+                        .HasColumnType("int");
+
+                    b.HasKey("ImagingProcedureId");
+
+                    b.HasIndex("ProcedureCode")
+                        .IsUnique();
+
+                    b.ToTable("ImagingProcedures");
+
+                    b.HasData(
+                        new
+                        {
+                            ImagingProcedureId = new Guid("20000001-0000-0000-0000-000000000001"),
+                            BodyPart = "Chest",
+                            Department = "Radiology",
+                            IsActive = true,
+                            Modality = "XR",
+                            ProcedureCode = "XR-CHEST-PA",
+                            ProcedureName = "X-Ray Chest PA",
+                            TatHours = 2
+                        },
+                        new
+                        {
+                            ImagingProcedureId = new Guid("20000001-0000-0000-0000-000000000002"),
+                            BodyPart = "Abdomen",
+                            Department = "Radiology",
+                            IsActive = true,
+                            Modality = "XR",
+                            ProcedureCode = "XR-ABDOMEN",
+                            ProcedureName = "X-Ray Abdomen",
+                            TatHours = 2
+                        },
+                        new
+                        {
+                            ImagingProcedureId = new Guid("20000001-0000-0000-0000-000000000003"),
+                            BodyPart = "Abdomen",
+                            Department = "Radiology",
+                            IsActive = true,
+                            Modality = "US",
+                            ProcedureCode = "US-ABDOMEN",
+                            ProcedureName = "Ultrasound Abdomen",
+                            TatHours = 4
+                        },
+                        new
+                        {
+                            ImagingProcedureId = new Guid("20000001-0000-0000-0000-000000000004"),
+                            BodyPart = "Pelvis",
+                            Department = "Radiology",
+                            IsActive = true,
+                            Modality = "US",
+                            ProcedureCode = "US-PELVIS",
+                            ProcedureName = "Ultrasound Pelvis",
+                            TatHours = 4
+                        },
+                        new
+                        {
+                            ImagingProcedureId = new Guid("20000001-0000-0000-0000-000000000005"),
+                            BodyPart = "Head",
+                            Department = "Radiology",
+                            IsActive = true,
+                            Modality = "CT",
+                            ProcedureCode = "CT-HEAD",
+                            ProcedureName = "CT Head",
+                            TatHours = 6
+                        },
+                        new
+                        {
+                            ImagingProcedureId = new Guid("20000001-0000-0000-0000-000000000006"),
+                            BodyPart = "Chest",
+                            Department = "Radiology",
+                            IsActive = true,
+                            Modality = "CT",
+                            ProcedureCode = "CT-CHEST",
+                            ProcedureName = "CT Chest",
+                            TatHours = 6
+                        },
+                        new
+                        {
+                            ImagingProcedureId = new Guid("20000001-0000-0000-0000-000000000007"),
+                            BodyPart = "Abdomen/Pelvis",
+                            Department = "Radiology",
+                            IsActive = true,
+                            Modality = "CT",
+                            ProcedureCode = "CT-ABDO-PELV",
+                            ProcedureName = "CT Abdomen & Pelvis",
+                            TatHours = 8
+                        },
+                        new
+                        {
+                            ImagingProcedureId = new Guid("20000001-0000-0000-0000-000000000008"),
+                            BodyPart = "Brain",
+                            Department = "Radiology",
+                            IsActive = true,
+                            Modality = "MRI",
+                            ProcedureCode = "MRI-BRAIN",
+                            ProcedureName = "MRI Brain",
+                            TatHours = 12
+                        },
+                        new
+                        {
+                            ImagingProcedureId = new Guid("20000001-0000-0000-0000-000000000009"),
+                            BodyPart = "Spine",
+                            Department = "Radiology",
+                            IsActive = true,
+                            Modality = "MRI",
+                            ProcedureCode = "MRI-SPINE",
+                            ProcedureName = "MRI Spine",
+                            TatHours = 12
+                        },
+                        new
+                        {
+                            ImagingProcedureId = new Guid("20000001-0000-0000-0000-000000000010"),
+                            BodyPart = "Breast",
+                            Department = "Radiology",
+                            IsActive = true,
+                            Modality = "MG",
+                            ProcedureCode = "MAMMO-BI",
+                            ProcedureName = "Mammography Bilateral",
+                            TatHours = 8
+                        });
                 });
 
             modelBuilder.Entity("KayCare.Core.Entities.InpatientCharge", b =>
@@ -1346,6 +1556,9 @@ namespace KayCare.Infrastructure.Data.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<Guid?>("CriticalCallLogId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("Department")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -1354,6 +1567,9 @@ namespace KayCare.Infrastructure.Data.Migrations
                     b.Property<string>("InstrumentType")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("IsCritical")
+                        .HasColumnType("bit");
 
                     b.Property<bool>("IsManualEntry")
                         .HasColumnType("bit");
@@ -1511,6 +1727,10 @@ namespace KayCare.Infrastructure.Data.Migrations
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("NEWSEQUENTIALID()");
 
+                    b.Property<string>("CriticalReferenceRange")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<string>("DefaultReferenceRange")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
@@ -1614,6 +1834,7 @@ namespace KayCare.Infrastructure.Data.Migrations
                         new
                         {
                             LabTestCatalogId = new Guid("10000001-0000-0000-0000-000000000006"),
+                            CriticalReferenceRange = "0.40-1.60",
                             DefaultReferenceRange = "0.70-1.10",
                             DefaultUnit = "mmol/L",
                             Department = "Chemistry",
@@ -1627,6 +1848,7 @@ namespace KayCare.Infrastructure.Data.Migrations
                         new
                         {
                             LabTestCatalogId = new Guid("10000001-0000-0000-0000-000000000007"),
+                            CriticalReferenceRange = "1.60-3.10",
                             DefaultReferenceRange = "2.10-2.55",
                             DefaultUnit = "mmol/L",
                             Department = "Chemistry",
@@ -1640,6 +1862,7 @@ namespace KayCare.Infrastructure.Data.Migrations
                         new
                         {
                             LabTestCatalogId = new Guid("10000001-0000-0000-0000-000000000008"),
+                            CriticalReferenceRange = "2.2-25.0",
                             DefaultReferenceRange = "3.9-5.6",
                             DefaultUnit = "mmol/L",
                             Department = "Chemistry",
@@ -1653,6 +1876,7 @@ namespace KayCare.Infrastructure.Data.Migrations
                         new
                         {
                             LabTestCatalogId = new Guid("10000001-0000-0000-0000-000000000009"),
+                            CriticalReferenceRange = "2.2-25.0",
                             DefaultReferenceRange = "3.9-7.8",
                             DefaultUnit = "mmol/L",
                             Department = "Chemistry",
@@ -2614,6 +2838,166 @@ namespace KayCare.Infrastructure.Data.Migrations
                     b.ToTable("PurchaseOrderItems");
                 });
 
+            modelBuilder.Entity("KayCare.Core.Entities.RadiologyOrder", b =>
+                {
+                    b.Property<Guid>("RadiologyOrderId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+
+                    b.Property<Guid?>("BillId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ClinicalIndication")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<Guid>("OrderingDoctorUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("PatientId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Priority")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.HasKey("RadiologyOrderId");
+
+                    b.HasIndex("BillId");
+
+                    b.HasIndex("OrderingDoctorUserId");
+
+                    b.HasIndex("PatientId");
+
+                    b.HasIndex("TenantId", "CreatedAt");
+
+                    b.HasIndex("TenantId", "PatientId");
+
+                    b.HasIndex("TenantId", "Status");
+
+                    b.ToTable("RadiologyOrders");
+                });
+
+            modelBuilder.Entity("KayCare.Core.Entities.RadiologyOrderItem", b =>
+                {
+                    b.Property<Guid>("RadiologyOrderItemId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+
+                    b.Property<string>("AccessionNumber")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTime?>("AcquiredAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("BodyPart")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Department")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Findings")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<Guid>("ImagingProcedureId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Impression")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("Modality")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("PacsStudyUid")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("PacsViewerUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("ProcedureName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<Guid>("RadiologyOrderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Recommendations")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime?>("ReportedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("ReportingDoctorUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("SignedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("SignedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<int>("TatHours")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("RadiologyOrderItemId");
+
+                    b.HasIndex("ImagingProcedureId");
+
+                    b.HasIndex("RadiologyOrderId");
+
+                    b.HasIndex("TenantId", "AccessionNumber");
+
+                    b.HasIndex("TenantId", "RadiologyOrderId");
+
+                    b.ToTable("RadiologyOrderItems");
+                });
+
             modelBuilder.Entity("KayCare.Core.Entities.Referral", b =>
                 {
                     b.Property<Guid>("ReferralId")
@@ -3558,6 +3942,17 @@ namespace KayCare.Infrastructure.Data.Migrations
                     b.Navigation("Patient");
                 });
 
+            modelBuilder.Entity("KayCare.Core.Entities.CriticalCallLog", b =>
+                {
+                    b.HasOne("KayCare.Core.Entities.LabOrderItem", "LabOrderItem")
+                        .WithOne("CriticalCallLog")
+                        .HasForeignKey("KayCare.Core.Entities.CriticalCallLog", "LabOrderItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("LabOrderItem");
+                });
+
             modelBuilder.Entity("KayCare.Core.Entities.DispenseEvent", b =>
                 {
                     b.HasOne("KayCare.Core.Entities.User", "DispensedBy")
@@ -3950,6 +4345,51 @@ namespace KayCare.Infrastructure.Data.Migrations
                     b.Navigation("PurchaseOrder");
                 });
 
+            modelBuilder.Entity("KayCare.Core.Entities.RadiologyOrder", b =>
+                {
+                    b.HasOne("KayCare.Core.Entities.Bill", "Bill")
+                        .WithMany()
+                        .HasForeignKey("BillId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("KayCare.Core.Entities.User", "OrderingDoctor")
+                        .WithMany()
+                        .HasForeignKey("OrderingDoctorUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("KayCare.Core.Entities.Patient", "Patient")
+                        .WithMany()
+                        .HasForeignKey("PatientId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Bill");
+
+                    b.Navigation("OrderingDoctor");
+
+                    b.Navigation("Patient");
+                });
+
+            modelBuilder.Entity("KayCare.Core.Entities.RadiologyOrderItem", b =>
+                {
+                    b.HasOne("KayCare.Core.Entities.ImagingProcedure", "ImagingProcedure")
+                        .WithMany()
+                        .HasForeignKey("ImagingProcedureId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("KayCare.Core.Entities.RadiologyOrder", "RadiologyOrder")
+                        .WithMany("Items")
+                        .HasForeignKey("RadiologyOrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ImagingProcedure");
+
+                    b.Navigation("RadiologyOrder");
+                });
+
             modelBuilder.Entity("KayCare.Core.Entities.Referral", b =>
                 {
                     b.HasOne("KayCare.Core.Entities.Consultation", "Consultation")
@@ -4133,6 +4573,8 @@ namespace KayCare.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("KayCare.Core.Entities.LabOrderItem", b =>
                 {
+                    b.Navigation("CriticalCallLog");
+
                     b.Navigation("LabResult");
                 });
 
@@ -4159,6 +4601,11 @@ namespace KayCare.Infrastructure.Data.Migrations
                 });
 
             modelBuilder.Entity("KayCare.Core.Entities.PurchaseOrder", b =>
+                {
+                    b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("KayCare.Core.Entities.RadiologyOrder", b =>
                 {
                     b.Navigation("Items");
                 });

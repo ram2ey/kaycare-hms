@@ -21,4 +21,19 @@ public class LabOrderItemResponse
     public string? ManualResultFlag           { get; set; }
     public Guid?   LabResultId                { get; set; }
     public bool    IsTatExceeded              { get; set; }
+
+    public bool    IsCritical                 { get; set; }
+    public Guid?   CriticalCallLogId         { get; set; }
+    public string? CriticalCallLogRecipient  { get; set; }
+    public string? CriticalCallLogNotes      { get; set; }
+    public DateTime? CriticalCallLogCalledAt { get; set; }
+
+    public Guid    LabOrderId                { get; set; }
+    public string? PatientName               { get; set; }
+    public string? PatientMrn                { get; set; }
+
+    public string? Hl7ResultValue             { get; set; }
+    public string? Hl7ResultUnit              { get; set; }
+    public string? Hl7Flag                    { get; set; }
+    public string? Hl7ResultReferenceRange    { get; set; }
 }

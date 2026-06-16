@@ -16,4 +16,6 @@ public class LabResultResponse
     public string    Status             { get; set; } = string.Empty;
     public int       ObservationCount   { get; set; }
     public DateTime  CreatedAt          { get; set; }
+    public Guid?     LabOrderId         { get; set; }
+    public string?   RawHl7             { get; set; }
 }

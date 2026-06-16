@@ -17,4 +17,7 @@ public interface ILabOrderService
     Task<LabOrderItemResponse> ReceiveSampleAsync(Guid labOrderItemId, CancellationToken ct);
     Task<LabOrderItemResponse> EnterManualResultAsync(Guid labOrderItemId, ManualResultRequest req, CancellationToken ct);
     Task<LabOrderItemResponse> SignItemAsync(Guid labOrderItemId, CancellationToken ct);
+
+    Task<LabOrderItemResponse> RecordCriticalCallLogAsync(Guid itemId, CreateCriticalCallLogRequest req, CancellationToken ct);
+    Task<IReadOnlyList<LabOrderItemResponse>> GetCriticalAlertsAsync(CancellationToken ct);
 }

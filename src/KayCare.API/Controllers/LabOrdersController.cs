@@ -135,4 +135,25 @@ public class LabOrdersController : ControllerBase
         var item = await _labOrders.SignItemAsync(itemId, ct);
         return Ok(item);
     }
+
+    /// <summary>Get list of all critical alerts.</summary>
+    [HttpGet("critical-alerts")]
+    [ProducesResponseType(typeof(IReadOnlyList<LabOrderItemResponse>), 200)]
+    public async Task<IActionResult> GetCriticalAlerts(CancellationToken ct)
+        => Ok(await _labOrders.GetCriticalAlertsAsync(ct));
+
+    /// <summary>Record clinician contact log for panic-range critical results.</summary>
+    [HttpPost("items/{itemId:guid}/critical-log")]
+    [Authorize(Roles = $"{Roles.LabTechnician},{Roles.Nurse},{Roles.Doctor},{Roles.Admin},{Roles.SuperAdmin}")]
+    [ProducesResponseType(typeof(LabOrderItemResponse), 200)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(404)]
+    public async Task<IActionResult> RecordCriticalCallLog(
+        Guid itemId,
+        [FromBody] CreateCriticalCallLogRequest request,
+        CancellationToken ct)
+    {
+        var result = await _labOrders.RecordCriticalCallLogAsync(itemId, request, ct);
+        return Ok(result);
+    }
 }

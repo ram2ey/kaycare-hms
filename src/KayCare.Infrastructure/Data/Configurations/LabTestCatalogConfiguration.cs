@@ -17,6 +17,7 @@ public class LabTestCatalogConfiguration : IEntityTypeConfiguration<LabTestCatal
         builder.Property(t => t.InstrumentType).HasMaxLength(50);
         builder.Property(t => t.DefaultUnit).HasMaxLength(50);
         builder.Property(t => t.DefaultReferenceRange).HasMaxLength(100);
+        builder.Property(t => t.CriticalReferenceRange).HasMaxLength(100);
 
         builder.HasIndex(t => t.TestCode).IsUnique();
 
@@ -65,28 +66,32 @@ public class LabTestCatalogConfiguration : IEntityTypeConfiguration<LabTestCatal
                 LabTestCatalogId = new Guid("10000001-0000-0000-0000-000000000006"),
                 TestCode = "MAGNESIUM", TestName = "Magnesium", Department = "Chemistry",
                 InstrumentType = "DxC500", IsManualEntry = false, TatHours = 3,
-                DefaultUnit = "mmol/L", DefaultReferenceRange = "0.70-1.10"
+                DefaultUnit = "mmol/L", DefaultReferenceRange = "0.70-1.10",
+                CriticalReferenceRange = "0.40-1.60"
             },
             new LabTestCatalog
             {
                 LabTestCatalogId = new Guid("10000001-0000-0000-0000-000000000007"),
                 TestCode = "CALCIUM", TestName = "Calcium", Department = "Chemistry",
                 InstrumentType = "DxC500", IsManualEntry = false, TatHours = 3,
-                DefaultUnit = "mmol/L", DefaultReferenceRange = "2.10-2.55"
+                DefaultUnit = "mmol/L", DefaultReferenceRange = "2.10-2.55",
+                CriticalReferenceRange = "1.60-3.10"
             },
             new LabTestCatalog
             {
                 LabTestCatalogId = new Guid("10000001-0000-0000-0000-000000000008"),
                 TestCode = "FBG", TestName = "Fasting Blood Glucose", Department = "Chemistry",
                 InstrumentType = "DxC500", IsManualEntry = false, TatHours = 1,
-                DefaultUnit = "mmol/L", DefaultReferenceRange = "3.9-5.6"
+                DefaultUnit = "mmol/L", DefaultReferenceRange = "3.9-5.6",
+                CriticalReferenceRange = "2.2-25.0"
             },
             new LabTestCatalog
             {
                 LabTestCatalogId = new Guid("10000001-0000-0000-0000-000000000009"),
                 TestCode = "RBG", TestName = "Random Blood Glucose", Department = "Chemistry",
                 InstrumentType = "DxC500", IsManualEntry = false, TatHours = 1,
-                DefaultUnit = "mmol/L", DefaultReferenceRange = "3.9-7.8"
+                DefaultUnit = "mmol/L", DefaultReferenceRange = "3.9-7.8",
+                CriticalReferenceRange = "2.2-25.0"
             },
             new LabTestCatalog
             {

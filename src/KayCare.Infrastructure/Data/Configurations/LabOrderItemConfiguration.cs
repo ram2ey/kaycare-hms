@@ -36,5 +36,10 @@ public class LabOrderItemConfiguration : IEntityTypeConfiguration<LabOrderItem>
                .WithOne(r => r.LabOrderItem)
                .HasForeignKey<LabResult>(r => r.LabOrderItemId)
                .OnDelete(DeleteBehavior.SetNull);
+
+        builder.HasOne(i => i.CriticalCallLog)
+               .WithOne(c => c.LabOrderItem)
+               .HasForeignKey<CriticalCallLog>(c => c.LabOrderItemId)
+               .OnDelete(DeleteBehavior.Cascade);
     }
 }

@@ -32,6 +32,8 @@ const navItems = [
   { to: '/documents',                  label: 'Documents',        roles: [...CLINICAL] },
   { to: '/lab-orders',                 label: 'Lab Worklist',     roles: [Roles.Doctor, Roles.Nurse, Roles.LabTechnician, Roles.Admin, Roles.SuperAdmin] },
   { to: '/lab-results',                label: 'Lab Results',      roles: [Roles.Doctor, Roles.Nurse, Roles.LabTechnician, Roles.Admin, Roles.SuperAdmin] },
+  { to: '/lab-orders/hl7-inbox',       label: 'HL7 Inbox',        roles: [Roles.Doctor, Roles.Nurse, Roles.LabTechnician, Roles.Admin, Roles.SuperAdmin] },
+  { to: '/radiology',                  label: 'Radiology Worklist', roles: [Roles.Doctor, Roles.Nurse, Roles.LabTechnician, Roles.Admin, Roles.SuperAdmin] },
   { to: '/audit-logs',                 label: 'Audit Logs',       roles: [Roles.SuperAdmin, Roles.Admin] },
   { to: '/admin/users',                label: 'Staff Users',      roles: [Roles.SuperAdmin, Roles.Admin] },
   { to: '/admin/departments',          label: 'Departments',      roles: [Roles.SuperAdmin, Roles.Admin] },

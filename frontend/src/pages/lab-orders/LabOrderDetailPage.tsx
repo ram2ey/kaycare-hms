@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getLabOrderById, receiveSample, enterManualResult, signItem, downloadLabReport } from '../../api/labOrders';
-import type { LabOrderDetail, LabOrderItem } from '../../types/labOrders';
+import { getLabOrderById, receiveSample, enterManualResult, signItem, downloadLabReport, recordCriticalCallLog } from '../../api/labOrders';
+import type { LabOrderDetail, LabOrderItemResponse, LabOrderItem } from '../../types/labOrders';
 import { ITEM_STATUS_COLORS, ORDER_STATUS_COLORS } from '../../types/labOrders';
+
 
 function printBarcode(item: LabOrderItem, patientName: string, patientMrn: string) {
   const win = window.open('', '_blank', 'width=400,height=300');
@@ -34,13 +35,19 @@ export default function LabOrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [order, setOrder] = useState<LabOrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [manualItem, setManualItem] = useState<LabOrderItem | null>(null);
+  const [manualItem, setManualItem] = useState<LabOrderItemResponse | null>(null);
   const [manualResult, setManualResult] = useState('');
   const [manualNotes, setManualNotes] = useState('');
   const [manualUnit, setManualUnit] = useState('');
   const [manualRefRange, setManualRefRange] = useState('');
   const [saving, setSaving] = useState(false);
   const [downloading, setDownloading] = useState(false);
+
+  const [selectedCallLogItem, setSelectedCallLogItem] = useState<LabOrderItemResponse | null>(null);
+  const [recipientName, setRecipientName] = useState('');
+  const [callLogNotes, setCallLogNotes] = useState('Read-back confirmed');
+  const [callLogSubmitting, setCallLogSubmitting] = useState(false);
+  const [callLogError, setCallLogError] = useState<string | null>(null);
 
   const load = async () => {
     if (!id) return;
@@ -51,9 +58,39 @@ export default function LabOrderDetailPage() {
 
   useEffect(() => { load(); }, [id]);
 
-  const handleReceive = async (item: LabOrderItem) => {
+  const handleReceive = async (item: LabOrderItemResponse) => {
     await receiveSample(item.labOrderItemId);
     load();
+  };
+
+  const handleOpenCallLogModal = (item: LabOrderItemResponse) => {
+    setSelectedCallLogItem(item);
+    setRecipientName('');
+    setCallLogNotes('Read-back confirmed');
+    setCallLogError(null);
+  };
+
+  const handleCallLogSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedCallLogItem) return;
+    if (!recipientName.trim()) {
+      setCallLogError('Recipient clinician name is required.');
+      return;
+    }
+    setCallLogSubmitting(true);
+    setCallLogError(null);
+    try {
+      await recordCriticalCallLog(selectedCallLogItem.labOrderItemId, {
+        recipientName: recipientName.trim(),
+        notes: callLogNotes.trim(),
+      });
+      setSelectedCallLogItem(null);
+      load();
+    } catch (err: any) {
+      setCallLogError(err.response?.data?.message || 'Failed to record call log.');
+    } finally {
+      setCallLogSubmitting(false);
+    }
   };
 
   const handleManualSave = async () => {
@@ -102,12 +139,35 @@ export default function LabOrderDetailPage() {
   const dob = order.patientDob ? new Date(order.patientDob) : null;
   const age = dob ? Math.floor((Date.now() - dob.getTime()) / (365.25 * 24 * 3600 * 1000)) : '';
 
+  const unloggedCriticalItems = order.items.filter(i => i.isCritical && !i.criticalCallLogId);
+
   return (
     <div className="p-6 max-w-4xl mx-auto">
       {/* Back link */}
       <Link to="/lab-orders" className="text-sm text-blue-600 hover:underline mb-4 inline-block">
         ← Waiting List
       </Link>
+
+      {/* Critical warning banner */}
+      {unloggedCriticalItems.length > 0 && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-5 flex items-start justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <span className="flex h-3 w-3 relative shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-red-600"></span>
+            </span>
+            <div>
+              <p className="text-sm font-bold text-red-800 uppercase">
+                Critical Panic Value Detected
+              </p>
+              <p className="text-xs text-red-700 mt-0.5">
+                Verbal verification is required immediately. Please contact the ordering clinician and log the call below:{" "}
+                <span className="font-semibold">{unloggedCriticalItems.map(i => i.testName).join(', ')}</span>
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Header */}
       <div className="bg-white border rounded-lg p-5 mb-5">
@@ -166,6 +226,11 @@ export default function LabOrderDetailPage() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-gray-800">{item.testName}</span>
+                    {item.isCritical && (
+                      <span className="text-[10px] bg-red-600 text-white font-extrabold px-1.5 py-0.5 rounded animate-pulse">
+                        ⚠ CRITICAL
+                      </span>
+                    )}
                     {item.isTatExceeded && (
                       <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded font-medium">
                         ⚠ TAT Exceeded
@@ -225,6 +290,21 @@ export default function LabOrderDetailPage() {
                 </div>
 
                 <div className="flex items-center gap-2 ml-4">
+                  {item.isCritical && (
+                    item.criticalCallLogId ? (
+                      <span className="text-[10px] text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded font-semibold" title={item.criticalCallLogNotes || undefined}>
+                        📞 Logged: {item.criticalCallLogRecipient} ({new Date(item.criticalCallLogCalledAt!).toLocaleDateString()})
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => handleOpenCallLogModal(item)}
+                        className="px-2.5 py-1 bg-red-650 hover:bg-red-700 text-white text-xs font-bold rounded shadow-sm transition-colors cursor-pointer"
+                      >
+                        📞 Log Call
+                      </button>
+                    )
+                  )}
+
                   <span className={`px-2 py-0.5 rounded text-xs font-medium ${ITEM_STATUS_COLORS[item.status]}`}>
                     {item.status}
                   </span>
@@ -352,6 +432,91 @@ export default function LabOrderDetailPage() {
                 {saving ? 'Saving…' : 'Save Result'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Log Call Modal */}
+      {selectedCallLogItem && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-gray-150 shadow-2xl max-w-md w-full overflow-hidden font-outfit">
+            <div className="bg-red-650 p-4 text-white">
+              <h3 className="font-extrabold text-base flex items-center gap-2">
+                📞 Record Critical Value Call Log
+              </h3>
+              <p className="text-red-100 text-xs mt-1">
+                CLIA/CAP regulations require verbal verification of panic values.
+              </p>
+            </div>
+
+            <form onSubmit={handleCallLogSubmit} className="p-5 space-y-4">
+              {callLogError && (
+                <div className="bg-red-50 border border-red-200 text-red-800 text-xs rounded-xl p-3 font-semibold">
+                  ⚠️ {callLogError}
+                </div>
+              )}
+
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-gray-600 uppercase">Patient</label>
+                <div className="bg-gray-50 border border-gray-100 rounded-xl p-2.5 text-xs text-gray-700 font-semibold">
+                  {order.patientName} ({order.patientMrn})
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-gray-600 uppercase">Test & Result</label>
+                <div className="bg-red-50/50 border border-red-100 rounded-xl p-2.5 text-xs text-red-950 font-bold">
+                  {selectedCallLogItem.testName}: {selectedCallLogItem.manualResult || selectedCallLogItem.hl7ResultValue} {selectedCallLogItem.manualResultUnit || selectedCallLogItem.hl7ResultUnit}
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label htmlFor="recipientName" className="block text-xs font-bold text-gray-700 uppercase">
+                  Recipient Clinician Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="recipientName"
+                  type="text"
+                  required
+                  placeholder="e.g. Dr. Jane Smith"
+                  value={recipientName}
+                  onChange={(e) => setRecipientName(e.target.value)}
+                  className="w-full border border-gray-250 rounded-xl px-3.5 py-2.5 text-xs focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label htmlFor="callLogNotes" className="block text-xs font-bold text-gray-700 uppercase">
+                  Read-back Notes / Confirmation
+                </label>
+                <textarea
+                  id="callLogNotes"
+                  rows={3}
+                  value={callLogNotes}
+                  onChange={(e) => setCallLogNotes(e.target.value)}
+                  placeholder="e.g. Read-back confirmed. Patient being scheduled for immediate IV saline."
+                  className="w-full border border-gray-250 rounded-xl px-3.5 py-2.5 text-xs focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none resize-none"
+                />
+              </div>
+
+              <div className="flex gap-2 justify-end pt-2 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setSelectedCallLogItem(null)}
+                  disabled={callLogSubmitting}
+                  className="px-4 py-2.5 border border-gray-200 text-gray-600 font-semibold text-xs rounded-xl hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={callLogSubmitting}
+                  className="px-4 py-2.5 bg-red-650 hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all"
+                >
+                  {callLogSubmitting ? 'Recording...' : 'Confirm & Resolve Alert'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

@@ -149,6 +149,11 @@ public class LabOrderService : ILabOrderService
             .Include(o => o.Bill)
             .Include(o => o.Items)
                 .ThenInclude(i => i.LabTestCatalog)
+            .Include(o => o.Items)
+                .ThenInclude(i => i.CriticalCallLog)
+            .Include(o => o.Items)
+                .ThenInclude(i => i.LabResult)
+                    .ThenInclude(r => r.Observations)
             .AsNoTracking()
             .FirstOrDefaultAsync(o => o.LabOrderId == labOrderId, ct);
 
@@ -204,6 +209,12 @@ public class LabOrderService : ILabOrderService
         item.ManualResultFlag           = ComputeFlag(req.Result, req.ReferenceRange);
         item.Status                     = LabOrderItemStatus.Resulted;
         item.ResultedAt                 = DateTime.UtcNow;
+
+        var catalogItem = await _db.LabTestCatalog.FindAsync(new object[] { item.LabTestCatalogId }, ct);
+        if (catalogItem != null && !string.IsNullOrWhiteSpace(catalogItem.CriticalReferenceRange))
+        {
+            item.IsCritical = IsValueCritical(req.Result, catalogItem.CriticalReferenceRange);
+        }
 
         UpdateOrderStatus(item.LabOrder);
         await _db.SaveChangesAsync(ct);
@@ -384,6 +395,27 @@ public class LabOrderService : ILabOrderService
                          && i.Status != LabOrderItemStatus.Signed
                          && DateTime.UtcNow > i.SampleReceivedAt.Value.AddHours(i.TatHours);
 
+        string? hl7ResultValue = null;
+        string? hl7ResultUnit = null;
+        string? hl7Flag = null;
+        string? hl7ResultReferenceRange = null;
+
+        if (i.LabResult != null && i.LabResult.Observations != null && i.LabResult.Observations.Any())
+        {
+            var criticalObs = i.LabResult.Observations.FirstOrDefault(o => {
+                var range = i.LabTestCatalog?.CriticalReferenceRange;
+                return range != null && IsValueCritical(o.Value, range);
+            }) ?? i.LabResult.Observations.FirstOrDefault();
+
+            if (criticalObs != null)
+            {
+                hl7ResultValue = criticalObs.Value;
+                hl7ResultUnit = criticalObs.Units;
+                hl7Flag = criticalObs.AbnormalFlag;
+                hl7ResultReferenceRange = criticalObs.ReferenceRange;
+            }
+        }
+
         return new LabOrderItemResponse
         {
             LabOrderItemId   = i.LabOrderItemId,
@@ -405,6 +437,87 @@ public class LabOrderService : ILabOrderService
             ManualResultFlag           = i.ManualResultFlag,
             LabResultId                = i.LabResultId,
             IsTatExceeded              = isTatExceeded,
+            IsCritical                 = i.IsCritical,
+            CriticalCallLogId          = i.CriticalCallLogId,
+            CriticalCallLogRecipient   = i.CriticalCallLog?.RecipientName,
+            CriticalCallLogNotes       = i.CriticalCallLog?.Notes,
+            CriticalCallLogCalledAt    = i.CriticalCallLog?.CalledAt,
+            LabOrderId                 = i.LabOrderId,
+            PatientName                = i.LabOrder?.Patient != null ? $"{i.LabOrder.Patient.FirstName} {i.LabOrder.Patient.LastName}" : null,
+            PatientMrn                 = i.LabOrder?.Patient?.MedicalRecordNumber,
+            Hl7ResultValue             = hl7ResultValue,
+            Hl7ResultUnit              = hl7ResultUnit,
+            Hl7Flag                    = hl7Flag,
+            Hl7ResultReferenceRange    = hl7ResultReferenceRange,
         };
+    }
+
+    internal static bool IsValueCritical(string? value, string? criticalRangeStr)
+    {
+        if (string.IsNullOrWhiteSpace(value) || string.IsNullOrWhiteSpace(criticalRangeStr))
+            return false;
+
+        if (!double.TryParse(value, System.Globalization.NumberStyles.Any,
+                System.Globalization.CultureInfo.InvariantCulture, out var numericValue))
+            return false;
+
+        var parts = criticalRangeStr.Split('-');
+        if (parts.Length != 2) return false;
+
+        if (!double.TryParse(parts[0].Trim(), System.Globalization.NumberStyles.Any,
+                System.Globalization.CultureInfo.InvariantCulture, out var low)) return false;
+        if (!double.TryParse(parts[1].Trim(), System.Globalization.NumberStyles.Any,
+                System.Globalization.CultureInfo.InvariantCulture, out var high)) return false;
+
+        return numericValue < low || numericValue > high;
+    }
+
+    public async Task<LabOrderItemResponse> RecordCriticalCallLogAsync(Guid itemId, CreateCriticalCallLogRequest req, CancellationToken ct)
+    {
+        var item = await _db.LabOrderItems
+            .Include(i => i.CriticalCallLog)
+            .FirstOrDefaultAsync(i => i.LabOrderItemId == itemId, ct);
+
+        if (item == null)
+            throw new NotFoundException("LabOrderItem", itemId);
+
+        if (!item.IsCritical)
+            throw new AppException("Call logs can only be recorded for items with critical values.", 400);
+
+        var user = await _db.Users.FindAsync(new object[] { _currentUser.UserId }, ct);
+        var callerName = user != null ? $"{user.FirstName} {user.LastName}" : "System Tech";
+
+        var log = new CriticalCallLog
+        {
+            CriticalCallLogId = Guid.NewGuid(),
+            LabOrderItemId = itemId,
+            RecipientName = req.RecipientName.Trim(),
+            CalledByName = callerName,
+            CalledAt = DateTime.UtcNow,
+            Notes = req.Notes.Trim(),
+            TenantId = _currentUser.TenantId
+        };
+
+        _db.CriticalCallLogs.Add(log);
+        item.CriticalCallLogId = log.CriticalCallLogId;
+        await _db.SaveChangesAsync(ct);
+
+        return ToItemResponse(item);
+    }
+
+    public async Task<IReadOnlyList<LabOrderItemResponse>> GetCriticalAlertsAsync(CancellationToken ct)
+    {
+        var items = await _db.LabOrderItems
+            .Include(i => i.CriticalCallLog)
+            .Include(i => i.LabTestCatalog)
+            .Include(i => i.LabOrder)
+                .ThenInclude(o => o.Patient)
+            .Include(i => i.LabResult)
+                .ThenInclude(r => r.Observations)
+            .Where(i => i.IsCritical)
+            .OrderByDescending(i => i.ResultedAt)
+            .ToListAsync(ct);
+
+        return items.Select(ToItemResponse).ToList();
     }
 }

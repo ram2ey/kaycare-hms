@@ -38,6 +38,10 @@ import LabResultDetailPage from './pages/lab-results/LabResultDetailPage';
 import LabWaitingListPage from './pages/lab-orders/LabWaitingListPage';
 import PlaceLabOrderPage from './pages/lab-orders/PlaceLabOrderPage';
 import LabOrderDetailPage from './pages/lab-orders/LabOrderDetailPage';
+import { Hl7InboxPage } from './pages/lab-orders/Hl7InboxPage';
+import { RadiologyOrdersPage } from './pages/radiology/RadiologyOrdersPage';
+import { NewRadiologyOrderPage } from './pages/radiology/NewRadiologyOrderPage';
+import { RadiologyOrderDetailPage } from './pages/radiology/RadiologyOrderDetailPage';
 import AuditLogsPage from './pages/audit-logs/AuditLogsPage';
 import UsersPage from './pages/admin/UsersPage';
 import DepartmentsPage from './pages/admin/DepartmentsPage';
@@ -179,7 +183,11 @@ export default function App() {
               <Route path="lab-results/:id" element={<LabResultDetailPage />} />
               <Route path="lab-orders" element={<LabWaitingListPage />} />
               <Route path="lab-orders/new" element={<PlaceLabOrderPage />} />
+              <Route path="lab-orders/hl7-inbox" element={<Hl7InboxPage />} />
               <Route path="lab-orders/:id" element={<LabOrderDetailPage />} />
+              <Route path="radiology" element={<RadiologyOrdersPage />} />
+              <Route path="radiology/new" element={<NewRadiologyOrderPage />} />
+              <Route path="radiology/:id" element={<RadiologyOrderDetailPage />} />
               <Route
                 path="audit-logs"
                 element={<ProtectedRoute allowedRoles={[Roles.SuperAdmin, Roles.Admin]} />}

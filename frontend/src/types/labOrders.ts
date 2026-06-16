@@ -55,7 +55,7 @@ export interface LabOrder {
 }
 
 export interface LabOrderDetail extends LabOrder {
-  items: LabOrderItem[];
+  items: LabOrderItemResponse[];
 }
 
 export type LabOrderStatus =
@@ -94,3 +94,27 @@ export const DEPARTMENTS = [
   'Urinalysis',
   'Microbiology',
 ] as const;
+
+export const FLAG_COLORS: Record<string, string> = {
+  H: 'bg-red-100 text-red-700 font-semibold',
+  L: 'bg-blue-100 text-blue-700 font-semibold',
+  HH: 'bg-red-200 text-red-800 font-bold border border-red-300 animate-pulse',
+  LL: 'bg-blue-200 text-blue-800 font-bold border border-blue-300 animate-pulse',
+  A: 'bg-yellow-100 text-yellow-700 font-semibold',
+  N: 'bg-gray-100 text-gray-700',
+  CRIT: 'bg-red-200 text-red-850 font-extrabold border border-red-400 animate-pulse',
+};
+
+export interface LabOrderItemResponse extends LabOrderItem {
+  isCritical?: boolean;
+  criticalCallLogId?: string | null;
+  criticalCallLogRecipient?: string | null;
+  criticalCallLogNotes?: string | null;
+  criticalCallLogCalledAt?: string | null;
+  patientName?: string | null;
+  patientMrn?: string | null;
+  hl7ResultValue?: string | null;
+  hl7ResultUnit?: string | null;
+  hl7Flag?: string | null;
+  hl7ResultReferenceRange?: string | null;
+}

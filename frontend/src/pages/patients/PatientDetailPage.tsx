@@ -14,6 +14,7 @@ import AdmissionsTab from './tabs/AdmissionsTab';
 import ReferralsTab from './tabs/ReferralsTab';
 import VitalsTab from './tabs/VitalsTab';
 import NursingNotesTab from './tabs/NursingNotesTab';
+import TimelineTab from './tabs/TimelineTab';
 
 const TABS = [
   { key: 'overview',       label: 'Overview' },
@@ -26,6 +27,7 @@ const TABS = [
   { key: 'vitals',         label: 'Vitals' },
   { key: 'nursing',        label: 'Nursing Notes' },
   { key: 'documents',      label: 'Documents' },
+  { key: 'timeline',       label: 'Clinical Timeline' },
 ];
 
 export default function PatientDetailPage() {
@@ -147,6 +149,7 @@ export default function PatientDetailPage() {
         {activeTab === 'vitals'        && <VitalsTab        patientId={patient.patientId} />}
         {activeTab === 'nursing'       && <NursingNotesTab  patientId={patient.patientId} />}
         {activeTab === 'documents'     && <DocumentsTab     patientId={patient.patientId} />}
+        {activeTab === 'timeline'      && <TimelineTab      patientId={patient.patientId} patientName={patient.fullName} patientMrn={patient.medicalRecordNumber} />}
       </div>
     </div>
   );

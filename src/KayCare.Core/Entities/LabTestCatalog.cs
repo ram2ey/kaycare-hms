@@ -19,4 +19,5 @@ public class LabTestCatalog
     public string? DefaultUnit          { get; set; }
     /// <summary>Default reference range shown to lab technician (e.g. "3.9-5.6").</summary>
     public string? DefaultReferenceRange { get; set; }
+    public string? CriticalReferenceRange { get; set; }
 }

@@ -226,30 +226,23 @@ public sealed class MllpListenerService : BackgroundService
         db.LabResults.Add(labResult);
         await db.SaveChangesAsync(ct); // LabResultId populated after save
 
-        // ── Update LabOrderItem and parent order status ───────────────────────
-        if (orderItem != null)
-        {
-            orderItem.Status      = Core.Constants.LabOrderItemStatus.Resulted;
-            orderItem.ResultedAt  = DateTime.UtcNow;
-            orderItem.LabResultId = labResult.LabResultId;
-
-            var siblings = orderItem.LabOrder.Items.ToList();
-            var allDone  = siblings.All(i => i.LabOrderItemId == orderItem.LabOrderItemId
-                                          || i.Status is Core.Constants.LabOrderItemStatus.Resulted
-                                                      or Core.Constants.LabOrderItemStatus.Signed);
-            var anyDone  = siblings.Any(i => i.LabOrderItemId == orderItem.LabOrderItemId
-                                          || i.Status is Core.Constants.LabOrderItemStatus.Resulted
-                                                      or Core.Constants.LabOrderItemStatus.Signed);
-
-            orderItem.LabOrder.Status = allDone ? Core.Constants.LabOrderStatus.Completed
-                                      : anyDone ? Core.Constants.LabOrderStatus.PartiallyCompleted
-                                                : Core.Constants.LabOrderStatus.Active;
-        }
-
+        var hasCritical = false;
         // ── Persist LabObservations ───────────────────────────────────────────
         for (var i = 0; i < parsed.Observations.Count; i++)
         {
             var obs = parsed.Observations[i];
+            
+            var catalogItem = await db.LabTestCatalog
+                .FirstOrDefaultAsync(t => t.TestCode == obs.TestCode, ct);
+            if (catalogItem != null && !string.IsNullOrWhiteSpace(catalogItem.CriticalReferenceRange))
+            {
+                var isObsCritical = LabOrderService.IsValueCritical(obs.Value, catalogItem.CriticalReferenceRange);
+                if (isObsCritical)
+                {
+                    hasCritical = true;
+                }
+            }
+
             db.LabObservations.Add(new LabObservation
             {
                 LabResultId    = labResult.LabResultId,
@@ -262,6 +255,27 @@ public sealed class MllpListenerService : BackgroundService
                 ReferenceRange = obs.ReferenceRange,
                 AbnormalFlag   = obs.AbnormalFlag,
             });
+        }
+
+        // ── Update LabOrderItem and parent order status ───────────────────────
+        if (orderItem != null)
+        {
+            orderItem.Status      = Core.Constants.LabOrderItemStatus.Resulted;
+            orderItem.ResultedAt  = DateTime.UtcNow;
+            orderItem.LabResultId = labResult.LabResultId;
+            orderItem.IsCritical  = hasCritical;
+
+            var siblings = orderItem.LabOrder.Items.ToList();
+            var allDone  = siblings.All(i => i.LabOrderItemId == orderItem.LabOrderItemId
+                                          || i.Status is Core.Constants.LabOrderItemStatus.Resulted
+                                                      or Core.Constants.LabOrderItemStatus.Signed);
+            var anyDone  = siblings.Any(i => i.LabOrderItemId == orderItem.LabOrderItemId
+                                          || i.Status is Core.Constants.LabOrderItemStatus.Resulted
+                                                      or Core.Constants.LabOrderItemStatus.Signed);
+
+            orderItem.LabOrder.Status = allDone ? Core.Constants.LabOrderStatus.Completed
+                                      : anyDone ? Core.Constants.LabOrderStatus.PartiallyCompleted
+                                                : Core.Constants.LabOrderStatus.Active;
         }
 
         await db.SaveChangesAsync(ct);

@@ -61,6 +61,11 @@ public class AppDbContext : DbContext
     public DbSet<Referral>                 Referrals                 => Set<Referral>();
     public DbSet<IcdCode>                  IcdCodes                  => Set<IcdCode>();
     public DbSet<AuditLog>                 AuditLogs                 => Set<AuditLog>();
+    public DbSet<ImagingProcedure>        ImagingProcedures         => Set<ImagingProcedure>();
+    public DbSet<RadiologyOrder>          RadiologyOrders           => Set<RadiologyOrder>();
+    public DbSet<RadiologyOrderItem>      RadiologyOrderItems       => Set<RadiologyOrderItem>();
+    public DbSet<CriticalCallLog>         CriticalCallLogs          => Set<CriticalCallLog>();
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -154,6 +159,12 @@ public class AppDbContext : DbContext
             .HasQueryFilter(m => m.TenantId == _tenantContext.TenantId);
         modelBuilder.Entity<Referral>()
             .HasQueryFilter(r => r.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<RadiologyOrder>()
+            .HasQueryFilter(r => r.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<RadiologyOrderItem>()
+            .HasQueryFilter(i => i.TenantId == _tenantContext.TenantId);
+        modelBuilder.Entity<CriticalCallLog>()
+            .HasQueryFilter(c => c.TenantId == _tenantContext.TenantId);
     }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

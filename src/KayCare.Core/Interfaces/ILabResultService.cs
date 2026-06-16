@@ -7,4 +7,5 @@ public interface ILabResultService
     Task<IReadOnlyList<LabResultResponse>> GetByPatientAsync(Guid patientId, CancellationToken ct);
     Task<LabResultDetailResponse?>         GetByAccessionAsync(string accessionNumber, CancellationToken ct);
     Task<LabResultDetailResponse?>         GetByIdAsync(Guid labResultId, CancellationToken ct);
+    Task<bool>                             ProcessHl7MessageAsync(string rawMessage, CancellationToken ct);
 }
