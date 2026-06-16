@@ -8,7 +8,12 @@ namespace KayCare.Core.Interfaces;
 
 public interface IRadiologyOrderService
 {
-    Task<IReadOnlyList<ImagingProcedureResponse>>   GetProcedureCatalogAsync(CancellationToken ct);
+    // ── Procedure catalog ───────────────────────────────────────────────
+    Task<IReadOnlyList<ImagingProcedureResponse>>   GetProcedureCatalogAsync(CancellationToken ct);     // active only
+    Task<IReadOnlyList<ImagingProcedureResponse>>   GetFullProcedureCatalogAsync(CancellationToken ct); // admin — all
+    Task<ImagingProcedureResponse>                  CreateProcedureAsync(SaveImagingProcedureRequest request, CancellationToken ct);
+    Task<ImagingProcedureResponse>                  UpdateProcedureAsync(Guid id, SaveImagingProcedureRequest request, CancellationToken ct);
+    Task<ImagingProcedureResponse>                  ToggleProcedureActiveAsync(Guid id, CancellationToken ct);
     Task<RadiologyOrderDetailResponse>              PlaceOrderAsync(CreateRadiologyOrderRequest req, CancellationToken ct);
     Task<IReadOnlyList<RadiologyOrderResponse>>     GetByPatientAsync(Guid patientId, CancellationToken ct);
     Task<IReadOnlyList<RadiologyOrderResponse>>     GetWorklistAsync(DateOnly date, string? status, CancellationToken ct);

@@ -85,41 +85,54 @@ export default function ServiceCatalogPage() {
     .filter((g) => g.rows.length > 0);
 
   return (
-    <div className="p-6 max-w-4xl">
+    <div className="p-6 max-w-5xl mx-auto">
       <div className="text-sm text-gray-500 mb-4">
         <Link to="/billing" className="hover:text-blue-600">Billing</Link>
         <span className="mx-2">/</span>
         <span className="text-gray-800">Price Catalog</span>
       </div>
 
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
-          <h2 className="text-2xl font-semibold text-gray-800">Price Catalog</h2>
-          <p className="text-sm text-gray-500 mt-0.5">{items.length} item{items.length !== 1 ? 's' : ''}</p>
+          <h2 className="text-2xl font-bold text-gray-800">Price Catalog</h2>
+          <p className="text-sm text-gray-500 mt-1">{items.length} service/billing item{items.length !== 1 ? 's' : ''} configured</p>
         </div>
-        <div className="flex items-center gap-3">
-          <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+        <div className="flex items-center gap-4 self-start md:self-auto">
+          <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
             <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)}
-              className="rounded" />
-            Show inactive
+              className="rounded text-blue-600 focus:ring-blue-500" />
+            Show inactive items
           </label>
           <button onClick={openCreate}
-            className="px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white text-sm font-medium rounded-lg transition-colors">
+            className="px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors">
             + New Item
           </button>
         </div>
       </div>
 
-      {/* Category filter */}
-      {categories.length > 1 && (
-        <div className="flex flex-wrap gap-2 mb-4">
-          <button onClick={() => setFilterCategory('')}
-            className={`px-3 py-1 text-xs rounded-full border transition-colors ${!filterCategory ? 'bg-blue-700 text-white border-blue-700' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>
-            All
+      {/* Category filter tabs */}
+      {categories.length > 0 && (
+        <div className="border-b border-gray-200 mb-6 flex gap-6 overflow-x-auto scrollbar-none select-none">
+          <button
+            onClick={() => setFilterCategory('')}
+            className={`pb-3 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${
+              !filterCategory
+                ? 'border-blue-700 text-blue-700'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            All Categories
           </button>
           {categories.map((c) => (
-            <button key={c} onClick={() => setFilterCategory(c === filterCategory ? '' : c)}
-              className={`px-3 py-1 text-xs rounded-full border transition-colors ${filterCategory === c ? 'bg-blue-700 text-white border-blue-700' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}>
+            <button
+              key={c}
+              onClick={() => setFilterCategory(c)}
+              className={`pb-3 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${
+                filterCategory === c
+                  ? 'border-blue-700 text-blue-700'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
               {c}
             </button>
           ))}
@@ -127,44 +140,50 @@ export default function ServiceCatalogPage() {
       )}
 
       {loading ? (
-        <p className="text-gray-400 text-sm py-8">Loading…</p>
+        <p className="text-gray-400 text-sm py-12 text-center bg-white rounded-xl border border-gray-200">Loading catalog items...</p>
       ) : items.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-200 p-10 text-center">
           <p className="text-gray-500 text-sm mb-3">No items in the price catalog yet.</p>
-          <button onClick={openCreate} className="text-sm text-blue-600 hover:underline">Add the first item</button>
+          <button onClick={openCreate} className="text-sm text-blue-600 hover:underline font-semibold">Add the first item</button>
         </div>
       ) : (
-        <div className="space-y-5">
+        <div className="space-y-6">
           {grouped.map(({ cat, rows }) => (
-            <section key={cat} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <section key={cat} className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
               <div className="px-5 py-3 bg-gray-50 border-b border-gray-100">
-                <h3 className="text-sm font-semibold text-gray-700">{cat}</h3>
+                <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider">{cat}</h3>
               </div>
               <table className="w-full text-sm">
-                <thead className="border-b border-gray-100">
+                <thead className="border-b border-gray-100 text-gray-500 text-xs font-semibold uppercase tracking-wider bg-gray-50/30">
                   <tr>
-                    <th className="text-left px-5 py-2.5 font-medium text-gray-500 text-xs uppercase">Name</th>
-                    <th className="text-left px-5 py-2.5 font-medium text-gray-500 text-xs uppercase hidden sm:table-cell">Description</th>
-                    <th className="text-right px-5 py-2.5 font-medium text-gray-500 text-xs uppercase">Unit Price</th>
-                    <th className="text-center px-5 py-2.5 font-medium text-gray-500 text-xs uppercase">Status</th>
+                    <th className="text-left px-5 py-2.5">Name</th>
+                    <th className="text-left px-5 py-2.5 hidden sm:table-cell">Description</th>
+                    <th className="text-right px-5 py-2.5">Standard Price</th>
+                    <th className="text-center px-5 py-2.5">Status</th>
                     <th className="px-5 py-2.5"></th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50">
+                <tbody className="divide-y divide-gray-100 text-gray-700">
                   {rows.map((item) => (
-                    <tr key={item.serviceCatalogItemId} className={!item.isActive ? 'opacity-50' : ''}>
-                      <td className="px-5 py-3 font-medium text-gray-800">{item.name}</td>
-                      <td className="px-5 py-3 text-gray-500 hidden sm:table-cell">{item.description ?? '—'}</td>
-                      <td className="px-5 py-3 text-right font-mono text-gray-800">{fmt(item.unitPrice)}</td>
-                      <td className="px-5 py-3 text-center">
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${item.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                    <tr key={item.serviceCatalogItemId} className={`hover:bg-gray-50/50 transition-colors ${!item.isActive ? 'opacity-50' : ''}`}>
+                      <td className="px-5 py-3.5 font-bold text-gray-950">{item.name}</td>
+                      <td className="px-5 py-3.5 text-gray-500 hidden sm:table-cell font-medium">{item.description ?? '—'}</td>
+                      <td className="px-5 py-3.5 text-right font-mono font-bold text-gray-900">{fmt(item.unitPrice)}</td>
+                      <td className="px-5 py-3.5 text-center">
+                        <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold ${item.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-150 text-gray-550'}`}>
                           {item.isActive ? 'Active' : 'Inactive'}
                         </span>
                       </td>
-                      <td className="px-5 py-3 text-right">
-                        <div className="flex justify-end gap-3">
-                          <button onClick={() => openEdit(item)} className="text-xs text-blue-600 hover:underline">Edit</button>
-                          <button onClick={() => handleDelete(item)} className="text-xs text-red-500 hover:underline">Delete</button>
+                      <td className="px-5 py-3.5 text-right">
+                        <div className="flex justify-end items-center gap-4">
+                          <Link
+                            to={`/admin/payer-tariffs?serviceId=${item.serviceCatalogItemId}`}
+                            className="text-xs text-indigo-650 hover:text-indigo-800 font-semibold hover:underline"
+                          >
+                            Tariffs →
+                          </Link>
+                          <button onClick={() => openEdit(item)} className="text-xs text-blue-650 hover:text-blue-800 font-semibold hover:underline">Edit</button>
+                          <button onClick={() => handleDelete(item)} className="text-xs text-red-600 hover:text-red-800 font-semibold hover:underline">Delete</button>
                         </div>
                       </td>
                     </tr>
@@ -178,49 +197,55 @@ export default function ServiceCatalogPage() {
 
       {/* Create / Edit modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/45 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">
-              {editing ? 'Edit Item' : 'New Catalog Item'}
+            <h3 className="text-lg font-bold text-gray-900 mb-4">
+              {editing ? 'Edit Catalog Item' : 'New Catalog Item'}
             </h3>
-            <form onSubmit={handleSave} className="space-y-3">
+            <form onSubmit={handleSave} className="space-y-4">
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Name *</label>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Name *</label>
                 <input required value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                   placeholder="e.g. General Consultation" className={inp} />
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Category *</label>
-                <select required value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))} className={inp}>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Category *</label>
+                <select required value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))} className={inp + ' bg-white'}>
                   {BILL_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Unit Price (GHS) *</label>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Unit Price (GHS) *</label>
                 <input required type="number" step="0.01" min={0} value={form.unitPrice || ''}
                   onChange={(e) => setForm((f) => ({ ...f, unitPrice: Number(e.target.value) }))}
                   placeholder="0.00" className={inp} />
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Description</label>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Description / Notes</label>
                 <input value={form.description ?? ''} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                  placeholder="Optional description" className={inp} />
+                  placeholder="Optional details" className={inp} />
               </div>
               <div className="flex items-center gap-2">
                 <input type="checkbox" id="isActive" checked={form.isActive}
                   onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))}
-                  className="rounded" />
-                <label htmlFor="isActive" className="text-sm text-gray-700 cursor-pointer">Active</label>
+                  className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4 border-gray-300" />
+                <label htmlFor="isActive" className="text-sm text-gray-700 cursor-pointer select-none">Active and available for billing</label>
               </div>
               {error && <p className="text-xs text-red-600">{error}</p>}
-              <div className="flex gap-3 justify-end pt-2">
+              <div className="flex gap-3 justify-end pt-4 border-t border-gray-150">
                 <button type="button" onClick={() => setShowForm(false)}
-                  className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+                  className="px-4 py-2 text-sm font-semibold text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
                   Cancel
                 </button>
                 <button type="submit" disabled={saving}
-                  className="px-4 py-2 text-sm font-medium bg-blue-700 hover:bg-blue-800 text-white rounded-lg disabled:opacity-50 transition-colors">
-                  {saving ? 'Saving…' : 'Save'}
+                  className="px-5 py-2 text-sm font-semibold bg-blue-700 hover:bg-blue-800 text-white rounded-lg disabled:opacity-50 transition-colors flex items-center gap-2">
+                  {saving && (
+                    <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                  )}
+                  Save Item
                 </button>
               </div>
             </form>
@@ -230,3 +255,4 @@ export default function ServiceCatalogPage() {
     </div>
   );
 }
+

@@ -6,6 +6,17 @@ export interface ImagingProcedureItem {
   bodyPart: string
   department: string
   tatHours: number
+  isActive: boolean
+}
+
+export interface SaveImagingProcedureRequest {
+  procedureCode: string
+  procedureName: string
+  modality: string
+  bodyPart: string
+  department: string
+  tatHours: number
+  isActive: boolean
 }
 
 export interface RadiologyOrderItemResponse {

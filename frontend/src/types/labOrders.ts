@@ -8,6 +8,21 @@ export interface LabTestCatalog {
   tatHours: number;
   defaultUnit: string | null;
   defaultReferenceRange: string | null;
+  criticalReferenceRange: string | null;
+  isActive: boolean;
+}
+
+export interface SaveLabTestRequest {
+  testCode: string;
+  testName: string;
+  department: string;
+  instrumentType: string | null;
+  isManualEntry: boolean;
+  tatHours: number;
+  defaultUnit: string | null;
+  defaultReferenceRange: string | null;
+  criticalReferenceRange: string | null;
+  isActive: boolean;
 }
 
 export interface LabOrderItem {

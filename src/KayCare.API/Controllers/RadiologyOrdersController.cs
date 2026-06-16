@@ -24,9 +24,47 @@ public class RadiologyOrdersController : ControllerBase
         _radiologyReport = radiologyReport;
     }
 
+    /// <summary>All active imaging procedures in the catalog (for order dropdowns).</summary>
     [HttpGet("catalog")]
+    [ProducesResponseType(typeof(IReadOnlyList<ImagingProcedureResponse>), 200)]
     public async Task<IActionResult> GetCatalog(CancellationToken ct)
         => Ok(await _radiology.GetProcedureCatalogAsync(ct));
+
+    /// <summary>Full catalog including inactive — Admin/SuperAdmin only.</summary>
+    [HttpGet("catalog/all")]
+    [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
+    [ProducesResponseType(typeof(IReadOnlyList<ImagingProcedureResponse>), 200)]
+    public async Task<IActionResult> GetFullCatalog(CancellationToken ct)
+        => Ok(await _radiology.GetFullProcedureCatalogAsync(ct));
+
+    /// <summary>Create a new imaging procedure in the catalog.</summary>
+    [HttpPost("catalog")]
+    [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
+    [ProducesResponseType(typeof(ImagingProcedureResponse), 201)]
+    public async Task<IActionResult> CreateProcedure([FromBody] SaveImagingProcedureRequest req, CancellationToken ct)
+    {
+        var result = await _radiology.CreateProcedureAsync(req, ct);
+        return StatusCode(201, result);
+    }
+
+    /// <summary>Update an existing imaging procedure in the catalog.</summary>
+    [HttpPut("catalog/{id:guid}")]
+    [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
+    [ProducesResponseType(typeof(ImagingProcedureResponse), 200)]
+    [ProducesResponseType(404)]
+    public async Task<IActionResult> UpdateProcedure(Guid id, [FromBody] SaveImagingProcedureRequest req, CancellationToken ct)
+    {
+        var result = await _radiology.UpdateProcedureAsync(id, req, ct);
+        return Ok(result);
+    }
+
+    /// <summary>Toggle active status of an imaging procedure in the catalog.</summary>
+    [HttpPatch("catalog/{id:guid}/toggle")]
+    [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
+    [ProducesResponseType(typeof(ImagingProcedureResponse), 200)]
+    [ProducesResponseType(404)]
+    public async Task<IActionResult> ToggleProcedure(Guid id, CancellationToken ct)
+        => Ok(await _radiology.ToggleProcedureActiveAsync(id, ct));
 
     [HttpGet("stats")]
     public async Task<IActionResult> GetStats(CancellationToken ct)

@@ -39,6 +39,62 @@ public class RadiologyOrderService : IRadiologyOrderService
         return procedures.Select(MapProcedure).ToList();
     }
 
+    public async Task<IReadOnlyList<ImagingProcedureResponse>> GetFullProcedureCatalogAsync(CancellationToken ct)
+    {
+        var procedures = await _db.ImagingProcedures
+            .AsNoTracking()
+            .OrderBy(p => p.Modality)
+            .ThenBy(p => p.ProcedureName)
+            .ToListAsync(ct);
+
+        return procedures.Select(MapProcedure).ToList();
+    }
+
+    public async Task<ImagingProcedureResponse> CreateProcedureAsync(SaveImagingProcedureRequest request, CancellationToken ct)
+    {
+        var procedure = new ImagingProcedure
+        {
+            ImagingProcedureId = Guid.NewGuid(),
+            ProcedureCode      = request.ProcedureCode.Trim().ToUpperInvariant(),
+            ProcedureName      = request.ProcedureName.Trim(),
+            Modality           = request.Modality.Trim(),
+            BodyPart           = request.BodyPart.Trim(),
+            Department         = request.Department.Trim(),
+            TatHours           = request.TatHours,
+            IsActive           = request.IsActive,
+        };
+        _db.ImagingProcedures.Add(procedure);
+        await _db.SaveChangesAsync(ct);
+        return MapProcedure(procedure);
+    }
+
+    public async Task<ImagingProcedureResponse> UpdateProcedureAsync(Guid id, SaveImagingProcedureRequest request, CancellationToken ct)
+    {
+        var procedure = await _db.ImagingProcedures.FindAsync(new object[] { id }, ct)
+            ?? throw new NotFoundException("ImagingProcedure", id);
+
+        procedure.ProcedureCode = request.ProcedureCode.Trim().ToUpperInvariant();
+        procedure.ProcedureName = request.ProcedureName.Trim();
+        procedure.Modality      = request.Modality.Trim();
+        procedure.BodyPart      = request.BodyPart.Trim();
+        procedure.Department    = request.Department.Trim();
+        procedure.TatHours      = request.TatHours;
+        procedure.IsActive      = request.IsActive;
+
+        await _db.SaveChangesAsync(ct);
+        return MapProcedure(procedure);
+    }
+
+    public async Task<ImagingProcedureResponse> ToggleProcedureActiveAsync(Guid id, CancellationToken ct)
+    {
+        var procedure = await _db.ImagingProcedures.FindAsync(new object[] { id }, ct)
+            ?? throw new NotFoundException("ImagingProcedure", id);
+
+        procedure.IsActive = !procedure.IsActive;
+        await _db.SaveChangesAsync(ct);
+        return MapProcedure(procedure);
+    }
+
     private static readonly SemaphoreSlim _accessionSemaphore = new SemaphoreSlim(1, 1);
 
     public async Task<RadiologyOrderDetailResponse> PlaceOrderAsync(CreateRadiologyOrderRequest req, CancellationToken ct)
@@ -366,6 +422,7 @@ public class RadiologyOrderService : IRadiologyOrderService
         BodyPart           = p.BodyPart,
         Department         = p.Department,
         TatHours           = p.TatHours,
+        IsActive           = p.IsActive,
     };
 
     public async Task<RadiologyStatsResponse> GetStatsAsync(CancellationToken ct)

@@ -46,6 +46,11 @@ import AuditLogsPage from './pages/audit-logs/AuditLogsPage';
 import UsersPage from './pages/admin/UsersPage';
 import DepartmentsPage from './pages/admin/DepartmentsPage';
 import FacilitySettingsPage from './pages/admin/FacilitySettingsPage';
+import LabCatalogPage from './pages/admin/LabCatalogPage';
+import ImagingCatalogPage from './pages/admin/ImagingCatalogPage';
+import WardSetupPage from './pages/admin/WardSetupPage';
+import DrugFormularyPage from './pages/admin/DrugFormularyPage';
+import PayerTariffsPage from './pages/admin/PayerTariffsPage';
 import TenantsPage from './pages/admin/TenantsPage';
 import PharmacyDrugsPage from './pages/pharmacy/PharmacyDrugsPage';
 import ReorderAlertsPage from './pages/pharmacy/ReorderAlertsPage';
@@ -211,6 +216,36 @@ export default function App() {
                 element={<ProtectedRoute allowedRoles={[Roles.SuperAdmin, Roles.Admin]} />}
               >
                 <Route index element={<FacilitySettingsPage />} />
+              </Route>
+              <Route
+                path="admin/lab-catalog"
+                element={<ProtectedRoute allowedRoles={[Roles.SuperAdmin, Roles.Admin]} />}
+              >
+                <Route index element={<LabCatalogPage />} />
+              </Route>
+              <Route
+                path="admin/imaging-catalog"
+                element={<ProtectedRoute allowedRoles={[Roles.SuperAdmin, Roles.Admin]} />}
+              >
+                <Route index element={<ImagingCatalogPage />} />
+              </Route>
+              <Route
+                path="admin/wards"
+                element={<ProtectedRoute allowedRoles={[Roles.SuperAdmin, Roles.Admin]} />}
+              >
+                <Route index element={<WardSetupPage />} />
+              </Route>
+              <Route
+                path="admin/drug-formulary"
+                element={<ProtectedRoute allowedRoles={[Roles.SuperAdmin, Roles.Admin]} />}
+              >
+                <Route index element={<DrugFormularyPage />} />
+              </Route>
+              <Route
+                path="admin/payer-tariffs"
+                element={<ProtectedRoute allowedRoles={[Roles.SuperAdmin, Roles.Admin]} />}
+              >
+                <Route index element={<PayerTariffsPage />} />
               </Route>
               <Route path="change-password" element={<ChangePasswordPage />} />
             </Route>

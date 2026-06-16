@@ -28,6 +28,39 @@ public class LabOrdersController : ControllerBase
     public async Task<IActionResult> GetCatalog(CancellationToken ct)
         => Ok(await _labOrders.GetTestCatalogAsync(ct));
 
+    /// <summary>Full catalog including inactive — Admin/SuperAdmin only.</summary>
+    [HttpGet("catalog/all")]
+    [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
+    [ProducesResponseType(typeof(IReadOnlyList<LabTestCatalogResponse>), 200)]
+    public async Task<IActionResult> GetFullCatalog(CancellationToken ct)
+        => Ok(await _labOrders.GetFullTestCatalogAsync(ct));
+
+    /// <summary>Create a new lab test catalog item.</summary>
+    [HttpPost("catalog")]
+    [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
+    [ProducesResponseType(typeof(LabTestCatalogResponse), 201)]
+    public async Task<IActionResult> CreateTest([FromBody] SaveLabTestRequest request, CancellationToken ct)
+    {
+        var result = await _labOrders.CreateTestAsync(request, ct);
+        return StatusCode(201, result);
+    }
+
+    /// <summary>Update an existing lab test catalog item.</summary>
+    [HttpPut("catalog/{id:guid}")]
+    [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
+    [ProducesResponseType(typeof(LabTestCatalogResponse), 200)]
+    [ProducesResponseType(404)]
+    public async Task<IActionResult> UpdateTest(Guid id, [FromBody] SaveLabTestRequest request, CancellationToken ct)
+        => Ok(await _labOrders.UpdateTestAsync(id, request, ct));
+
+    /// <summary>Toggle active status of a lab test catalog item.</summary>
+    [HttpPatch("catalog/{id:guid}/toggle")]
+    [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
+    [ProducesResponseType(typeof(LabTestCatalogResponse), 200)]
+    [ProducesResponseType(404)]
+    public async Task<IActionResult> ToggleTestActive(Guid id, CancellationToken ct)
+        => Ok(await _labOrders.ToggleTestActiveAsync(id, ct));
+
     /// <summary>
     /// Waiting list — orders for a given date.
     /// Mirrors the CrelioHealth waiting list view.

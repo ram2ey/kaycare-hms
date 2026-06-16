@@ -11,4 +11,6 @@ public class LabTestCatalogResponse
     public int     TatHours              { get; set; }
     public string? DefaultUnit           { get; set; }
     public string? DefaultReferenceRange { get; set; }
+    public string? CriticalReferenceRange { get; set; }
+    public bool    IsActive              { get; set; }
 }

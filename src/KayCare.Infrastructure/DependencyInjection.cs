@@ -41,6 +41,7 @@ public static class DependencyInjection
         services.AddScoped<IBillingReportsService, BillingReportsService>();
         services.AddScoped<IServiceCatalogService, ServiceCatalogService>();
         services.AddScoped<IPayerService, PayerService>();
+        services.AddScoped<IPayerTariffService, PayerTariffService>();
         services.AddScoped<IChargeCaptureService, ChargeCaptureService>();
         services.AddScoped<IInsuranceClaimService, InsuranceClaimService>();
         services.AddScoped<ICreditNoteService, CreditNoteService>();

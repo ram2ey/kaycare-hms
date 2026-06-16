@@ -28,3 +28,28 @@ export interface SavePayerRequest {
   notes?:        string;
   isActive:     boolean;
 }
+
+export interface PayerTariffResponse {
+  payerTariffId: string;
+  payerId: string;
+  payerName: string;
+  serviceCatalogItemId: string;
+  serviceName: string;
+  serviceCategory: string;
+  standardPrice: number;
+  tariffCode: string | null;
+  tariffPrice: number;
+  effectiveDate: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SavePayerTariffRequest {
+  payerId: string;
+  serviceCatalogItemId: string;
+  tariffCode: string | null;
+  tariffPrice: number;
+  effectiveDate: string;
+  isActive: boolean;
+}

@@ -35,6 +35,72 @@ public class LabOrderService : ILabOrderService
         return tests.Select(ToCatalogResponse).ToList().AsReadOnly();
     }
 
+    public async Task<IReadOnlyList<LabTestCatalogResponse>> GetFullTestCatalogAsync(CancellationToken ct)
+    {
+        var tests = await _db.LabTestCatalog
+            .OrderBy(t => t.Department)
+            .ThenBy(t => t.TestName)
+            .AsNoTracking()
+            .ToListAsync(ct);
+
+        return tests.Select(ToCatalogResponse).ToList().AsReadOnly();
+    }
+
+    public async Task<LabTestCatalogResponse> CreateTestAsync(SaveLabTestRequest request, CancellationToken ct)
+    {
+        var test = new LabTestCatalog
+        {
+            LabTestCatalogId       = Guid.NewGuid(),
+            TestCode               = request.TestCode.Trim().ToUpperInvariant(),
+            TestName               = request.TestName.Trim(),
+            Department             = request.Department.Trim(),
+            InstrumentType         = request.InstrumentType?.Trim(),
+            IsManualEntry          = request.IsManualEntry,
+            TatHours               = request.TatHours,
+            DefaultUnit            = request.DefaultUnit?.Trim(),
+            DefaultReferenceRange  = request.DefaultReferenceRange?.Trim(),
+            CriticalReferenceRange = request.CriticalReferenceRange?.Trim(),
+            IsActive               = request.IsActive,
+        };
+
+        _db.LabTestCatalog.Add(test);
+        await _db.SaveChangesAsync(ct);
+
+        return ToCatalogResponse(test);
+    }
+
+    public async Task<LabTestCatalogResponse> UpdateTestAsync(Guid id, SaveLabTestRequest request, CancellationToken ct)
+    {
+        var test = await _db.LabTestCatalog.FindAsync(new object[] { id }, ct)
+            ?? throw new NotFoundException("LabTestCatalog", id);
+
+        test.TestCode               = request.TestCode.Trim().ToUpperInvariant();
+        test.TestName               = request.TestName.Trim();
+        test.Department             = request.Department.Trim();
+        test.InstrumentType         = request.InstrumentType?.Trim();
+        test.IsManualEntry          = request.IsManualEntry;
+        test.TatHours               = request.TatHours;
+        test.DefaultUnit            = request.DefaultUnit?.Trim();
+        test.DefaultReferenceRange  = request.DefaultReferenceRange?.Trim();
+        test.CriticalReferenceRange = request.CriticalReferenceRange?.Trim();
+        test.IsActive               = request.IsActive;
+
+        await _db.SaveChangesAsync(ct);
+        return ToCatalogResponse(test);
+    }
+
+    public async Task<LabTestCatalogResponse> ToggleTestActiveAsync(Guid id, CancellationToken ct)
+    {
+        var test = await _db.LabTestCatalog.FindAsync(new object[] { id }, ct)
+            ?? throw new NotFoundException("LabTestCatalog", id);
+
+        test.IsActive = !test.IsActive;
+
+        await _db.SaveChangesAsync(ct);
+
+        return ToCatalogResponse(test);
+    }
+
     // ── Place order ───────────────────────────────────────────────────────────
 
     public async Task<LabOrderDetailResponse> PlaceOrderAsync(CreateLabOrderRequest req, CancellationToken ct)
@@ -329,6 +395,8 @@ public class LabOrderService : ILabOrderService
         TatHours             = t.TatHours,
         DefaultUnit          = t.DefaultUnit,
         DefaultReferenceRange = t.DefaultReferenceRange,
+        CriticalReferenceRange = t.CriticalReferenceRange,
+        IsActive             = t.IsActive,
     };
 
     private static LabOrderResponse ToResponse(LabOrder o)
