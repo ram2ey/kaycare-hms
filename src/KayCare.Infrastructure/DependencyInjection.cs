@@ -1,4 +1,3 @@
-using Azure.Storage.Blobs;
 using KayCare.Core.Interfaces;
 using KayCare.Infrastructure.Data;
 using KayCare.Infrastructure.Services;
@@ -21,7 +20,7 @@ public static class DependencyInjection
         services.AddScoped<ITenantContext, TenantContext>();
 
         services.AddDbContext<AppDbContext>(options =>
-            options.UseSqlServer(
+            options.UseNpgsql(
                 config.GetConnectionString("DefaultConnection"),
                 b => b.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName)
             )
@@ -66,9 +65,17 @@ public static class DependencyInjection
         services.AddScoped<IReportsService, ReportsService>();
         services.AddScoped<IIcdCodeService, IcdCodeService>();
 
-        // Azure Blob Storage — singleton client; per-request scoped service
+        // Supabase client — singleton; used by BlobStorageService for file storage
         services.AddSingleton(_ =>
-            new BlobServiceClient(config["BlobStorage:ConnectionString"]));
+        {
+            var url = config["Supabase:Url"]!;
+            var key = config["Supabase:ServiceKey"]!;
+            var options = new Supabase.SupabaseOptions { AutoConnectRealtime = false };
+            var client = new Supabase.Client(url, key, options);
+            // Fire-and-forget initialization; storage calls work after the first awaitable resolves
+            Task.Run(() => client.InitializeAsync());
+            return client;
+        });
         services.AddSingleton<IBlobStorageService, BlobStorageService>();
         services.AddScoped<IDocumentService, DocumentService>();
         services.AddScoped<ILabResultService, LabResultService>();

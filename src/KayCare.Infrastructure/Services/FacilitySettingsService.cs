@@ -28,7 +28,7 @@ public class FacilitySettingsService : IFacilitySettingsService
             .AsNoTracking()
             .FirstOrDefaultAsync(ct);
 
-        return settings == null ? null : Map(settings);
+        return settings == null ? null : await MapAsync(settings, ct);
     }
 
     public async Task<FacilitySettingsResponse> UpsertAsync(SaveFacilitySettingsRequest request, CancellationToken ct = default)
@@ -56,7 +56,7 @@ public class FacilitySettingsService : IFacilitySettingsService
         }
 
         await _db.SaveChangesAsync(ct);
-        return Map(settings);
+        return await MapAsync(settings, ct);
     }
 
     public async Task<FacilitySettingsResponse> UploadLogoAsync(
@@ -74,7 +74,7 @@ public class FacilitySettingsService : IFacilitySettingsService
         settings.LogoBlobName = blobName;
         await _db.SaveChangesAsync(ct);
 
-        return Map(settings);
+        return await MapAsync(settings, ct);
     }
 
     public async Task<FacilitySettingsResponse> DeleteLogoAsync(CancellationToken ct = default)
@@ -88,7 +88,7 @@ public class FacilitySettingsService : IFacilitySettingsService
             await _db.SaveChangesAsync(ct);
         }
 
-        return Map(settings);
+        return await MapAsync(settings, ct);
     }
 
     public async Task<byte[]?> GetLogoBytesAsync(CancellationToken ct = default)
@@ -135,17 +135,25 @@ public class FacilitySettingsService : IFacilitySettingsService
         return $"tenant-{sanitized}";
     }
 
-    private FacilitySettingsResponse Map(FacilitySettings s) => new()
+    private async Task<FacilitySettingsResponse> MapAsync(FacilitySettings s, CancellationToken ct)
     {
-        FacilitySettingsId = s.FacilitySettingsId,
-        FacilityName       = s.FacilityName,
-        Address            = s.Address,
-        Phone              = s.Phone,
-        Email              = s.Email,
-        HasLogo            = !string.IsNullOrEmpty(s.LogoBlobName),
-        LogoUrl            = string.IsNullOrEmpty(s.LogoBlobName)
-            ? null
-            : _blob.GenerateSasUri(ContainerName(), s.LogoBlobName, LogoSasExpiry).ToString(),
-        UpdatedAt          = s.UpdatedAt,
-    };
+        string? logoUrl = null;
+        if (!string.IsNullOrEmpty(s.LogoBlobName))
+        {
+            var uri = await _blob.GenerateSasUriAsync(ContainerName(), s.LogoBlobName, LogoSasExpiry, ct);
+            logoUrl = uri.ToString();
+        }
+
+        return new FacilitySettingsResponse
+        {
+            FacilitySettingsId = s.FacilitySettingsId,
+            FacilityName       = s.FacilityName,
+            Address            = s.Address,
+            Phone              = s.Phone,
+            Email              = s.Email,
+            HasLogo            = !string.IsNullOrEmpty(s.LogoBlobName),
+            LogoUrl            = logoUrl,
+            UpdatedAt          = s.UpdatedAt,
+        };
+    }
 }

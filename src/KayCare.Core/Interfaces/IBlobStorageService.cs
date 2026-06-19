@@ -8,8 +8,8 @@ public interface IBlobStorageService
     /// <summary>Permanently deletes a blob.</summary>
     Task DeleteAsync(string containerName, string blobPath, CancellationToken ct = default);
 
-    /// <summary>Returns a time-limited SAS URI for reading a single blob.</summary>
-    Uri GenerateSasUri(string containerName, string blobPath, TimeSpan expiry);
+    /// <summary>Returns a time-limited signed URI for reading a single blob.</summary>
+    Task<Uri> GenerateSasUriAsync(string containerName, string blobPath, TimeSpan expiry, CancellationToken ct = default);
 
     /// <summary>Downloads blob content as bytes. Returns null if the blob does not exist.</summary>
     Task<byte[]?> DownloadAsync(string containerName, string blobPath, CancellationToken ct = default);

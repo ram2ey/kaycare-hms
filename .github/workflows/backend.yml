@@ -6,6 +6,7 @@ on:
     paths:
       - 'src/**'
       - '*.sln'
+      - 'Dockerfile'
       - '.github/workflows/backend.yml'
   workflow_dispatch:
 
@@ -14,15 +15,15 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
-      sqlserver:
-        image: mcr.microsoft.com/mssql/server:2022-latest
+      postgres:
+        image: postgres:16
         env:
-          ACCEPT_EULA: Y
-          SA_PASSWORD: CI_TestPass123!
+          POSTGRES_PASSWORD: CI_TestPass123!
+          POSTGRES_DB: KayCareTestDb
         ports:
-          - 1433:1433
+          - 5432:5432
         options: >-
-          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P CI_TestPass123! -Q 'SELECT 1' -C"
+          --health-cmd "pg_isready -U postgres"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 10
@@ -44,16 +45,13 @@ jobs:
 
       - name: Run tests
         env:
-          TEST_DB_CONNECTION: "Server=localhost,1433;Database=KayCareTestDb;User ID=sa;Password=CI_TestPass123!;TrustServerCertificate=True;"
+          TEST_DB_CONNECTION: "Host=localhost;Port=5432;Database=KayCareTestDb;Username=postgres;Password=CI_TestPass123!"
         run: dotnet test src/KayCare.Tests --configuration Release --no-build
 
-      - name: Publish
-        run: dotnet publish src/KayCare.API --configuration Release --no-build --output ./publish
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
 
-      - name: Deploy to Azure App Service
-        continue-on-error: true
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: kaycarehms-prod-api
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: ./publish
+      - name: Deploy to Railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: railway up --service kaycare-api --detach

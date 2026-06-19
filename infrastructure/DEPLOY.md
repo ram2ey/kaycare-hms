@@ -1,98 +1,65 @@
-# KayCare HMS — Azure Deployment Guide (Free Tier)
+# KayCare HMS — Deployment Guide (Railway + Supabase + Vercel)
 
 ## Monthly Cost Estimate
 
-| Resource | Tier | Cost |
+| Service | Free Tier | Cost |
 |---|---|---|
-| App Service Plan F1 | Free | $0 |
-| Azure SQL Serverless GP | Free offer (100k vCore-sec/month) | $0* |
-| Blob Storage LRS | Pay-as-you-go | ~$1 |
-| Key Vault | Standard | ~$0.50 |
-| Static Web Apps | Free | $0 |
-| **Total** | | **~$1.50/month** |
-
-*SQL free offer covers 100,000 vCore-seconds/month. If exhausted the DB auto-pauses instead of billing.
+| Railway (Hobby) | $5 credit/month included | $0 |
+| Supabase (Free) | 500 MB DB · 1 GB storage · 2 GB bandwidth | $0 |
+| Vercel (Hobby) | Unlimited deploys · 100 GB bandwidth | $0 |
+| **Total** | | **$0/month** |
 
 ---
 
 ## Prerequisites
 
-- [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) installed
-- `az login` completed
-- Resource group `kaycare-rg` already exists (created previously)
+- [Railway CLI](https://docs.railway.app/guides/cli) installed (`npm i -g @railway/cli`)
+- [Vercel CLI](https://vercel.com/docs/cli) installed (`npm i -g vercel`)
+- [Supabase account](https://supabase.com) (free — no card required)
+- [Railway account](https://railway.app) (free hobby plan)
+- `.NET 8 SDK` + `dotnet-ef` tools installed locally
 
 ---
 
-## Step 1 — Generate a JWT Signing Key (if you don't have one)
+## Step 1 — Create a Supabase Project
 
-```powershell
-[System.Convert]::ToBase64String((1..64 | ForEach-Object { Get-Random -Maximum 256 }) -as [byte[]])
-```
-
-Save the output — you'll need it at deploy time.
-
----
-
-## Step 2 — Deploy All Azure Resources
-
-Run from the repo root:
-
-```powershell
-az deployment group create `
-  --resource-group kaycare-rg `
-  --template-file infrastructure/bicep/main-consolidated.bicep `
-  --parameters sqlAdminPassword="<YourSQLPassword>" `
-               jwtKey="<YourJwtKey>" `
-  --output table
-```
-
-This creates (or updates) all resources in one idempotent deployment:
-- Key Vault `kaycare-prod-kv` — stores SQL password, JWT key, connection strings
-- SQL Server `kaycare-prod-sql` + Serverless database `KayCareDb`
-- Blob Storage `kaycareprodstorstor`
-- App Service Plan `kaycare-prod-plan` (F1 Free) + API app `kaycare-prod-api`
-- Static Web App `kaycare-prod-web`
-
-**Note on SQL free offer:** The `useFreeLimit: true` flag only applies to the first Azure SQL Serverless database per subscription. If you have other Serverless databases, this one may not qualify.
+1. Go to [app.supabase.com](https://app.supabase.com) → **New project**
+2. Set a strong database password and save it
+3. After creation, go to **Settings → API** and copy:
+   - **Project URL** → this is `Supabase:Url`
+   - **service_role** secret key → this is `Supabase:ServiceKey`
+4. Go to **Settings → Database** and copy the **Connection string (URI)** format:
+   ```
+   postgresql://postgres:[YOUR-PASSWORD]@db.[ref].supabase.co:5432/postgres
+   ```
+   Convert to Npgsql format:
+   ```
+   Host=db.[ref].supabase.co;Port=5432;Database=postgres;Username=postgres;Password=[YOUR-PASSWORD];SSL Mode=Require;Trust Server Certificate=true;
+   ```
+   This is your `ConnectionStrings:DefaultConnection`.
 
 ---
 
-## Step 3 — Set the Connection String Directly in App Service
+## Step 2 — Run Migrations Against Supabase
 
-The Key Vault reference for the connection string has a known resolution lag. Set it directly as a fallback:
-
-```powershell
-az webapp config connection-string set `
-  --name kaycare-prod-api `
-  --resource-group kaycare-rg `
-  --settings DefaultConnection="Server=tcp:kaycare-prod-sql.database.windows.net,1433;Initial Catalog=KayCareDb;Persist Security Info=False;User ID=kaycare_admin;Password=<YourSQLPassword>;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;" `
-  --connection-string-type SQLAzure
-```
-
----
-
-## Step 4 — Run All EF Core Migrations Against Azure SQL
-
-Run from the repo root (PowerShell):
+From the repo root (PowerShell):
 
 ```powershell
-$env:ConnectionStrings__DefaultConnection = "Server=tcp:kaycare-prod-sql.database.windows.net,1433;Initial Catalog=KayCareDb;User ID=kaycare_admin;Password=<YourSQLPassword>;Encrypt=True;Connection Timeout=30;"
+$env:ConnectionStrings__DefaultConnection = "Host=db.[ref].supabase.co;Port=5432;Database=postgres;Username=postgres;Password=[YOUR-PASSWORD];SSL Mode=Require;Trust Server Certificate=true;"
 
 dotnet ef database update `
   --project src/KayCare.Infrastructure `
   --startup-project src/KayCare.API
 ```
 
-This applies all migrations including:
-`AddPharmacyInventory`, `AddPurchaseOrders`, `AddInpatientBilling`, `AddDischargeSummaryFields`,
-`AddNursingModule`, `AddReferrals`, `AddIcdCodes`, `AddLabTechnicianRole`, `AddBillingOfficerRole`
+This applies the single `InitialPostgres` migration, creating all tables.
 
 ---
 
-## Step 5 — Seed the Demo Tenant
+## Step 3 — Seed the Demo Tenant
 
 ```powershell
-$env:ConnectionStrings__DefaultConnection = "Server=tcp:kaycare-prod-sql.database.windows.net,1433;Initial Catalog=KayCareDb;User ID=kaycare_admin;Password=<YourSQLPassword>;Encrypt=True;Connection Timeout=30;"
+$env:ConnectionStrings__DefaultConnection = "Host=db.[ref].supabase.co;Port=5432;..."
 
 cd tools/Seeder
 dotnet run
@@ -105,78 +72,120 @@ Demo credentials after seeding:
 
 ---
 
-## Step 6 — Configure GitHub Actions Secrets
-
-### Backend — App Service publish profile
+## Step 4 — Deploy the Backend to Railway
 
 ```powershell
-az webapp deployment list-publishing-profiles `
-  --name kaycare-prod-api `
-  --resource-group kaycare-rg `
-  --xml
+# Login
+railway login
+
+# Create a new project
+railway init --name kaycare-hms
+
+# Link the service
+railway link
+
+# Set environment variables
+railway variables set `
+  ASPNETCORE_ENVIRONMENT=Production `
+  ConnectionStrings__DefaultConnection="Host=db.[ref].supabase.co;Port=5432;Database=postgres;Username=postgres;Password=[YOUR-PASSWORD];SSL Mode=Require;Trust Server Certificate=true;" `
+  Jwt__Key="[YOUR-JWT-SECRET-MIN-32-CHARS]" `
+  Jwt__Issuer="KayCare" `
+  Jwt__Audience="KayCare" `
+  Supabase__Url="https://[ref].supabase.co" `
+  Supabase__ServiceKey="[YOUR-SERVICE-ROLE-KEY]" `
+  Cors__AllowedOrigins__0="https://[your-vercel-url].vercel.app"
+
+# Deploy (Railway auto-detects Dockerfile)
+railway up --service kaycare-api
 ```
 
-Copy the full XML output. In GitHub → Settings → Secrets → Actions, update secret:
-- `AZURE_WEBAPP_PUBLISH_PROFILE` = (paste XML)
-
-### Frontend — Static Web App deploy token
-
-```powershell
-az deployment group show `
-  --resource-group kaycare-rg `
-  --name main-consolidated `
-  --query properties.outputs.staticWebDeployToken.value `
-  --output tsv
-```
-
-Update GitHub secret:
-- `AZURE_STATIC_WEB_APPS_API_TOKEN` = (paste token)
+After deploy, Railway will show your public URL (e.g. `https://kaycare-api.up.railway.app`).
 
 ---
 
-## Step 7 — Trigger CI/CD
+## Step 5 — Deploy the Frontend to Vercel
 
 ```powershell
-# Trigger backend deploy
-gh workflow run backend.yml
+cd frontend
 
-# Trigger frontend deploy
-gh workflow run frontend.yml
+# Set the Railway API URL in production env
+# Edit .env.production and replace PLACEHOLDER with your Railway URL
+# e.g. VITE_API_URL=https://kaycare-api.up.railway.app/api
+
+vercel --prod
 ```
 
-Or push a commit to main — both workflows auto-trigger.
+Or connect via [vercel.com](https://vercel.com) → Import Git Repository → select `kaycare-hms` → set root directory to `frontend`.
 
 ---
 
-## Deployment Outputs
+## Step 6 — Update CORS
 
-After `az deployment group create` completes:
+Once your Vercel URL is known (e.g. `https://kaycare-hms.vercel.app`), update Railway:
 
-| Output | Value |
+```powershell
+railway variables set Cors__AllowedOrigins__0="https://kaycare-hms.vercel.app"
+```
+
+And update `frontend/.env.production`:
+```
+VITE_API_URL=https://kaycare-api.up.railway.app/api
+```
+
+---
+
+## Step 7 — Configure GitHub Actions Secrets
+
+In GitHub → Settings → Secrets → Actions, add:
+
+| Secret | Value |
 |---|---|
-| `apiUrl` | `https://kaycare-prod-api.azurewebsites.net` |
-| `staticWebUrl` | `https://kaycare-prod-web.azurestaticapps.net` (or assigned URL) |
-| `keyVaultName` | `kaycare-prod-kv` |
-| `sqlServerFqdn` | `kaycare-prod-sql.database.windows.net` |
+| `RAILWAY_TOKEN` | From `railway whoami --token` |
+| `VERCEL_TOKEN` | From [vercel.com/account/tokens](https://vercel.com/account/tokens) |
+| `VERCEL_ORG_ID` | From `.vercel/project.json` after `vercel link` |
+| `VERCEL_PROJECT_ID` | From `.vercel/project.json` after `vercel link` |
+| `VITE_API_URL` | `https://kaycare-api.up.railway.app/api` |
+
+Push to `main` — both workflows auto-trigger.
 
 ---
 
-## Known Issues & Workarounds
+## Generate a JWT Signing Key
 
-### Key Vault reference not resolving for connection string
-The App Service managed identity correctly has Key Vault Secrets User role, but the
-`@Microsoft.KeyVault(...)` reference syntax sometimes takes 5–10 minutes to resolve after
-first deployment. The direct connection string set in Step 3 bypasses this entirely.
+```powershell
+[System.Convert]::ToBase64String((1..64 | ForEach-Object { Get-Random -Maximum 256 }) -as [byte[]])
+```
 
-### Tenant middleware on .azurewebsites.net
-`TenantResolutionMiddleware` is already patched to skip subdomain resolution for
-`.azurewebsites.net` and `.azurestaticapps.net` hosts.
+Use the output as `Jwt__Key` in Railway env vars.
 
-### F1 Free tier cold starts
-The F1 plan does not support Always On. Expect 10–30 second cold start on first request
-after inactivity. This is expected behaviour on the free tier.
+---
 
-### SQL Serverless auto-pause
-The database auto-pauses after 60 minutes of inactivity. First query after pause takes
-~30 seconds to resume. Acceptable for dev/demo; upgrade to Basic DTU ($5/month) for
-production traffic that cannot tolerate resume latency.
+## Architecture Diagram
+
+```
+Browser
+  │
+  └─► Vercel (React SPA)
+          │  HTTPS API calls
+          └─► Railway (ASP.NET Core 8 via Docker)
+                  │  EF Core / Npgsql
+                  ├─► Supabase PostgreSQL (database)
+                  │  Supabase C# SDK
+                  └─► Supabase Storage (patient docs, logos)
+```
+
+---
+
+## Known Gotchas
+
+### Railway cold starts
+Railway free tier may sleep after inactivity. First request after sleep takes ~5–15 seconds. Upgrade to the Pro plan ($20/month) to avoid this.
+
+### Supabase connection pooling
+Use the **Session Mode** pooler (port 5432) for EF Core. The Transaction Mode pooler (port 6543) is incompatible with EF Core migrations and `SaveChanges`.
+
+### MLLP Listener (HL7 port 2575)
+The MLLP background service runs on TCP port 2575. Railway only exposes one public HTTP port. The MLLP port is internal only — lab equipment must reach the service via a VPN or private network tunnel. This is the expected hospital network topology.
+
+### Supabase Storage bucket naming
+Bucket names follow the same rules as before (lowercase, letters/digits/hyphens, 3-63 chars). The existing `BuildContainerName` helper in `DocumentService` and `FacilitySettingsService` is fully compatible.

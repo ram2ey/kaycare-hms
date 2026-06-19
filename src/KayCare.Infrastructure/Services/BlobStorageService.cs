@@ -1,65 +1,97 @@
-using Azure.Storage.Blobs;
-using Azure.Storage.Blobs.Models;
-using Azure.Storage.Sas;
 using KayCare.Core.Interfaces;
+using Supabase.Storage;
 
 namespace KayCare.Infrastructure.Services;
 
+/// <summary>
+/// Supabase Storage implementation of IBlobStorageService.
+/// Each "containerName" maps to a Supabase Storage bucket (created on demand).
+/// </summary>
 public class BlobStorageService : IBlobStorageService
 {
-    private readonly BlobServiceClient _serviceClient;
+    private readonly Supabase.Client _supabase;
 
-    public BlobStorageService(BlobServiceClient serviceClient)
+    public BlobStorageService(Supabase.Client supabase)
     {
-        _serviceClient = serviceClient;
+        _supabase = supabase;
     }
 
-    public async Task UploadAsync(string containerName, string blobPath, Stream content, string contentType, CancellationToken ct = default)
+    // ── Upload ─────────────────────────────────────────────────────────────────
+
+    public async Task UploadAsync(
+        string containerName,
+        string blobPath,
+        Stream content,
+        string contentType,
+        CancellationToken ct = default)
     {
-        var containerClient = _serviceClient.GetBlobContainerClient(containerName);
+        await EnsureBucketAsync(containerName);
 
-        // Create the per-tenant container with no public access if it doesn't exist
-        await containerClient.CreateIfNotExistsAsync(PublicAccessType.None, cancellationToken: ct);
+        // Read stream into bytes — Supabase C# SDK requires byte[]
+        using var ms = new MemoryStream();
+        await content.CopyToAsync(ms, ct);
+        var bytes = ms.ToArray();
 
-        var blobClient = containerClient.GetBlobClient(blobPath);
-        await blobClient.UploadAsync(content, new BlobHttpHeaders { ContentType = contentType }, cancellationToken: ct);
+        var options = new Supabase.Storage.FileOptions { ContentType = contentType, Upsert = true };
+        await _supabase.Storage.From(containerName).Upload(bytes, blobPath, options);
     }
 
-    public async Task DeleteAsync(string containerName, string blobPath, CancellationToken ct = default)
-    {
-        var blobClient = _serviceClient
-            .GetBlobContainerClient(containerName)
-            .GetBlobClient(blobPath);
+    // ── Delete ─────────────────────────────────────────────────────────────────
 
-        await blobClient.DeleteIfExistsAsync(cancellationToken: ct);
+    public async Task DeleteAsync(
+        string containerName,
+        string blobPath,
+        CancellationToken ct = default)
+    {
+        await _supabase.Storage.From(containerName).Remove(new List<string> { blobPath });
     }
 
-    public async Task<byte[]?> DownloadAsync(string containerName, string blobPath, CancellationToken ct = default)
+    // ── Download ───────────────────────────────────────────────────────────────
+
+    public async Task<byte[]?> DownloadAsync(
+        string containerName,
+        string blobPath,
+        CancellationToken ct = default)
     {
-        var blobClient = _serviceClient
-            .GetBlobContainerClient(containerName)
-            .GetBlobClient(blobPath);
-
-        if (!await blobClient.ExistsAsync(ct))
-            return null;
-
-        var response = await blobClient.DownloadContentAsync(ct);
-        return response.Value.Content.ToArray();
-    }
-
-    public Uri GenerateSasUri(string containerName, string blobPath, TimeSpan expiry)
-    {
-        var blobClient = _serviceClient
-            .GetBlobContainerClient(containerName)
-            .GetBlobClient(blobPath);
-
-        var sasBuilder = new BlobSasBuilder(BlobSasPermissions.Read, DateTimeOffset.UtcNow.Add(expiry))
+        try
         {
-            BlobContainerName = containerName,
-            BlobName          = blobPath,
-            Resource          = "b"
-        };
+            return await _supabase.Storage.From(containerName).Download(blobPath, null);
+        }
+        catch
+        {
+            // Supabase throws when the object does not exist
+            return null;
+        }
+    }
 
-        return blobClient.GenerateSasUri(sasBuilder);
+    // ── Signed URL ─────────────────────────────────────────────────────────────
+
+    public async Task<Uri> GenerateSasUriAsync(
+        string containerName,
+        string blobPath,
+        TimeSpan expiry,
+        CancellationToken ct = default)
+    {
+        var expiresInSeconds = (int)expiry.TotalSeconds;
+        var signedUrl = await _supabase.Storage
+            .From(containerName)
+            .CreateSignedUrl(blobPath, expiresInSeconds);
+
+        return new Uri(signedUrl);
+    }
+
+    // ── Helpers ────────────────────────────────────────────────────────────────
+
+    /// <summary>Creates a private bucket if it does not already exist.</summary>
+    private async Task EnsureBucketAsync(string bucketName)
+    {
+        try
+        {
+            await _supabase.Storage.CreateBucket(bucketName, new BucketUpsertOptions { Public = false });
+        }
+        catch
+        {
+            // Bucket already exists — safe to ignore
+        }
     }
 }

@@ -97,7 +97,7 @@ public class DocumentService : IDocumentService
             .FirstOrDefaultAsync(d => d.DocumentId == documentId, ct)
             ?? throw new NotFoundException(nameof(PatientDocument), documentId);
 
-        var uri = _blob.GenerateSasUri(doc.ContainerName, doc.BlobPath, SasExpiry);
+        var uri = await _blob.GenerateSasUriAsync(doc.ContainerName, doc.BlobPath, SasExpiry, ct);
         return uri.ToString();
     }
 
