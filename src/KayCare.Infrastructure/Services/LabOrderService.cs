@@ -219,7 +219,7 @@ public class LabOrderService : ILabOrderService
                 .ThenInclude(i => i.CriticalCallLog)
             .Include(o => o.Items)
                 .ThenInclude(i => i.LabResult)
-                    .ThenInclude(r => r.Observations)
+                    .ThenInclude(r => r!.Observations)
             .AsNoTracking()
             .FirstOrDefaultAsync(o => o.LabOrderId == labOrderId, ct);
 
@@ -230,6 +230,9 @@ public class LabOrderService : ILabOrderService
 
     public async Task<LabOrderItemResponse> ReceiveSampleAsync(Guid labOrderItemId, CancellationToken ct)
     {
+        using var transaction = await _db.Database.BeginTransactionAsync(ct);
+        await _db.AcquireAdvisoryLockAsync(_currentUser.TenantId, "LabAccessionNumber", ct);
+
         var item = await _db.LabOrderItems
             .Include(i => i.LabOrder)
             .FirstOrDefaultAsync(i => i.LabOrderItemId == labOrderItemId, ct)
@@ -247,6 +250,8 @@ public class LabOrderService : ILabOrderService
             item.LabOrder.Status = LabOrderStatus.Active;
 
         await _db.SaveChangesAsync(ct);
+
+        await transaction.CommitAsync(ct);
 
         return ToItemResponse(item);
     }
@@ -375,9 +380,11 @@ public class LabOrderService : ILabOrderService
             .OrderByDescending(n => n)
             .FirstOrDefaultAsync(ct);
 
-        var next = last == null
-            ? 1
-            : int.Parse(last[(prefix.Length)..]) + 1;
+        var next = 1;
+        if (last is not null && int.TryParse(last[prefix.Length..], out var lastSeq))
+        {
+            next = lastSeq + 1;
+        }
 
         return $"{prefix}{next:D5}";
     }
@@ -581,7 +588,7 @@ public class LabOrderService : ILabOrderService
             .Include(i => i.LabOrder)
                 .ThenInclude(o => o.Patient)
             .Include(i => i.LabResult)
-                .ThenInclude(r => r.Observations)
+                .ThenInclude(r => r!.Observations)
             .Where(i => i.IsCritical)
             .OrderByDescending(i => i.ResultedAt)
             .ToListAsync(ct);

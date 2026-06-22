@@ -23,6 +23,9 @@ public class CreditNoteService : ICreditNoteService
 
     public async Task<CreditNoteResponse> CreateAsync(CreateCreditNoteRequest req, CancellationToken ct = default)
     {
+        using var transaction = await _db.Database.BeginTransactionAsync(ct);
+        await _db.AcquireAdvisoryLockAsync(_currentUser.TenantId, "CreditNoteNumber", ct);
+
         var bill = await _db.Bills.FirstOrDefaultAsync(b => b.BillId == req.BillId, ct)
             ?? throw new NotFoundException(nameof(Bill), req.BillId);
 
@@ -51,6 +54,8 @@ public class CreditNoteService : ICreditNoteService
 
         _db.CreditNotes.Add(cn);
         await _db.SaveChangesAsync(ct);
+
+        await transaction.CommitAsync(ct);
 
         return await LoadDetailAsync(cn.CreditNoteId, ct)
             ?? throw new InvalidOperationException("Failed to load created credit note.");
@@ -199,8 +204,16 @@ public class CreditNoteService : ICreditNoteService
 
     private async Task<string> GenerateNumberAsync(CancellationToken ct)
     {
-        var year  = DateTime.UtcNow.Year;
-        var count = await _db.CreditNotes.CountAsync(c => c.CreatedAt.Year == year, ct);
-        return $"CN-{year}-{(count + 1):D5}";
+        var year   = DateTime.UtcNow.Year;
+        var prefix = $"CN-{year}-";
+        var last = await _db.CreditNotes
+            .Where(c => c.CreditNoteNumber.StartsWith(prefix))
+            .OrderByDescending(c => c.CreditNoteNumber)
+            .Select(c => c.CreditNoteNumber)
+            .FirstOrDefaultAsync(ct);
+        var seq = 1;
+        if (last is not null && int.TryParse(last[prefix.Length..], out var lastNum))
+            seq = lastNum + 1;
+        return $"{prefix}{seq:D5}";
     }
 }

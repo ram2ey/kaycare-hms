@@ -23,88 +23,142 @@ public class ChargeCaptureService : IChargeCaptureService
 
     public async Task CaptureConsultationChargeAsync(Guid consultationId, CancellationToken ct = default)
     {
-        var consultation = await _db.Consultations
-            .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.ConsultationId == consultationId, ct);
-        if (consultation is null) return;
-
-        // Idempotency: skip if already captured
-        var alreadyCaptured = await _db.BillItems
-            .AnyAsync(i => i.SourceType == ChargeSourceType.Consultation
-                        && i.SourceId   == consultationId, ct);
-        if (alreadyCaptured) return;
-
-        var bill  = await FindOrCreateBillAsync(consultation.PatientId, consultationId, ct);
-        var price = await GetCatalogPriceAsync("Medical Consultation", "Consultation", ct);
-
-        _db.BillItems.Add(new BillItem
+        var ownsTransaction = _db.Database.CurrentTransaction == null;
+        var transaction = ownsTransaction ? await _db.Database.BeginTransactionAsync(ct) : null;
+        try
         {
-            BillId      = bill.BillId,
-            TenantId    = _tenantContext.TenantId,
-            Description = "Medical Consultation",
-            Category    = "Consultation",
-            Quantity    = 1,
-            UnitPrice   = price,
-            SourceType  = ChargeSourceType.Consultation,
-            SourceId    = consultationId
-        });
+            await _db.AcquireAdvisoryLockAsync(_tenantContext.TenantId, "BillNumber", ct);
 
-        await _db.SaveChangesAsync(ct);
-        await RecalculateTotalAsync(bill.BillId, ct);
+            var consultation = await _db.Consultations
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.ConsultationId == consultationId, ct);
+            if (consultation is null) return;
+
+            // Idempotency: skip if already captured
+            var alreadyCaptured = await _db.BillItems
+                .AnyAsync(i => i.SourceType == ChargeSourceType.Consultation
+                            && i.SourceId   == consultationId, ct);
+            if (alreadyCaptured) return;
+
+            var bill  = await FindOrCreateBillAsync(consultation.PatientId, consultationId, ct);
+            var price = await GetCatalogPriceAsync("Medical Consultation", "Consultation", ct);
+
+            _db.BillItems.Add(new BillItem
+            {
+                BillId      = bill.BillId,
+                TenantId    = _tenantContext.TenantId,
+                Description = "Medical Consultation",
+                Category    = "Consultation",
+                Quantity    = 1,
+                UnitPrice   = price,
+                SourceType  = ChargeSourceType.Consultation,
+                SourceId    = consultationId
+            });
+
+            await _db.SaveChangesAsync(ct);
+            await RecalculateTotalAsync(bill.BillId, ct);
+
+            if (ownsTransaction && transaction != null)
+            {
+                await transaction.CommitAsync(ct);
+            }
+        }
+        catch
+        {
+            if (ownsTransaction && transaction != null)
+            {
+                await transaction.RollbackAsync(ct);
+            }
+            throw;
+        }
+        finally
+        {
+            if (ownsTransaction && transaction != null)
+            {
+                await transaction.DisposeAsync();
+            }
+        }
     }
 
     // ── Lab Order ─────────────────────────────────────────────────────────────
 
     public async Task CaptureLabOrderChargesAsync(Guid labOrderId, CancellationToken ct = default)
     {
-        var order = await _db.LabOrders
-            .Include(o => o.Items)
-            .FirstOrDefaultAsync(o => o.LabOrderId == labOrderId, ct);
-        if (order is null) return;
-
-        var bill = await FindOrCreateBillAsync(order.PatientId, order.ConsultationId, ct);
-
-        // Link the order to the bill
-        if (order.BillId != bill.BillId)
+        var ownsTransaction = _db.Database.CurrentTransaction == null;
+        var transaction = ownsTransaction ? await _db.Database.BeginTransactionAsync(ct) : null;
+        try
         {
-            order.BillId = bill.BillId;
-            await _db.SaveChangesAsync(ct);
-        }
+            await _db.AcquireAdvisoryLockAsync(_tenantContext.TenantId, "BillNumber", ct);
 
-        // Batch-load catalog once
-        var catalog = await _db.ServiceCatalogItems
-            .Where(s => s.IsActive)
-            .AsNoTracking()
-            .ToListAsync(ct);
+            var order = await _db.LabOrders
+                .Include(o => o.Items)
+                .FirstOrDefaultAsync(o => o.LabOrderId == labOrderId, ct);
+            if (order is null) return;
 
-        var anyAdded = false;
-        foreach (var labItem in order.Items)
-        {
-            var alreadyCaptured = await _db.BillItems
-                .AnyAsync(i => i.SourceType == ChargeSourceType.LabOrder
-                            && i.SourceId   == labItem.LabOrderItemId, ct);
-            if (alreadyCaptured) continue;
+            var bill = await FindOrCreateBillAsync(order.PatientId, order.ConsultationId, ct);
 
-            var price = FindCatalogPrice(catalog, labItem.TestName, "Laboratory");
-
-            _db.BillItems.Add(new BillItem
+            // Link the order to the bill
+            if (order.BillId != bill.BillId)
             {
-                BillId      = bill.BillId,
-                TenantId    = _tenantContext.TenantId,
-                Description = labItem.TestName,
-                Category    = "Laboratory",
-                Quantity    = 1,
-                UnitPrice   = price,
-                SourceType  = ChargeSourceType.LabOrder,
-                SourceId    = labItem.LabOrderItemId
-            });
-            anyAdded = true;
-        }
+                order.BillId = bill.BillId;
+                await _db.SaveChangesAsync(ct);
+            }
 
-        if (anyAdded)
+            // Batch-load catalog once
+            var catalog = await _db.ServiceCatalogItems
+                .Where(s => s.IsActive)
+                .AsNoTracking()
+                .ToListAsync(ct);
+
+            var anyAdded = false;
+            foreach (var labItem in order.Items)
+            {
+                var alreadyCaptured = await _db.BillItems
+                    .AnyAsync(i => i.SourceType == ChargeSourceType.LabOrder
+                                && i.SourceId   == labItem.LabOrderItemId, ct);
+                if (alreadyCaptured) continue;
+
+                var price = FindCatalogPrice(catalog, labItem.TestName, "Laboratory");
+
+                _db.BillItems.Add(new BillItem
+                {
+                    BillId      = bill.BillId,
+                    TenantId    = _tenantContext.TenantId,
+                    Description = labItem.TestName,
+                    Category    = "Laboratory",
+                    Quantity    = 1,
+                    UnitPrice   = price,
+                    SourceType  = ChargeSourceType.LabOrder,
+                    SourceId    = labItem.LabOrderItemId
+                });
+                anyAdded = true;
+            }
+
+            if (anyAdded)
+            {
+                await _db.SaveChangesAsync(ct);
+                await RecalculateTotalAsync(bill.BillId, ct);
+            }
+
+            if (ownsTransaction && transaction != null)
+            {
+                await transaction.CommitAsync(ct);
+            }
+        }
+        catch
         {
-            await _db.SaveChangesAsync(ct);
-            await RecalculateTotalAsync(bill.BillId, ct);
+            if (ownsTransaction && transaction != null)
+            {
+                await transaction.RollbackAsync(ct);
+            }
+            throw;
+        }
+        finally
+        {
+            if (ownsTransaction && transaction != null)
+            {
+                await transaction.DisposeAsync();
+            }
         }
     }
 
@@ -112,53 +166,80 @@ public class ChargeCaptureService : IChargeCaptureService
 
     public async Task CaptureDispenseChargesAsync(Guid prescriptionId, Guid dispenseEventId, CancellationToken ct = default)
     {
-        var prescription = await _db.Prescriptions
-            .FirstOrDefaultAsync(p => p.PrescriptionId == prescriptionId, ct);
-        if (prescription is null) return;
-
-        var dispenseEvent = await _db.DispenseEvents
-            .Include(e => e.Items)
-                .ThenInclude(i => i.PrescriptionItem)
-            .FirstOrDefaultAsync(e => e.DispenseEventId == dispenseEventId, ct);
-        if (dispenseEvent is null) return;
-
-        var bill = await FindOrCreateBillAsync(prescription.PatientId, prescription.ConsultationId, ct);
-
-        // Link prescription to bill
-        if (prescription.BillId != bill.BillId)
+        var ownsTransaction = _db.Database.CurrentTransaction == null;
+        var transaction = ownsTransaction ? await _db.Database.BeginTransactionAsync(ct) : null;
+        try
         {
-            prescription.BillId = bill.BillId;
-            await _db.SaveChangesAsync(ct);
-        }
+            await _db.AcquireAdvisoryLockAsync(_tenantContext.TenantId, "BillNumber", ct);
 
-        var catalog = await _db.ServiceCatalogItems
-            .Where(s => s.IsActive)
-            .AsNoTracking()
-            .ToListAsync(ct);
+            var prescription = await _db.Prescriptions
+                .FirstOrDefaultAsync(p => p.PrescriptionId == prescriptionId, ct);
+            if (prescription is null) return;
 
-        foreach (var eventItem in dispenseEvent.Items)
-        {
-            var med      = eventItem.PrescriptionItem;
-            var price    = FindCatalogPrice(catalog, med.MedicationName, "Medication");
-            var desc     = string.IsNullOrWhiteSpace(med.Strength)
-                ? med.MedicationName
-                : $"{med.MedicationName} {med.Strength}";
+            var dispenseEvent = await _db.DispenseEvents
+                .Include(e => e.Items)
+                    .ThenInclude(i => i.PrescriptionItem)
+                .FirstOrDefaultAsync(e => e.DispenseEventId == dispenseEventId, ct);
+            if (dispenseEvent is null) return;
 
-            _db.BillItems.Add(new BillItem
+            var bill = await FindOrCreateBillAsync(prescription.PatientId, prescription.ConsultationId, ct);
+
+            // Link prescription to bill
+            if (prescription.BillId != bill.BillId)
             {
-                BillId      = bill.BillId,
-                TenantId    = _tenantContext.TenantId,
-                Description = desc,
-                Category    = "Medication",
-                Quantity    = eventItem.QuantityDispensed,
-                UnitPrice   = price,
-                SourceType  = ChargeSourceType.Prescription,
-                SourceId    = eventItem.DispenseEventItemId
-            });
-        }
+                prescription.BillId = bill.BillId;
+                await _db.SaveChangesAsync(ct);
+            }
 
-        await _db.SaveChangesAsync(ct);
-        await RecalculateTotalAsync(bill.BillId, ct);
+            var catalog = await _db.ServiceCatalogItems
+                .Where(s => s.IsActive)
+                .AsNoTracking()
+                .ToListAsync(ct);
+
+            foreach (var eventItem in dispenseEvent.Items)
+            {
+                var med      = eventItem.PrescriptionItem;
+                var price    = FindCatalogPrice(catalog, med.MedicationName, "Medication");
+                var desc     = string.IsNullOrWhiteSpace(med.Strength)
+                    ? med.MedicationName
+                    : $"{med.MedicationName} {med.Strength}";
+
+                _db.BillItems.Add(new BillItem
+                {
+                    BillId      = bill.BillId,
+                    TenantId    = _tenantContext.TenantId,
+                    Description = desc,
+                    Category    = "Medication",
+                    Quantity    = eventItem.QuantityDispensed,
+                    UnitPrice   = price,
+                    SourceType  = ChargeSourceType.Prescription,
+                    SourceId    = eventItem.DispenseEventItemId
+                });
+            }
+
+            await _db.SaveChangesAsync(ct);
+            await RecalculateTotalAsync(bill.BillId, ct);
+
+            if (ownsTransaction && transaction != null)
+            {
+                await transaction.CommitAsync(ct);
+            }
+        }
+        catch
+        {
+            if (ownsTransaction && transaction != null)
+            {
+                await transaction.RollbackAsync(ct);
+            }
+            throw;
+        }
+        finally
+        {
+            if (ownsTransaction && transaction != null)
+            {
+                await transaction.DisposeAsync();
+            }
+        }
     }
 
     // ── Shared helpers ────────────────────────────────────────────────────────

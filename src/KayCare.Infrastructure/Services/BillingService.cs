@@ -25,6 +25,9 @@ public class BillingService : IBillingService
 
     public async Task<BillDetailResponse> CreateAsync(CreateBillRequest req, CancellationToken ct = default)
     {
+        using var transaction = await _db.Database.BeginTransactionAsync(ct);
+        await _db.AcquireAdvisoryLockAsync(_tenantContext.TenantId, "BillNumber", ct);
+
         var patientExists = await _db.Patients.AnyAsync(p => p.PatientId == req.PatientId, ct);
         if (!patientExists) throw new NotFoundException(nameof(Patient), req.PatientId);
 
@@ -85,6 +88,8 @@ public class BillingService : IBillingService
 
         bill.TotalAmount = total;
         await _db.SaveChangesAsync(ct);
+
+        await transaction.CommitAsync(ct);
 
         return await LoadDetailAsync(bill.BillId, ct);
     }
@@ -172,7 +177,8 @@ public class BillingService : IBillingService
 
         bill.PaidAmount += req.Amount;
 
-        bill.Status = bill.PaidAmount >= (bill.TotalAmount - bill.DiscountAmount)
+        var effectiveBalance = bill.TotalAmount + bill.AdjustmentTotal - bill.DiscountAmount - bill.WriteOffAmount - bill.CreditNoteTotal - bill.PaidAmount;
+        bill.Status = effectiveBalance <= 0
             ? BillStatus.Paid
             : BillStatus.PartiallyPaid;
 

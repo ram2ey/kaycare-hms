@@ -114,6 +114,9 @@ public class RadiologyOrderService : IRadiologyOrderService
         if (procedures.Count != req.ProcedureIds.Count)
             throw new AppException("One or more selected procedures were not found or are inactive.");
 
+        using var transaction = await _db.Database.BeginTransactionAsync(ct);
+        await _db.AcquireAdvisoryLockAsync(_tenantContext.TenantId, "RadiologyAccessionNumber", ct);
+
         await _accessionSemaphore.WaitAsync(ct);
         try
         {
@@ -153,6 +156,8 @@ public class RadiologyOrderService : IRadiologyOrderService
 
             order.Status = RadiologyOrderStatus.Scheduled;
             await _db.SaveChangesAsync(ct);
+
+            await transaction.CommitAsync(ct);
 
             return await LoadDetailAsync(order.RadiologyOrderId, ct);
         }
@@ -341,20 +346,23 @@ public class RadiologyOrderService : IRadiologyOrderService
 
     private async Task<string> GenerateAccessionAsync(CancellationToken ct)
     {
-        var year  = DateTime.UtcNow.Year;
+        var year   = DateTime.UtcNow.Year;
         var prefix = $"RAD-{year}-";
-
-        var dbCount = await _db.RadiologyOrderItems
+        var last = await _db.RadiologyOrderItems
             .Where(i => i.AccessionNumber != null && i.AccessionNumber.StartsWith(prefix))
-            .CountAsync(ct);
-
+            .OrderByDescending(i => i.AccessionNumber)
+            .Select(i => i.AccessionNumber!)
+            .FirstOrDefaultAsync(ct);
+        var seq = 1;
+        if (last is not null && int.TryParse(last[prefix.Length..], out var lastNum))
+            seq = lastNum + 1;
+        // Also incorporate any added items in the ChangeTracker to prevent collision in multi-item orders
         var localCount = _db.ChangeTracker.Entries<RadiologyOrderItem>()
             .Count(e => e.State == EntityState.Added 
                 && e.Entity.TenantId == _tenantContext.TenantId
                 && e.Entity.AccessionNumber != null 
                 && e.Entity.AccessionNumber.StartsWith(prefix));
-
-        return $"{prefix}{(dbCount + localCount + 1):D5}";
+        return $"{prefix}{(seq + localCount):D5}";
     }
 
     private static RadiologyOrderResponse MapSummary(RadiologyOrder o)

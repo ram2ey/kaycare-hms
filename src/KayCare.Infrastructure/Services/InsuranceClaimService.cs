@@ -1,4 +1,4 @@
-using KayCare.Core.Constants;
+ using KayCare.Core.Constants;
 using KayCare.Core.DTOs.Billing;
 using KayCare.Core.Entities;
 using KayCare.Core.Exceptions;
@@ -28,6 +28,9 @@ public class InsuranceClaimService : IInsuranceClaimService
 
     public async Task<InsuranceClaimResponse> CreateAsync(CreateClaimRequest req, CancellationToken ct = default)
     {
+        using var transaction = await _db.Database.BeginTransactionAsync(ct);
+        await _db.AcquireAdvisoryLockAsync(_tenantContext.TenantId, "ClaimNumber", ct);
+
         var bill = await _db.Bills
             .Include(b => b.Patient)
             .FirstOrDefaultAsync(b => b.BillId == req.BillId, ct)
@@ -79,6 +82,8 @@ public class InsuranceClaimService : IInsuranceClaimService
 
         _db.InsuranceClaims.Add(claim);
         await _db.SaveChangesAsync(ct);
+
+        await transaction.CommitAsync(ct);
 
         return await LoadDetailAsync(claim.ClaimId, ct)
             ?? throw new InvalidOperationException("Failed to load created claim.");
@@ -142,57 +147,68 @@ public class InsuranceClaimService : IInsuranceClaimService
     public async Task<InsuranceClaimResponse> ApproveAsync(
         Guid claimId, ApproveClaimRequest req, CancellationToken ct = default)
     {
-        var claim = await _db.InsuranceClaims
-            .Include(c => c.Bill)
-            .FirstOrDefaultAsync(c => c.ClaimId == claimId, ct)
-            ?? throw new NotFoundException(nameof(InsuranceClaim), claimId);
-
-        if (claim.Status != ClaimStatus.Submitted)
-            throw new AppException($"Only Submitted claims can be approved. Current status: {claim.Status}.", 409);
-
-        if (req.ApprovedAmount > claim.ClaimAmount)
-            throw new AppException(
-                $"Approved amount ({req.ApprovedAmount:F2}) cannot exceed the claimed amount ({claim.ClaimAmount:F2}).", 400);
-
-        var bill = claim.Bill;
-
-        if (req.ApprovedAmount > bill.BalanceDue)
-            throw new AppException(
-                $"Approved amount ({req.ApprovedAmount:F2}) cannot exceed the bill balance due ({bill.BalanceDue:F2}).", 400);
-
-        // Auto-create a payment on the bill for the approved amount
-        var payment = new Payment
+        using var transaction = await _db.Database.BeginTransactionAsync(ct);
+        try
         {
-            BillId           = bill.BillId,
-            Amount           = req.ApprovedAmount,
-            PaymentMethod    = "Insurance",
-            Reference        = claim.ClaimNumber,
-            ReceivedByUserId = _currentUser.UserId,
-            PaymentDate      = DateTime.UtcNow,
-            Notes            = $"Insurance claim {claim.ClaimNumber} approved"
-        };
+            var claim = await _db.InsuranceClaims
+                .Include(c => c.Bill)
+                .FirstOrDefaultAsync(c => c.ClaimId == claimId, ct)
+                ?? throw new NotFoundException(nameof(InsuranceClaim), claimId);
 
-        _db.Payments.Add(payment);
-        await _db.SaveChangesAsync(ct); // flush to get PaymentId
+            if (claim.Status != ClaimStatus.Submitted)
+                throw new AppException($"Only Submitted claims can be approved. Current status: {claim.Status}.", 409);
 
-        bill.PaidAmount += req.ApprovedAmount;
-        bill.Status = bill.PaidAmount >= (bill.TotalAmount + bill.AdjustmentTotal - bill.DiscountAmount - bill.WriteOffAmount)
-            ? BillStatus.Paid
-            : BillStatus.PartiallyPaid;
+            if (req.ApprovedAmount > claim.ClaimAmount)
+                throw new AppException(
+                    $"Approved amount ({req.ApprovedAmount:F2}) cannot exceed the claimed amount ({claim.ClaimAmount:F2}).", 400);
 
-        claim.ApprovedAmount = req.ApprovedAmount;
-        claim.Status         = req.ApprovedAmount >= claim.ClaimAmount
-            ? ClaimStatus.Approved
-            : ClaimStatus.PartiallyApproved;
-        claim.ResponseAt     = DateTime.UtcNow;
-        claim.PaymentId      = payment.PaymentId;
-        if (!string.IsNullOrWhiteSpace(req.Notes))
-            claim.Notes = req.Notes.Trim();
+            var bill = claim.Bill;
 
-        await _db.SaveChangesAsync(ct);
+            if (req.ApprovedAmount > bill.BalanceDue)
+                throw new AppException(
+                    $"Approved amount ({req.ApprovedAmount:F2}) cannot exceed the bill balance due ({bill.BalanceDue:F2}).", 400);
 
-        return await LoadDetailAsync(claimId, ct)
-            ?? throw new InvalidOperationException("Failed to load claim after approval.");
+            // Auto-create a payment on the bill for the approved amount
+            var payment = new Payment
+            {
+                BillId           = bill.BillId,
+                Amount           = req.ApprovedAmount,
+                PaymentMethod    = "Insurance",
+                Reference        = claim.ClaimNumber,
+                ReceivedByUserId = _currentUser.UserId,
+                PaymentDate      = DateTime.UtcNow,
+                Notes            = $"Insurance claim {claim.ClaimNumber} approved"
+            };
+
+            _db.Payments.Add(payment);
+            await _db.SaveChangesAsync(ct); // flush to get PaymentId
+
+            bill.PaidAmount += req.ApprovedAmount;
+            var effectiveBalance = bill.TotalAmount + bill.AdjustmentTotal - bill.DiscountAmount - bill.WriteOffAmount - bill.CreditNoteTotal - bill.PaidAmount;
+            bill.Status = effectiveBalance <= 0
+                ? BillStatus.Paid
+                : BillStatus.PartiallyPaid;
+
+            claim.ApprovedAmount = req.ApprovedAmount;
+            claim.Status         = req.ApprovedAmount >= claim.ClaimAmount
+                ? ClaimStatus.Approved
+                : ClaimStatus.PartiallyApproved;
+            claim.ResponseAt     = DateTime.UtcNow;
+            claim.PaymentId      = payment.PaymentId;
+            if (!string.IsNullOrWhiteSpace(req.Notes))
+                claim.Notes = req.Notes.Trim();
+
+            await _db.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+
+            return await LoadDetailAsync(claimId, ct)
+                ?? throw new InvalidOperationException("Failed to load claim after approval.");
+        }
+        catch
+        {
+            await transaction.RollbackAsync(ct);
+            throw;
+        }
     }
 
     // ── Reject ────────────────────────────────────────────────────────────────
@@ -541,9 +557,16 @@ public class InsuranceClaimService : IInsuranceClaimService
 
     private async Task<string> GenerateClaimNumberAsync(CancellationToken ct)
     {
-        var year = DateTime.UtcNow.Year;
-        var count = await _db.InsuranceClaims
-            .CountAsync(c => c.CreatedAt.Year == year, ct);
-        return $"CLM-{year}-{(count + 1):D5}";
+        var year   = DateTime.UtcNow.Year;
+        var prefix = $"CLM-{year}-";
+        var last = await _db.InsuranceClaims
+            .Where(c => c.ClaimNumber.StartsWith(prefix))
+            .OrderByDescending(c => c.ClaimNumber)
+            .Select(c => c.ClaimNumber)
+            .FirstOrDefaultAsync(ct);
+        var seq = 1;
+        if (last is not null && int.TryParse(last[prefix.Length..], out var lastNum))
+            seq = lastNum + 1;
+        return $"{prefix}{seq:D5}";
     }
 }

@@ -131,136 +131,158 @@ public class PrescriptionService : IPrescriptionService
 
     public async Task<PrescriptionDetailResponse> DispenseAsync(Guid prescriptionId, DispensePrescriptionRequest req, CancellationToken ct = default)
     {
-        var prescription = await _db.Prescriptions
-            .Include(p => p.Items)
-            .FirstOrDefaultAsync(p => p.PrescriptionId == prescriptionId, ct)
-            ?? throw new NotFoundException(nameof(Prescription), prescriptionId);
-
-        if (prescription.Status != PrescriptionStatus.Active && prescription.Status != PrescriptionStatus.PartiallyDispensed)
-            throw new AppException($"Cannot dispense a prescription with status '{prescription.Status}'.", 400);
-
-        var now = DateTime.UtcNow;
-
-        // Mark all items as fully dispensed
-        foreach (var item in prescription.Items)
+        using var transaction = await _db.Database.BeginTransactionAsync(ct);
+        try
         {
-            item.QuantityDispensed = item.Quantity;
-            item.IsFullyDispensed  = true;
-        }
+            var prescription = await _db.Prescriptions
+                .Include(p => p.Items)
+                .FirstOrDefaultAsync(p => p.PrescriptionId == prescriptionId, ct)
+                ?? throw new NotFoundException(nameof(Prescription), prescriptionId);
 
-        // Create a dispense event for the full dispense
-        var dispenseEvent = new DispenseEvent
-        {
-            TenantId          = _tenantContext.TenantId,
-            PrescriptionId    = prescriptionId,
-            DispensedByUserId = _currentUser.UserId,
-            DispensedAt       = now,
-            Notes             = req.Notes,
-            Items             = prescription.Items.Select(item => new DispenseEventItem
+            if (prescription.Status != PrescriptionStatus.Active && prescription.Status != PrescriptionStatus.PartiallyDispensed)
+                throw new AppException($"Cannot dispense a prescription with status '{prescription.Status}'.", 400);
+
+            var now = DateTime.UtcNow;
+
+            // Mark all items as fully dispensed
+            foreach (var item in prescription.Items)
             {
-                TenantId           = _tenantContext.TenantId,
-                PrescriptionItemId = item.ItemId,
-                QuantityDispensed  = item.Quantity
-            }).ToList()
-        };
+                item.QuantityDispensed = item.Quantity;
+                item.IsFullyDispensed  = true;
+            }
 
-        _db.DispenseEvents.Add(dispenseEvent);
+            // Create a dispense event for the full dispense
+            var dispenseEvent = new DispenseEvent
+            {
+                TenantId          = _tenantContext.TenantId,
+                PrescriptionId    = prescriptionId,
+                DispensedByUserId = _currentUser.UserId,
+                DispensedAt       = now,
+                Notes             = req.Notes,
+                Items             = prescription.Items.Select(item => new DispenseEventItem
+                {
+                    TenantId           = _tenantContext.TenantId,
+                    PrescriptionItemId = item.ItemId,
+                    QuantityDispensed  = item.Quantity
+                }).ToList()
+            };
 
-        prescription.Status            = PrescriptionStatus.Dispensed;
-        prescription.DispensedAt       = now;
-        prescription.DispensedByUserId = _currentUser.UserId;
+            _db.DispenseEvents.Add(dispenseEvent);
 
-        if (req.Notes is not null)
-            prescription.Notes = string.IsNullOrWhiteSpace(prescription.Notes)
-                ? req.Notes
-                : $"{prescription.Notes}\n[Dispensing note] {req.Notes}";
+            prescription.Status            = PrescriptionStatus.Dispensed;
+            prescription.DispensedAt       = now;
+            prescription.DispensedByUserId = _currentUser.UserId;
 
-        await _db.SaveChangesAsync(ct);
+            if (req.Notes is not null)
+                prescription.Notes = string.IsNullOrWhiteSpace(prescription.Notes)
+                    ? req.Notes
+                    : $"{prescription.Notes}\n[Dispensing note] {req.Notes}";
 
-        await _chargeCapture.CaptureDispenseChargesAsync(prescriptionId, dispenseEvent.DispenseEventId, ct);
-        await _stockMovement.DeductForDispenseAsync(prescriptionId, prescription.Items.Select(i => (i.MedicationName, i.Quantity)), ct);
+            await _db.SaveChangesAsync(ct);
 
-        return await LoadDetailAsync(prescriptionId, ct);
+            await _chargeCapture.CaptureDispenseChargesAsync(prescriptionId, dispenseEvent.DispenseEventId, ct);
+            await _stockMovement.DeductForDispenseAsync(prescriptionId, prescription.Items.Select(i => (i.MedicationName, i.Quantity)), ct);
+
+            await transaction.CommitAsync(ct);
+
+            return await LoadDetailAsync(prescriptionId, ct);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(ct);
+            throw;
+        }
     }
 
     // ── Partial Dispense ──────────────────────────────────────────────────────
 
     public async Task<PrescriptionDetailResponse> PartialDispenseAsync(Guid prescriptionId, PartialDispenseRequest req, CancellationToken ct = default)
     {
-        var prescription = await _db.Prescriptions
-            .Include(p => p.Items)
-            .FirstOrDefaultAsync(p => p.PrescriptionId == prescriptionId, ct)
-            ?? throw new NotFoundException(nameof(Prescription), prescriptionId);
-
-        if (prescription.Status != PrescriptionStatus.Active && prescription.Status != PrescriptionStatus.PartiallyDispensed)
-            throw new AppException($"Cannot dispense a prescription with status '{prescription.Status}'.", 400);
-
-        if (!req.Items.Any(i => i.QuantityToDispense > 0))
-            throw new AppException("At least one item must have a quantity to dispense.", 400);
-
-        // Validate each requested item exists and won't be over-dispensed
-        var itemMap = prescription.Items.ToDictionary(i => i.ItemId);
-        foreach (var reqItem in req.Items.Where(i => i.QuantityToDispense > 0))
+        using var transaction = await _db.Database.BeginTransactionAsync(ct);
+        try
         {
-            if (!itemMap.TryGetValue(reqItem.PrescriptionItemId, out var item))
-                throw new AppException($"Item {reqItem.PrescriptionItemId} does not belong to this prescription.", 400);
+            var prescription = await _db.Prescriptions
+                .Include(p => p.Items)
+                .FirstOrDefaultAsync(p => p.PrescriptionId == prescriptionId, ct)
+                ?? throw new NotFoundException(nameof(Prescription), prescriptionId);
 
-            var remaining = item.Quantity - item.QuantityDispensed;
-            if (reqItem.QuantityToDispense > remaining)
-                throw new AppException($"Cannot dispense {reqItem.QuantityToDispense} of {item.MedicationName}: only {remaining} remaining.", 400);
-        }
+            if (prescription.Status != PrescriptionStatus.Active && prescription.Status != PrescriptionStatus.PartiallyDispensed)
+                throw new AppException($"Cannot dispense a prescription with status '{prescription.Status}'.", 400);
 
-        var now = DateTime.UtcNow;
+            if (!req.Items.Any(i => i.QuantityToDispense > 0))
+                throw new AppException("At least one item must have a quantity to dispense.", 400);
 
-        // Create dispense event
-        var eventItems = req.Items
-            .Where(i => i.QuantityToDispense > 0)
-            .Select(i => new DispenseEventItem
+            // Validate each requested item exists and won't be over-dispensed
+            var itemMap = prescription.Items.ToDictionary(i => i.ItemId);
+            foreach (var reqItem in req.Items.Where(i => i.QuantityToDispense > 0))
             {
-                TenantId           = _tenantContext.TenantId,
-                PrescriptionItemId = i.PrescriptionItemId,
-                QuantityDispensed  = i.QuantityToDispense
-            }).ToList();
+                if (!itemMap.TryGetValue(reqItem.PrescriptionItemId, out var item))
+                    throw new AppException($"Item {reqItem.PrescriptionItemId} does not belong to this prescription.", 400);
 
-        var dispenseEvent = new DispenseEvent
-        {
-            TenantId          = _tenantContext.TenantId,
-            PrescriptionId    = prescriptionId,
-            DispensedByUserId = _currentUser.UserId,
-            DispensedAt       = now,
-            Notes             = req.Notes,
-            Items             = eventItems
-        };
+                var remaining = item.Quantity - item.QuantityDispensed;
+                if (reqItem.QuantityToDispense > remaining)
+                    throw new AppException($"Cannot dispense {reqItem.QuantityToDispense} of {item.MedicationName}: only {remaining} remaining.", 400);
+            }
 
-        _db.DispenseEvents.Add(dispenseEvent);
+            var now = DateTime.UtcNow;
 
-        // Update running totals on each item
-        foreach (var reqItem in req.Items.Where(i => i.QuantityToDispense > 0))
-        {
-            var item = itemMap[reqItem.PrescriptionItemId];
-            item.QuantityDispensed += reqItem.QuantityToDispense;
-            item.IsFullyDispensed   = item.QuantityDispensed >= item.Quantity;
+            // Create dispense event
+            var eventItems = req.Items
+                .Where(i => i.QuantityToDispense > 0)
+                .Select(i => new DispenseEventItem
+                {
+                    TenantId           = _tenantContext.TenantId,
+                    PrescriptionItemId = i.PrescriptionItemId,
+                    QuantityDispensed  = i.QuantityToDispense
+                }).ToList();
+
+            var dispenseEvent = new DispenseEvent
+            {
+                TenantId          = _tenantContext.TenantId,
+                PrescriptionId    = prescriptionId,
+                DispensedByUserId = _currentUser.UserId,
+                DispensedAt       = now,
+                Notes             = req.Notes,
+                Items             = eventItems
+            };
+
+            _db.DispenseEvents.Add(dispenseEvent);
+
+            // Update running totals on each item
+            foreach (var reqItem in req.Items.Where(i => i.QuantityToDispense > 0))
+            {
+                var item = itemMap[reqItem.PrescriptionItemId];
+                item.QuantityDispensed += reqItem.QuantityToDispense;
+                item.IsFullyDispensed   = item.QuantityDispensed >= item.Quantity;
+            }
+
+            // Set prescription status based on whether all items are fully dispensed
+            var allFullyDispensed = prescription.Items.All(i => i.IsFullyDispensed);
+            if (allFullyDispensed)
+            {
+                prescription.Status            = PrescriptionStatus.Dispensed;
+                prescription.DispensedAt       = now;
+                prescription.DispensedByUserId = _currentUser.UserId;
+            }
+            else
+            {
+                prescription.Status = PrescriptionStatus.PartiallyDispensed;
+            }
+
+            await _db.SaveChangesAsync(ct);
+
+            await _chargeCapture.CaptureDispenseChargesAsync(prescriptionId, dispenseEvent.DispenseEventId, ct);
+            await _stockMovement.DeductForDispenseAsync(prescriptionId, eventItems.Select(i => (itemMap[i.PrescriptionItemId].MedicationName, i.QuantityDispensed)), ct);
+
+            await transaction.CommitAsync(ct);
+
+            return await LoadDetailAsync(prescriptionId, ct);
         }
-
-        // Set prescription status based on whether all items are fully dispensed
-        var allFullyDispensed = prescription.Items.All(i => i.IsFullyDispensed);
-        if (allFullyDispensed)
+        catch
         {
-            prescription.Status            = PrescriptionStatus.Dispensed;
-            prescription.DispensedAt       = now;
-            prescription.DispensedByUserId = _currentUser.UserId;
+            await transaction.RollbackAsync(ct);
+            throw;
         }
-        else
-        {
-            prescription.Status = PrescriptionStatus.PartiallyDispensed;
-        }
-
-        await _db.SaveChangesAsync(ct);
-
-        await _chargeCapture.CaptureDispenseChargesAsync(prescriptionId, dispenseEvent.DispenseEventId, ct);
-        await _stockMovement.DeductForDispenseAsync(prescriptionId, eventItems.Select(i => (itemMap[i.PrescriptionItemId].MedicationName, i.QuantityDispensed)), ct);
-
-        return await LoadDetailAsync(prescriptionId, ct);
     }
 
     // ── Cancel ────────────────────────────────────────────────────────────────

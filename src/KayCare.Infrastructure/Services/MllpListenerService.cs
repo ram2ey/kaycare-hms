@@ -38,9 +38,20 @@ public sealed class MllpListenerService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var listener = new TcpListener(IPAddress.Any, MllpPort);
-        listener.Start();
-        _logger.LogInformation("MLLP listener started on TCP port {Port}", MllpPort);
+        await Task.Yield(); // Avoid blocking application startup
+
+        TcpListener listener;
+        try
+        {
+            listener = new TcpListener(IPAddress.Any, MllpPort);
+            listener.Start();
+            _logger.LogInformation("MLLP listener started on TCP port {Port}", MllpPort);
+        }
+        catch (SocketException ex)
+        {
+            _logger.LogCritical(ex, "Failed to bind MLLP listener to port {Port}. The application will continue without MLLP capabilities.", MllpPort);
+            return;
+        }
 
         try
         {
@@ -224,7 +235,6 @@ public sealed class MllpListenerService : BackgroundService
         };
 
         db.LabResults.Add(labResult);
-        await db.SaveChangesAsync(ct); // LabResultId populated after save
 
         var hasCritical = false;
         // ── Persist LabObservations ───────────────────────────────────────────
@@ -245,7 +255,7 @@ public sealed class MllpListenerService : BackgroundService
 
             db.LabObservations.Add(new LabObservation
             {
-                LabResultId    = labResult.LabResultId,
+                LabResult      = labResult, // Navigation property linking instead of ID
                 TenantId       = tenant.TenantId,
                 SequenceNumber = obs.SequenceNumber > 0 ? obs.SequenceNumber : i + 1,
                 TestCode       = obs.TestCode,
@@ -262,7 +272,7 @@ public sealed class MllpListenerService : BackgroundService
         {
             orderItem.Status      = Core.Constants.LabOrderItemStatus.Resulted;
             orderItem.ResultedAt  = DateTime.UtcNow;
-            orderItem.LabResultId = labResult.LabResultId;
+            orderItem.LabResult   = labResult; // Navigation property linking instead of ID
             orderItem.IsCritical  = hasCritical;
 
             var siblings = orderItem.LabOrder.Items.ToList();

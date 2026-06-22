@@ -294,7 +294,7 @@ Be professional, concise, and focused on patient safety.";
             return null;
         }
 
-        var url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={apiKey}";
+        var url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={apiKey}";
         
         var requestBody = new
         {

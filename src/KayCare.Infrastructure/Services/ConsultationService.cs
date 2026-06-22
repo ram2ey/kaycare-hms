@@ -131,32 +131,43 @@ public class ConsultationService : IConsultationService
 
     public async Task<ConsultationDetailResponse> SignAsync(Guid consultationId, CancellationToken ct = default)
     {
-        var consultation = await _db.Consultations
-            .FirstOrDefaultAsync(c => c.ConsultationId == consultationId, ct)
-            ?? throw new NotFoundException(nameof(Consultation), consultationId);
+        using var transaction = await _db.Database.BeginTransactionAsync(ct);
+        try
+        {
+            var consultation = await _db.Consultations
+                .FirstOrDefaultAsync(c => c.ConsultationId == consultationId, ct)
+                ?? throw new NotFoundException(nameof(Consultation), consultationId);
 
-        if (consultation.Status == ConsultationStatus.Signed)
-            throw new AppException("Consultation is already signed.", 400);
+            if (consultation.Status == ConsultationStatus.Signed)
+                throw new AppException("Consultation is already signed.", 400);
 
-        if (consultation.DoctorUserId != _currentUser.UserId &&
-            _currentUser.Role is not (Roles.SuperAdmin or Roles.Admin))
-            throw new AppException("Only the consulting doctor can sign off this consultation.", 403);
+            if (consultation.DoctorUserId != _currentUser.UserId &&
+                _currentUser.Role is not (Roles.SuperAdmin or Roles.Admin))
+                throw new AppException("Only the consulting doctor can sign off this consultation.", 403);
 
-        consultation.Status   = ConsultationStatus.Signed;
-        consultation.SignedAt = DateTime.UtcNow;
+            consultation.Status   = ConsultationStatus.Signed;
+            consultation.SignedAt = DateTime.UtcNow;
 
-        // Auto-complete the appointment when the doctor signs off
-        var appointment = await _db.Appointments
-            .FirstOrDefaultAsync(a => a.AppointmentId == consultation.AppointmentId, ct);
-        if (appointment is not null &&
-            AppointmentStatus.CanTransition(appointment.Status, AppointmentStatus.Completed))
-            appointment.Status = AppointmentStatus.Completed;
+            // Auto-complete the appointment when the doctor signs off
+            var appointment = await _db.Appointments
+                .FirstOrDefaultAsync(a => a.AppointmentId == consultation.AppointmentId, ct);
+            if (appointment is not null &&
+                AppointmentStatus.CanTransition(appointment.Status, AppointmentStatus.Completed))
+                appointment.Status = AppointmentStatus.Completed;
 
-        await _db.SaveChangesAsync(ct);
+            await _db.SaveChangesAsync(ct);
 
-        await _chargeCapture.CaptureConsultationChargeAsync(consultationId, ct);
+            await _chargeCapture.CaptureConsultationChargeAsync(consultationId, ct);
 
-        return await LoadDetailAsync(consultationId, ct);
+            await transaction.CommitAsync(ct);
+
+            return await LoadDetailAsync(consultationId, ct);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(ct);
+            throw;
+        }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

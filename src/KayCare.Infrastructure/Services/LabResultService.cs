@@ -9,8 +9,13 @@ namespace KayCare.Infrastructure.Services;
 public class LabResultService : ILabResultService
 {
     private readonly AppDbContext _db;
+    private readonly ITenantContext _tenantContext;
 
-    public LabResultService(AppDbContext db) => _db = db;
+    public LabResultService(AppDbContext db, ITenantContext tenantContext)
+    {
+        _db = db;
+        _tenantContext = tenantContext;
+    }
 
     public async Task<IReadOnlyList<LabResultResponse>> GetByPatientAsync(
         Guid patientId, CancellationToken ct)
@@ -121,105 +126,118 @@ public class LabResultService : ILabResultService
         var tenant = await _db.Tenants.AsNoTracking().FirstOrDefaultAsync(t => t.IsActive, ct);
         if (tenant == null) return false;
 
+        _tenantContext.TenantId = tenant.TenantId;
+        _tenantContext.TenantCode = tenant.TenantCode;
+
         var parsed = Hl7Parser.ParseOruR01(rawMessage);
         if (parsed == null) return false;
 
-        // Try to match to an open LabOrderItem by AccessionNumber
-        var orderItem = await _db.LabOrderItems
-            .FirstOrDefaultAsync(i => i.AccessionNumber == parsed.AccessionNumber
-                && i.TenantId == tenant.TenantId, ct);
-
-        Guid? patientId          = null;
-        Guid? orderingDoctorId   = null;
-
-        if (orderItem != null)
+        using var transaction = await _db.Database.BeginTransactionAsync(ct);
+        try
         {
-            var order = await _db.LabOrders.AsNoTracking()
-                .FirstOrDefaultAsync(o => o.LabOrderId == orderItem.LabOrderId, ct);
-            if (order != null)
+            // Try to match to an open LabOrderItem by AccessionNumber
+            var orderItem = await _db.LabOrderItems
+                .FirstOrDefaultAsync(i => i.AccessionNumber == parsed.AccessionNumber
+                    && i.TenantId == tenant.TenantId, ct);
+
+            Guid? patientId          = null;
+            Guid? orderingDoctorId   = null;
+
+            if (orderItem != null)
             {
-                patientId        = order.PatientId;
-                orderingDoctorId = order.OrderingDoctorUserId;
-            }
-        }
-
-        // If we still have no patient, try MRN lookup from PID segment
-        if (patientId == null && !string.IsNullOrEmpty(parsed.PatientMrn))
-        {
-            var patient = await _db.Patients.AsNoTracking()
-                .FirstOrDefaultAsync(p => p.MedicalRecordNumber == parsed.PatientMrn
-                    && p.TenantId == tenant.TenantId, ct);
-            patientId = patient?.PatientId;
-        }
-
-        if (patientId == null) return false;
-
-        // Check for duplicate accession
-        var existing = await _db.LabResults
-            .FirstOrDefaultAsync(r => r.AccessionNumber == parsed.AccessionNumber
-                && r.TenantId == tenant.TenantId, ct);
-
-        if (existing != null) return false;
-
-        var result = new LabResult
-        {
-            LabResultId          = Guid.NewGuid(),
-            PatientId            = patientId.Value,
-            OrderingDoctorUserId = orderingDoctorId,
-            AccessionNumber      = parsed.AccessionNumber,
-            OrderCode            = parsed.OrderCode,
-            OrderName            = parsed.OrderName,
-            OrderedAt            = parsed.OrderedAt,
-            ReceivedAt           = DateTime.UtcNow,
-            Status               = Core.Constants.LabResultStatus.Received,
-            RawHl7               = rawMessage,
-            LabOrderItemId       = orderItem?.LabOrderItemId,
-            TenantId             = tenant.TenantId,
-        };
-        _db.LabResults.Add(result);
-        await _db.SaveChangesAsync(ct);
-
-        var hasCritical = false;
-        foreach (var obs in parsed.Observations)
-        {
-            var isObsCritical = false;
-            var catalogItem = await _db.LabTestCatalog
-                .FirstOrDefaultAsync(t => t.TestCode == obs.TestCode, ct);
-            if (catalogItem != null && !string.IsNullOrWhiteSpace(catalogItem.CriticalReferenceRange))
-            {
-                isObsCritical = LabOrderService.IsValueCritical(obs.Value, catalogItem.CriticalReferenceRange);
-                if (isObsCritical)
+                var order = await _db.LabOrders.AsNoTracking()
+                    .FirstOrDefaultAsync(o => o.LabOrderId == orderItem.LabOrderId, ct);
+                if (order != null)
                 {
-                    hasCritical = true;
+                    patientId        = order.PatientId;
+                    orderingDoctorId = order.OrderingDoctorUserId;
                 }
             }
 
-            _db.LabObservations.Add(new LabObservation
+            // If we still have no patient, try MRN lookup from PID segment
+            if (patientId == null && !string.IsNullOrEmpty(parsed.PatientMrn))
             {
-                LabObservationId = Guid.NewGuid(),
-                LabResultId    = result.LabResultId,
-                TenantId       = tenant.TenantId,
-                SequenceNumber = obs.SequenceNumber > 0 ? obs.SequenceNumber : 1,
-                TestCode       = obs.TestCode,
-                TestName       = obs.TestName,
-                Value          = obs.Value,
-                Units          = obs.Units,
-                ReferenceRange = obs.ReferenceRange,
-                AbnormalFlag   = obs.AbnormalFlag,
-            });
-        }
-        await _db.SaveChangesAsync(ct);
+                var patient = await _db.Patients.AsNoTracking()
+                    .FirstOrDefaultAsync(p => p.MedicalRecordNumber == parsed.PatientMrn
+                        && p.TenantId == tenant.TenantId, ct);
+                patientId = patient?.PatientId;
+            }
 
-        // Update linked LabOrderItem status
-        if (orderItem != null)
-        {
-            orderItem.LabResultId = result.LabResultId;
-            orderItem.Status      = Core.Constants.LabOrderItemStatus.Resulted;
-            orderItem.ResultedAt  = DateTime.UtcNow;
-            orderItem.IsCritical  = hasCritical;
+            if (patientId == null) return false;
+
+            // Check for duplicate accession
+            var existing = await _db.LabResults
+                .FirstOrDefaultAsync(r => r.AccessionNumber == parsed.AccessionNumber
+                    && r.TenantId == tenant.TenantId, ct);
+
+            if (existing != null) return false;
+
+            var result = new LabResult
+            {
+                LabResultId          = Guid.NewGuid(),
+                PatientId            = patientId.Value,
+                OrderingDoctorUserId = orderingDoctorId,
+                AccessionNumber      = parsed.AccessionNumber,
+                OrderCode            = parsed.OrderCode,
+                OrderName            = parsed.OrderName,
+                OrderedAt            = parsed.OrderedAt,
+                ReceivedAt           = DateTime.UtcNow,
+                Status               = Core.Constants.LabResultStatus.Received,
+                RawHl7               = rawMessage,
+                LabOrderItemId       = orderItem?.LabOrderItemId,
+                TenantId             = tenant.TenantId,
+                Observations         = new List<LabObservation>()
+            };
+
+            var hasCritical = false;
+            foreach (var obs in parsed.Observations)
+            {
+                var isObsCritical = false;
+                var catalogItem = await _db.LabTestCatalog
+                    .FirstOrDefaultAsync(t => t.TestCode == obs.TestCode, ct);
+                if (catalogItem != null && !string.IsNullOrWhiteSpace(catalogItem.CriticalReferenceRange))
+                {
+                    isObsCritical = LabOrderService.IsValueCritical(obs.Value, catalogItem.CriticalReferenceRange);
+                    if (isObsCritical)
+                    {
+                        hasCritical = true;
+                    }
+                }
+
+                result.Observations.Add(new LabObservation
+                {
+                    LabObservationId = Guid.NewGuid(),
+                    TenantId       = tenant.TenantId,
+                    SequenceNumber = obs.SequenceNumber > 0 ? obs.SequenceNumber : 1,
+                    TestCode       = obs.TestCode,
+                    TestName       = obs.TestName,
+                    Value          = obs.Value,
+                    Units          = obs.Units,
+                    ReferenceRange = obs.ReferenceRange,
+                    AbnormalFlag   = obs.AbnormalFlag,
+                    LabResult      = result
+                });
+            }
+
+            _db.LabResults.Add(result);
+
+            // Update linked LabOrderItem status
+            if (orderItem != null)
+            {
+                orderItem.LabResult = result;
+                orderItem.Status      = Core.Constants.LabOrderItemStatus.Resulted;
+                orderItem.ResultedAt  = DateTime.UtcNow;
+                orderItem.IsCritical  = hasCritical;
+            }
+
             await _db.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+            return true;
         }
-
-        return true;
+        catch
+        {
+            await transaction.RollbackAsync(ct);
+            throw;
+        }
     }
 }

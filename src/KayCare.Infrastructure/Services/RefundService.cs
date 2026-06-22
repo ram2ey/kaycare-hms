@@ -23,6 +23,9 @@ public class RefundService : IRefundService
 
     public async Task<RefundResponse> CreateAsync(CreateRefundRequest req, CancellationToken ct = default)
     {
+        using var transaction = await _db.Database.BeginTransactionAsync(ct);
+        await _db.AcquireAdvisoryLockAsync(_currentUser.TenantId, "RefundNumber", ct);
+
         var bill = await _db.Bills.FirstOrDefaultAsync(b => b.BillId == req.BillId, ct)
             ?? throw new NotFoundException(nameof(Bill), req.BillId);
 
@@ -68,6 +71,8 @@ public class RefundService : IRefundService
         _db.Refunds.Add(refund);
         await _db.SaveChangesAsync(ct);
 
+        await transaction.CommitAsync(ct);
+
         return await LoadDetailAsync(refund.RefundId, ct)
             ?? throw new InvalidOperationException("Failed to load created refund.");
     }
@@ -106,41 +111,51 @@ public class RefundService : IRefundService
 
     public async Task<RefundResponse> ProcessAsync(Guid id, CancellationToken ct = default)
     {
-        var refund = await _db.Refunds
-            .Include(r => r.Bill)
-            .FirstOrDefaultAsync(r => r.RefundId == id, ct)
-            ?? throw new NotFoundException(nameof(Refund), id);
+        using var transaction = await _db.Database.BeginTransactionAsync(ct);
+        try
+        {
+            var refund = await _db.Refunds
+                .Include(r => r.Bill)
+                .FirstOrDefaultAsync(r => r.RefundId == id, ct)
+                ?? throw new NotFoundException(nameof(Refund), id);
 
-        if (refund.Status != RefundStatus.Pending)
-            throw new AppException($"Only Pending refunds can be processed. Current status: {refund.Status}.", 409);
+            if (refund.Status != RefundStatus.Pending)
+                throw new AppException($"Only Pending refunds can be processed. Current status: {refund.Status}.", 409);
 
-        var bill = refund.Bill;
+            var bill = refund.Bill;
 
-        if (refund.Amount > bill.PaidAmount)
-            throw new AppException($"Refund amount ({refund.Amount:F2}) exceeds current paid amount ({bill.PaidAmount:F2}).", 400);
+            if (refund.Amount > bill.PaidAmount)
+                throw new AppException($"Refund amount ({refund.Amount:F2}) exceeds current paid amount ({bill.PaidAmount:F2}).", 400);
 
-        // Record the refund payout — reduce PaidAmount on the bill
-        bill.PaidAmount -= refund.Amount;
+            // Record the refund payout — reduce PaidAmount on the bill
+            bill.PaidAmount -= refund.Amount;
 
-        // Recalculate bill status
-        var effectiveBalance = bill.TotalAmount + bill.AdjustmentTotal
-            - bill.DiscountAmount - bill.WriteOffAmount - bill.CreditNoteTotal - bill.PaidAmount;
+            // Recalculate bill status
+            var effectiveBalance = bill.TotalAmount + bill.AdjustmentTotal
+                - bill.DiscountAmount - bill.WriteOffAmount - bill.CreditNoteTotal - bill.PaidAmount;
 
-        if (effectiveBalance <= 0)
-            bill.Status = BillStatus.Paid;
-        else if (bill.PaidAmount > 0)
-            bill.Status = BillStatus.PartiallyPaid;
-        else if (bill.Status == BillStatus.Paid || bill.Status == BillStatus.PartiallyPaid)
-            bill.Status = BillStatus.Issued;
+            if (effectiveBalance <= 0)
+                bill.Status = BillStatus.Paid;
+            else if (bill.PaidAmount > 0)
+                bill.Status = BillStatus.PartiallyPaid;
+            else if (bill.Status == BillStatus.Paid || bill.Status == BillStatus.PartiallyPaid)
+                bill.Status = BillStatus.Issued;
 
-        refund.Status          = RefundStatus.Processed;
-        refund.ProcessedByUserId = _currentUser.UserId;
-        refund.ProcessedAt     = DateTime.UtcNow;
+            refund.Status          = RefundStatus.Processed;
+            refund.ProcessedByUserId = _currentUser.UserId;
+            refund.ProcessedAt     = DateTime.UtcNow;
 
-        await _db.SaveChangesAsync(ct);
+            await _db.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
 
-        return await LoadDetailAsync(id, ct)
-            ?? throw new InvalidOperationException("Failed to load refund after processing.");
+            return await LoadDetailAsync(id, ct)
+                ?? throw new InvalidOperationException("Failed to load refund after processing.");
+        }
+        catch
+        {
+            await transaction.RollbackAsync(ct);
+            throw;
+        }
     }
 
     // ── Cancel ────────────────────────────────────────────────────────────────
@@ -203,8 +218,16 @@ public class RefundService : IRefundService
 
     private async Task<string> GenerateNumberAsync(CancellationToken ct)
     {
-        var year  = DateTime.UtcNow.Year;
-        var count = await _db.Refunds.CountAsync(r => r.CreatedAt.Year == year, ct);
-        return $"REF-{year}-{(count + 1):D5}";
+        var year   = DateTime.UtcNow.Year;
+        var prefix = $"REF-{year}-";
+        var last = await _db.Refunds
+            .Where(r => r.RefundNumber.StartsWith(prefix))
+            .OrderByDescending(r => r.RefundNumber)
+            .Select(r => r.RefundNumber)
+            .FirstOrDefaultAsync(ct);
+        var seq = 1;
+        if (last is not null && int.TryParse(last[prefix.Length..], out var lastNum))
+            seq = lastNum + 1;
+        return $"{prefix}{seq:D5}";
     }
 }

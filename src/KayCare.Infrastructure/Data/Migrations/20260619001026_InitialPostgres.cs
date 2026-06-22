@@ -27,9 +27,9 @@ namespace KayCare.Infrastructure.Migrations
                     EntityType = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     EntityId = table.Column<Guid>(type: "uuid", nullable: false),
                     PatientId = table.Column<Guid>(type: "uuid", nullable: true),
-                    Details = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Details = table.Column<string>(type: "text", nullable: true),
                     IpAddress = table.Column<string>(type: "character varying(45)", maxLength: 45, nullable: true),
-                    Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()")
+                    Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
@@ -40,14 +40,14 @@ namespace KayCare.Infrastructure.Migrations
                 name: "BillTemplates",
                 columns: table => new
                 {
-                    BillTemplateId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    BillTemplateId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     Name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     Description = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     Category = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false),
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()"),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()")
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
@@ -58,7 +58,7 @@ namespace KayCare.Infrastructure.Migrations
                 name: "DrugInventory",
                 columns: table => new
                 {
-                    DrugInventoryId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    DrugInventoryId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     Name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     GenericName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
                     DosageForm = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
@@ -72,8 +72,8 @@ namespace KayCare.Infrastructure.Migrations
                     IsControlledSubstance = table.Column<bool>(type: "boolean", nullable: false),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false),
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()"),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()")
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
@@ -84,15 +84,15 @@ namespace KayCare.Infrastructure.Migrations
                 name: "FacilitySettings",
                 columns: table => new
                 {
-                    FacilitySettingsId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    FacilitySettingsId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     FacilityName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     Address = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     Phone = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
                     Email = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
                     LogoBlobName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()"),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()")
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
@@ -118,7 +118,7 @@ namespace KayCare.Infrastructure.Migrations
                 name: "ImagingProcedures",
                 columns: table => new
                 {
-                    ImagingProcedureId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    ImagingProcedureId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     ProcedureCode = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     ProcedureName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     Modality = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
@@ -136,7 +136,7 @@ namespace KayCare.Infrastructure.Migrations
                 name: "LabTestCatalog",
                 columns: table => new
                 {
-                    LabTestCatalogId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    LabTestCatalogId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     TestCode = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     TestName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     Department = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
@@ -157,7 +157,7 @@ namespace KayCare.Infrastructure.Migrations
                 name: "Patients",
                 columns: table => new
                 {
-                    PatientId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    PatientId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     MedicalRecordNumber = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     FirstName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     MiddleName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
@@ -187,8 +187,8 @@ namespace KayCare.Infrastructure.Migrations
                     IsActive = table.Column<bool>(type: "boolean", nullable: false),
                     RegisteredByUserId = table.Column<Guid>(type: "uuid", nullable: false),
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
-                    RegisteredAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()"),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()")
+                    RegisteredAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
@@ -199,7 +199,7 @@ namespace KayCare.Infrastructure.Migrations
                 name: "Payers",
                 columns: table => new
                 {
-                    PayerId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    PayerId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     Name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     Type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     ContactPhone = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true),
@@ -207,8 +207,8 @@ namespace KayCare.Infrastructure.Migrations
                     Notes = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false),
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()"),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()")
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
@@ -233,15 +233,15 @@ namespace KayCare.Infrastructure.Migrations
                 name: "ServiceCatalogItems",
                 columns: table => new
                 {
-                    ServiceCatalogItemId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    ServiceCatalogItemId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     Name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     Description = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     Category = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     UnitPrice = table.Column<decimal>(type: "numeric(12,2)", nullable: false),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false),
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()"),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()")
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
@@ -252,7 +252,7 @@ namespace KayCare.Infrastructure.Migrations
                 name: "Suppliers",
                 columns: table => new
                 {
-                    SupplierId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    SupplierId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     Name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     ContactName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
                     Phone = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
@@ -261,8 +261,8 @@ namespace KayCare.Infrastructure.Migrations
                     Notes = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false),
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()"),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()")
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
@@ -273,7 +273,7 @@ namespace KayCare.Infrastructure.Migrations
                 name: "Tenants",
                 columns: table => new
                 {
-                    TenantId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    TenantId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     TenantCode = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     TenantName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     Subdomain = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
@@ -281,8 +281,8 @@ namespace KayCare.Infrastructure.Migrations
                     IsActive = table.Column<bool>(type: "boolean", nullable: false),
                     MaxUsers = table.Column<int>(type: "integer", nullable: false),
                     StorageQuotaGB = table.Column<int>(type: "integer", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()"),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()")
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
@@ -293,15 +293,15 @@ namespace KayCare.Infrastructure.Migrations
                 name: "Wards",
                 columns: table => new
                 {
-                    WardId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    WardId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     Name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     WardType = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     Description = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     DailyRate = table.Column<decimal>(type: "numeric(12,2)", nullable: false),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false),
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()"),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()")
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
@@ -312,14 +312,14 @@ namespace KayCare.Infrastructure.Migrations
                 name: "BillTemplateItems",
                 columns: table => new
                 {
-                    BillTemplateItemId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    BillTemplateItemId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
                     BillTemplateId = table.Column<Guid>(type: "uuid", nullable: false),
                     Description = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
                     Category = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     Quantity = table.Column<int>(type: "integer", nullable: false),
                     UnitPrice = table.Column<decimal>(type: "numeric(12,2)", nullable: false),
-                    TotalPrice = table.Column<decimal>(type: "numeric(12,2)", nullable: false, computedColumnSql: "[Quantity] * [UnitPrice]", stored: true)
+                    TotalPrice = table.Column<decimal>(type: "numeric(12,2)", nullable: false, computedColumnSql: "\"Quantity\" * \"UnitPrice\"", stored: true)
                 },
                 constraints: table =>
                 {
@@ -336,14 +336,14 @@ namespace KayCare.Infrastructure.Migrations
                 name: "PatientAllergies",
                 columns: table => new
                 {
-                    AllergyId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    AllergyId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
                     PatientId = table.Column<Guid>(type: "uuid", nullable: false),
                     AllergyType = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     AllergenName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     Reaction = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     Severity = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    RecordedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()"),
+                    RecordedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
                     RecordedByUserId = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
@@ -393,7 +393,7 @@ namespace KayCare.Infrastructure.Migrations
                 name: "PurchaseOrders",
                 columns: table => new
                 {
-                    PurchaseOrderId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    PurchaseOrderId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     OrderNumber = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
                     SupplierId = table.Column<Guid>(type: "uuid", nullable: true),
                     Status = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
@@ -401,8 +401,8 @@ namespace KayCare.Infrastructure.Migrations
                     ExpectedDeliveryDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     Notes = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()"),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()")
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
@@ -419,7 +419,7 @@ namespace KayCare.Infrastructure.Migrations
                 name: "Users",
                 columns: table => new
                 {
-                    UserId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     RoleId = table.Column<int>(type: "integer", nullable: false),
                     Email = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
                     PasswordHash = table.Column<string>(type: "character varying(512)", maxLength: 512, nullable: false),
@@ -435,8 +435,8 @@ namespace KayCare.Infrastructure.Migrations
                     LockedUntil = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     CreatedByUserId = table.Column<Guid>(type: "uuid", nullable: true),
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()"),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()")
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
@@ -459,14 +459,14 @@ namespace KayCare.Infrastructure.Migrations
                 name: "Beds",
                 columns: table => new
                 {
-                    BedId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    BedId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     WardId = table.Column<Guid>(type: "uuid", nullable: false),
                     BedNumber = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     Status = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     Notes = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()"),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()")
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
@@ -483,7 +483,7 @@ namespace KayCare.Infrastructure.Migrations
                 name: "PurchaseOrderItems",
                 columns: table => new
                 {
-                    PurchaseOrderItemId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    PurchaseOrderItemId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
                     PurchaseOrderId = table.Column<Guid>(type: "uuid", nullable: false),
                     DrugInventoryId = table.Column<Guid>(type: "uuid", nullable: false),
@@ -512,7 +512,7 @@ namespace KayCare.Infrastructure.Migrations
                 name: "Appointments",
                 columns: table => new
                 {
-                    AppointmentId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    AppointmentId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     PatientId = table.Column<Guid>(type: "uuid", nullable: false),
                     DoctorUserId = table.Column<Guid>(type: "uuid", nullable: false),
                     ScheduledAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
@@ -527,8 +527,8 @@ namespace KayCare.Infrastructure.Migrations
                     CancellationReason = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     CreatedByUserId = table.Column<Guid>(type: "uuid", nullable: false),
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()"),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()")
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
@@ -551,7 +551,7 @@ namespace KayCare.Infrastructure.Migrations
                 name: "Bills",
                 columns: table => new
                 {
-                    BillId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    BillId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     BillNumber = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     PatientId = table.Column<Guid>(type: "uuid", nullable: false),
                     ConsultationId = table.Column<Guid>(type: "uuid", nullable: true),
@@ -568,11 +568,11 @@ namespace KayCare.Infrastructure.Migrations
                     WriteOffReason = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     CreditNoteTotal = table.Column<decimal>(type: "numeric(12,2)", nullable: false, defaultValue: 0m),
                     PaidAmount = table.Column<decimal>(type: "numeric(12,2)", nullable: false),
-                    BalanceDue = table.Column<decimal>(type: "numeric(12,2)", nullable: false, computedColumnSql: "[TotalAmount] + [AdjustmentTotal] - [DiscountAmount] - [WriteOffAmount] - [CreditNoteTotal] - [PaidAmount]", stored: true),
+                    BalanceDue = table.Column<decimal>(type: "numeric(12,2)", nullable: false, computedColumnSql: "\"TotalAmount\" + \"AdjustmentTotal\" - \"DiscountAmount\" - \"WriteOffAmount\" - \"CreditNoteTotal\" - \"PaidAmount\"", stored: true),
                     IssuedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()"),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()")
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
@@ -601,7 +601,7 @@ namespace KayCare.Infrastructure.Migrations
                 name: "PatientDocuments",
                 columns: table => new
                 {
-                    DocumentId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    DocumentId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     PatientId = table.Column<Guid>(type: "uuid", nullable: false),
                     ConsultationId = table.Column<Guid>(type: "uuid", nullable: true),
                     UploadedByUserId = table.Column<Guid>(type: "uuid", nullable: false),
@@ -613,8 +613,8 @@ namespace KayCare.Infrastructure.Migrations
                     BlobPath = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
                     ContainerName = table.Column<string>(type: "character varying(63)", maxLength: 63, nullable: false),
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()"),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()")
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
@@ -637,7 +637,7 @@ namespace KayCare.Infrastructure.Migrations
                 name: "Prescriptions",
                 columns: table => new
                 {
-                    PrescriptionId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    PrescriptionId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     ConsultationId = table.Column<Guid>(type: "uuid", nullable: false),
                     PatientId = table.Column<Guid>(type: "uuid", nullable: false),
                     BillId = table.Column<Guid>(type: "uuid", nullable: true),
@@ -649,8 +649,8 @@ namespace KayCare.Infrastructure.Migrations
                     DispensedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     DispensedByUserId = table.Column<Guid>(type: "uuid", nullable: true),
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()"),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()")
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
@@ -679,14 +679,14 @@ namespace KayCare.Infrastructure.Migrations
                 name: "PrescriptionTemplates",
                 columns: table => new
                 {
-                    TemplateId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    TemplateId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     CreatedByUserId = table.Column<Guid>(type: "uuid", nullable: false),
                     Name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     Description = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     IsShared = table.Column<bool>(type: "boolean", nullable: false),
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()"),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()")
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
@@ -703,7 +703,7 @@ namespace KayCare.Infrastructure.Migrations
                 name: "StockMovements",
                 columns: table => new
                 {
-                    StockMovementId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    StockMovementId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
                     DrugInventoryId = table.Column<Guid>(type: "uuid", nullable: false),
                     MovementType = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
@@ -714,7 +714,7 @@ namespace KayCare.Infrastructure.Migrations
                     ReferenceType = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     Notes = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     CreatedByUserId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()")
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
@@ -737,7 +737,7 @@ namespace KayCare.Infrastructure.Migrations
                 name: "Admissions",
                 columns: table => new
                 {
-                    AdmissionId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    AdmissionId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     AdmissionNumber = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     PatientId = table.Column<Guid>(type: "uuid", nullable: false),
                     BedId = table.Column<Guid>(type: "uuid", nullable: false),
@@ -760,8 +760,8 @@ namespace KayCare.Infrastructure.Migrations
                     FollowUpInstructions = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
                     AttendingPhysicianNotes = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()"),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()")
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
@@ -802,14 +802,14 @@ namespace KayCare.Infrastructure.Migrations
                 name: "Consultations",
                 columns: table => new
                 {
-                    ConsultationId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    ConsultationId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     AppointmentId = table.Column<Guid>(type: "uuid", nullable: false),
                     PatientId = table.Column<Guid>(type: "uuid", nullable: false),
                     DoctorUserId = table.Column<Guid>(type: "uuid", nullable: false),
-                    SubjectiveNotes = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    ObjectiveNotes = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    AssessmentNotes = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    PlanNotes = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    SubjectiveNotes = table.Column<string>(type: "text", nullable: true),
+                    ObjectiveNotes = table.Column<string>(type: "text", nullable: true),
+                    AssessmentNotes = table.Column<string>(type: "text", nullable: true),
+                    PlanNotes = table.Column<string>(type: "text", nullable: true),
                     BloodPressureSystolic = table.Column<int>(type: "integer", nullable: true),
                     BloodPressureDiastolic = table.Column<int>(type: "integer", nullable: true),
                     HeartRateBPM = table.Column<int>(type: "integer", nullable: true),
@@ -819,12 +819,12 @@ namespace KayCare.Infrastructure.Migrations
                     OxygenSaturationPct = table.Column<decimal>(type: "numeric(4,1)", nullable: true),
                     PrimaryDiagnosisCode = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
                     PrimaryDiagnosisDesc = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
-                    SecondaryDiagnoses = table.Column<string>(type: "nvarchar(max)", nullable: false, defaultValue: "[]"),
+                    SecondaryDiagnoses = table.Column<string>(type: "text", nullable: false, defaultValue: "[]"),
                     Status = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false, defaultValue: "Draft"),
                     SignedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()"),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()")
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
@@ -853,7 +853,7 @@ namespace KayCare.Infrastructure.Migrations
                 name: "BillAdjustments",
                 columns: table => new
                 {
-                    BillAdjustmentId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    BillAdjustmentId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     BillId = table.Column<Guid>(type: "uuid", nullable: false),
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
                     Amount = table.Column<decimal>(type: "numeric(12,2)", nullable: false),
@@ -882,14 +882,14 @@ namespace KayCare.Infrastructure.Migrations
                 name: "BillItems",
                 columns: table => new
                 {
-                    ItemId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    ItemId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
                     BillId = table.Column<Guid>(type: "uuid", nullable: false),
                     Description = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     Category = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     Quantity = table.Column<int>(type: "integer", nullable: false),
                     UnitPrice = table.Column<decimal>(type: "numeric(12,2)", nullable: false),
-                    TotalPrice = table.Column<decimal>(type: "numeric(12,2)", nullable: false, computedColumnSql: "[Quantity] * [UnitPrice]", stored: true),
+                    TotalPrice = table.Column<decimal>(type: "numeric(12,2)", nullable: false, computedColumnSql: "\"Quantity\" * \"UnitPrice\"", stored: true),
                     SourceType = table.Column<string>(type: "text", nullable: true),
                     SourceId = table.Column<Guid>(type: "uuid", nullable: true)
                 },
@@ -908,7 +908,7 @@ namespace KayCare.Infrastructure.Migrations
                 name: "CreditNotes",
                 columns: table => new
                 {
-                    CreditNoteId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    CreditNoteId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     CreditNoteNumber = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     BillId = table.Column<Guid>(type: "uuid", nullable: false),
                     PatientId = table.Column<Guid>(type: "uuid", nullable: false),
@@ -921,8 +921,8 @@ namespace KayCare.Infrastructure.Migrations
                     ApprovedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     AppliedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()"),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()")
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
@@ -957,7 +957,7 @@ namespace KayCare.Infrastructure.Migrations
                 name: "Payments",
                 columns: table => new
                 {
-                    PaymentId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    PaymentId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     BillId = table.Column<Guid>(type: "uuid", nullable: false),
                     Amount = table.Column<decimal>(type: "numeric(12,2)", nullable: false),
                     PaymentMethod = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
@@ -966,8 +966,8 @@ namespace KayCare.Infrastructure.Migrations
                     PaymentDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     Notes = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()"),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()")
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
@@ -990,7 +990,7 @@ namespace KayCare.Infrastructure.Migrations
                 name: "RadiologyOrders",
                 columns: table => new
                 {
-                    RadiologyOrderId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    RadiologyOrderId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     PatientId = table.Column<Guid>(type: "uuid", nullable: false),
                     BillId = table.Column<Guid>(type: "uuid", nullable: true),
                     OrderingDoctorUserId = table.Column<Guid>(type: "uuid", nullable: false),
@@ -999,8 +999,8 @@ namespace KayCare.Infrastructure.Migrations
                     ClinicalIndication = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     Notes = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()"),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()")
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
@@ -1029,7 +1029,7 @@ namespace KayCare.Infrastructure.Migrations
                 name: "DispenseEvents",
                 columns: table => new
                 {
-                    DispenseEventId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    DispenseEventId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
                     PrescriptionId = table.Column<Guid>(type: "uuid", nullable: false),
                     DispensedByUserId = table.Column<Guid>(type: "uuid", nullable: false),
@@ -1057,7 +1057,7 @@ namespace KayCare.Infrastructure.Migrations
                 name: "PrescriptionItems",
                 columns: table => new
                 {
-                    ItemId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    ItemId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
                     PrescriptionId = table.Column<Guid>(type: "uuid", nullable: false),
                     MedicationName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
@@ -1088,7 +1088,7 @@ namespace KayCare.Infrastructure.Migrations
                 name: "PrescriptionTemplateItems",
                 columns: table => new
                 {
-                    TemplateItemId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    TemplateItemId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
                     TemplateId = table.Column<Guid>(type: "uuid", nullable: false),
                     MedicationName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
@@ -1117,7 +1117,7 @@ namespace KayCare.Infrastructure.Migrations
                 name: "AdmissionTransfers",
                 columns: table => new
                 {
-                    AdmissionTransferId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    AdmissionTransferId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
                     AdmissionId = table.Column<Guid>(type: "uuid", nullable: false),
                     FromBedId = table.Column<Guid>(type: "uuid", nullable: false),
@@ -1173,7 +1173,7 @@ namespace KayCare.Infrastructure.Migrations
                 name: "InpatientCharges",
                 columns: table => new
                 {
-                    InpatientChargeId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    InpatientChargeId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
                     AdmissionId = table.Column<Guid>(type: "uuid", nullable: false),
                     ChargeDate = table.Column<DateOnly>(type: "date", nullable: false),
@@ -1184,7 +1184,7 @@ namespace KayCare.Infrastructure.Migrations
                     TotalPrice = table.Column<decimal>(type: "numeric(12,2)", nullable: false),
                     Notes = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     CreatedByUserId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()")
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
@@ -1207,7 +1207,7 @@ namespace KayCare.Infrastructure.Migrations
                 name: "NursingNotes",
                 columns: table => new
                 {
-                    NursingNoteId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    NursingNoteId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     PatientId = table.Column<Guid>(type: "uuid", nullable: false),
                     AdmissionId = table.Column<Guid>(type: "uuid", nullable: true),
                     AuthorId = table.Column<Guid>(type: "uuid", nullable: false),
@@ -1244,7 +1244,7 @@ namespace KayCare.Infrastructure.Migrations
                 name: "VitalSigns",
                 columns: table => new
                 {
-                    VitalSignsId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    VitalSignsId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     PatientId = table.Column<Guid>(type: "uuid", nullable: false),
                     AdmissionId = table.Column<Guid>(type: "uuid", nullable: true),
                     ConsultationId = table.Column<Guid>(type: "uuid", nullable: true),
@@ -1290,7 +1290,7 @@ namespace KayCare.Infrastructure.Migrations
                 name: "LabOrders",
                 columns: table => new
                 {
-                    LabOrderId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    LabOrderId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     PatientId = table.Column<Guid>(type: "uuid", nullable: false),
                     ConsultationId = table.Column<Guid>(type: "uuid", nullable: true),
                     BillId = table.Column<Guid>(type: "uuid", nullable: true),
@@ -1299,8 +1299,8 @@ namespace KayCare.Infrastructure.Migrations
                     Status = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
                     Notes = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()"),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()")
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
@@ -1335,7 +1335,7 @@ namespace KayCare.Infrastructure.Migrations
                 name: "Referrals",
                 columns: table => new
                 {
-                    ReferralId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    ReferralId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     ReferralNumber = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     PatientId = table.Column<Guid>(type: "uuid", nullable: false),
                     ConsultationId = table.Column<Guid>(type: "uuid", nullable: true),
@@ -1350,8 +1350,8 @@ namespace KayCare.Infrastructure.Migrations
                     Status = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     ResponseNotes = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()"),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()")
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
@@ -1386,7 +1386,7 @@ namespace KayCare.Infrastructure.Migrations
                 name: "Refunds",
                 columns: table => new
                 {
-                    RefundId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    RefundId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     RefundNumber = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     BillId = table.Column<Guid>(type: "uuid", nullable: false),
                     PatientId = table.Column<Guid>(type: "uuid", nullable: false),
@@ -1401,8 +1401,8 @@ namespace KayCare.Infrastructure.Migrations
                     Notes = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     ProcessedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()"),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()")
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
@@ -1443,7 +1443,7 @@ namespace KayCare.Infrastructure.Migrations
                 name: "InsuranceClaims",
                 columns: table => new
                 {
-                    ClaimId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    ClaimId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     ClaimNumber = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     BillId = table.Column<Guid>(type: "uuid", nullable: false),
                     PayerId = table.Column<Guid>(type: "uuid", nullable: false),
@@ -1459,8 +1459,8 @@ namespace KayCare.Infrastructure.Migrations
                     ResponseAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     PaymentId = table.Column<Guid>(type: "uuid", nullable: true),
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()"),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()")
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
@@ -1501,7 +1501,7 @@ namespace KayCare.Infrastructure.Migrations
                 name: "RadiologyOrderItems",
                 columns: table => new
                 {
-                    RadiologyOrderItemId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    RadiologyOrderItemId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     RadiologyOrderId = table.Column<Guid>(type: "uuid", nullable: false),
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
                     ImagingProcedureId = table.Column<Guid>(type: "uuid", nullable: false),
@@ -1544,7 +1544,7 @@ namespace KayCare.Infrastructure.Migrations
                 name: "DispenseEventItems",
                 columns: table => new
                 {
-                    DispenseEventItemId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    DispenseEventItemId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
                     DispenseEventId = table.Column<Guid>(type: "uuid", nullable: false),
                     PrescriptionItemId = table.Column<Guid>(type: "uuid", nullable: false),
@@ -1571,7 +1571,7 @@ namespace KayCare.Infrastructure.Migrations
                 name: "MedicationAdministrations",
                 columns: table => new
                 {
-                    MedicationAdministrationId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    MedicationAdministrationId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     PrescriptionId = table.Column<Guid>(type: "uuid", nullable: false),
                     PrescriptionItemId = table.Column<Guid>(type: "uuid", nullable: false),
                     PatientId = table.Column<Guid>(type: "uuid", nullable: false),
@@ -1625,7 +1625,7 @@ namespace KayCare.Infrastructure.Migrations
                 name: "LabOrderItems",
                 columns: table => new
                 {
-                    LabOrderItemId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    LabOrderItemId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     LabOrderId = table.Column<Guid>(type: "uuid", nullable: false),
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
                     LabTestCatalogId = table.Column<Guid>(type: "uuid", nullable: false),
@@ -1670,15 +1670,15 @@ namespace KayCare.Infrastructure.Migrations
                 name: "CriticalCallLogs",
                 columns: table => new
                 {
-                    CriticalCallLogId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    CriticalCallLogId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     LabOrderItemId = table.Column<Guid>(type: "uuid", nullable: false),
                     RecipientName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     CalledByName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     CalledAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     Notes = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: false),
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()"),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()")
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
@@ -1695,7 +1695,7 @@ namespace KayCare.Infrastructure.Migrations
                 name: "LabResults",
                 columns: table => new
                 {
-                    LabResultId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    LabResultId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     PatientId = table.Column<Guid>(type: "uuid", nullable: false),
                     OrderingDoctorUserId = table.Column<Guid>(type: "uuid", nullable: true),
                     AccessionNumber = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
@@ -1704,11 +1704,11 @@ namespace KayCare.Infrastructure.Migrations
                     OrderedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     ReceivedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     Status = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false, defaultValue: "Received"),
-                    RawHl7 = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    RawHl7 = table.Column<string>(type: "text", nullable: true),
                     LabOrderItemId = table.Column<Guid>(type: "uuid", nullable: true),
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()"),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "SYSUTCDATETIME()")
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
@@ -1737,7 +1737,7 @@ namespace KayCare.Infrastructure.Migrations
                 name: "LabObservations",
                 columns: table => new
                 {
-                    LabObservationId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
+                    LabObservationId = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     LabResultId = table.Column<Guid>(type: "uuid", nullable: false),
                     TenantId = table.Column<Guid>(type: "uuid", nullable: false),
                     SequenceNumber = table.Column<int>(type: "integer", nullable: false),

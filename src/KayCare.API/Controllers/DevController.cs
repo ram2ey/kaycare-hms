@@ -7,6 +7,7 @@ using KayCare.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
+#if DEBUG
 namespace KayCare.API.Controllers;
 
 [ApiController]
@@ -72,3 +73,4 @@ public class DevHl7Observation
     public string? ReferenceRange { get; set; }
     public string? AbnormalFlag { get; set; }
 }
+#endif

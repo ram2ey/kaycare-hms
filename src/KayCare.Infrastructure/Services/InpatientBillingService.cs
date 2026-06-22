@@ -193,69 +193,89 @@ public class InpatientBillingService : IInpatientBillingService
 
     public async Task<Guid> GenerateBillAsync(Guid admissionId, CancellationToken ct = default)
     {
-        var admission = await _db.Admissions
-            .Include(a => a.Patient)
-            .FirstOrDefaultAsync(a => a.AdmissionId == admissionId, ct)
-            ?? throw new NotFoundException("Admission", admissionId);
-
-        var charges = await _db.InpatientCharges
-            .Where(c => c.AdmissionId == admissionId)
-            .ToListAsync(ct);
-
-        // Find or create bill linked to this admission
-        var bill = await _db.Bills
-            .Include(b => b.Items)
-            .FirstOrDefaultAsync(b => b.AdmissionId == admissionId && b.Status != "Cancelled", ct);
-
-        if (bill == null)
+        using var transaction = await _db.Database.BeginTransactionAsync(ct);
+        try
         {
-            var year  = DateTime.UtcNow.Year;
-            var count = await _db.Bills.CountAsync(b => b.CreatedAt.Year == year, ct);
-            var billNum = $"INV-{year}-{(count + 1):D5}";
+            var admission = await _db.Admissions
+                .Include(a => a.Patient)
+                .FirstOrDefaultAsync(a => a.AdmissionId == admissionId, ct)
+                ?? throw new NotFoundException("Admission", admissionId);
 
-            bill = new Bill
+            var charges = await _db.InpatientCharges
+                .Where(c => c.AdmissionId == admissionId)
+                .ToListAsync(ct);
+
+            // Find or create bill linked to this admission
+            var bill = await _db.Bills
+                .Include(b => b.Items)
+                .FirstOrDefaultAsync(b => b.AdmissionId == admissionId && b.Status != "Cancelled", ct);
+
+            if (bill == null)
             {
-                BillNumber      = billNum,
-                PatientId       = admission.PatientId,
-                AdmissionId     = admissionId,
-                CreatedByUserId = _currentUser.UserId,
-                Status          = "Draft",
-                TotalAmount     = 0,
-                PaidAmount      = 0,
-            };
-            _db.Bills.Add(bill);
+                await _db.AcquireAdvisoryLockAsync(_tenantContext.TenantId, "BillNumber", ct);
+
+                var year   = DateTime.UtcNow.Year;
+                var prefix = $"INV-{year}-";
+                var lastNumber = await _db.Bills
+                    .Where(b => b.BillNumber.StartsWith(prefix))
+                    .OrderByDescending(b => b.BillNumber)
+                    .Select(b => b.BillNumber)
+                    .FirstOrDefaultAsync(ct);
+                var seq = 1;
+                if (lastNumber is not null && int.TryParse(lastNumber[prefix.Length..], out var last))
+                    seq = last + 1;
+                var billNum = $"{prefix}{seq:D5}";
+
+                bill = new Bill
+                {
+                    BillNumber      = billNum,
+                    PatientId       = admission.PatientId,
+                    AdmissionId     = admissionId,
+                    CreatedByUserId = _currentUser.UserId,
+                    Status          = "Draft",
+                    TotalAmount     = 0,
+                    PaidAmount      = 0,
+                };
+                _db.Bills.Add(bill);
+                await _db.SaveChangesAsync(ct);
+
+                await _db.Entry(bill).Collection(b => b.Items).LoadAsync(ct);
+            }
+
+            // Remove and replace all inpatient charge items
+            var oldItems = bill.Items
+                .Where(i => i.SourceType == ChargeSourceType.InpatientCharge)
+                .ToList();
+            _db.BillItems.RemoveRange(oldItems);
+
+            foreach (var c in charges)
+            {
+                _db.BillItems.Add(new BillItem
+                {
+                    TenantId    = _tenantContext.TenantId,
+                    BillId      = bill.BillId,
+                    Description = c.Description,
+                    Category    = c.Category,
+                    Quantity    = c.Quantity,
+                    UnitPrice   = c.UnitPrice,
+                    TotalPrice  = c.TotalPrice,
+                    SourceType  = ChargeSourceType.InpatientCharge,
+                    SourceId    = c.InpatientChargeId,
+                });
+            }
+
+            // Recalculate total; BalanceDue is a stored computed column — DB handles it
+            bill.TotalAmount = charges.Sum(c => c.TotalPrice);
+
             await _db.SaveChangesAsync(ct);
-
-            await _db.Entry(bill).Collection(b => b.Items).LoadAsync(ct);
+            await transaction.CommitAsync(ct);
+            return bill.BillId;
         }
-
-        // Remove and replace all inpatient charge items
-        var oldItems = bill.Items
-            .Where(i => i.SourceType == ChargeSourceType.InpatientCharge)
-            .ToList();
-        _db.BillItems.RemoveRange(oldItems);
-
-        foreach (var c in charges)
+        catch
         {
-            _db.BillItems.Add(new BillItem
-            {
-                TenantId    = _tenantContext.TenantId,
-                BillId      = bill.BillId,
-                Description = c.Description,
-                Category    = c.Category,
-                Quantity    = c.Quantity,
-                UnitPrice   = c.UnitPrice,
-                TotalPrice  = c.TotalPrice,
-                SourceType  = ChargeSourceType.InpatientCharge,
-                SourceId    = c.InpatientChargeId,
-            });
+            await transaction.RollbackAsync(ct);
+            throw;
         }
-
-        // Recalculate total; BalanceDue is a stored computed column — DB handles it
-        bill.TotalAmount = charges.Sum(c => c.TotalPrice);
-
-        await _db.SaveChangesAsync(ct);
-        return bill.BillId;
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────────

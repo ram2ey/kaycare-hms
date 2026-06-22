@@ -42,7 +42,7 @@ public class MediCloudWebAppFactory : WebApplicationFactory<Program>, IAsyncLife
             {
                 ["ConnectionStrings:DefaultConnection"] =
                     Environment.GetEnvironmentVariable("TEST_DB_CONNECTION")
-                    ?? @"Server=.\SQLEXPRESS;Database=KayCareTestDb;Integrated Security=True;TrustServerCertificate=True;",
+                    ?? "Host=localhost;Database=KayCareTestDb;Username=postgres;Password=postgres;",
                 ["Jwt:Key"]         = TestJwtKey,
                 ["Jwt:Issuer"]      = "KayCare",
                 ["Jwt:Audience"]    = "KayCare",

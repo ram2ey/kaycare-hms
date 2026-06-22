@@ -72,8 +72,6 @@ public static class DependencyInjection
             var key = config["Supabase:ServiceKey"]!;
             var options = new Supabase.SupabaseOptions { AutoConnectRealtime = false };
             var client = new Supabase.Client(url, key, options);
-            // Fire-and-forget initialization; storage calls work after the first awaitable resolves
-            Task.Run(() => client.InitializeAsync());
             return client;
         });
         services.AddSingleton<IBlobStorageService, BlobStorageService>();

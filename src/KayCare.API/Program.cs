@@ -105,10 +105,10 @@ app.UseSwaggerUI();
 app.UseHttpsRedirection();
 app.UseCors();
 
-// Tenant must be resolved before authentication so TenantId is in scope
-app.UseMiddleware<TenantResolutionMiddleware>();
-
 app.UseAuthentication();
+
+// Tenant must be resolved after authentication so TenantId is in scope from JWT if header is missing
+app.UseMiddleware<TenantResolutionMiddleware>();
 app.UseAuthorization();
 
 app.MapControllers();

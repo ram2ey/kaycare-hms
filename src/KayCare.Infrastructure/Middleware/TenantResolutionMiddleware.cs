@@ -1,3 +1,4 @@
+using KayCare.Core.Entities;
 using KayCare.Core.Interfaces;
 using KayCare.Infrastructure.Data;
 using Microsoft.AspNetCore.Http;
@@ -20,24 +21,45 @@ public class TenantResolutionMiddleware
     public async Task InvokeAsync(HttpContext context, AppDbContext db, ITenantContext tenantContext)
     {
         var identifier = ResolveIdentifier(context);
+        Guid? claimTenantId = null;
 
         if (string.IsNullOrEmpty(identifier))
         {
-            // No tenant header/subdomain — allow the request through.
+            var tenantIdClaim = context.User.FindFirst("tenantId")?.Value;
+            if (Guid.TryParse(tenantIdClaim, out var parsedId))
+            {
+                claimTenantId = parsedId;
+            }
+        }
+
+        if (string.IsNullOrEmpty(identifier) && !claimTenantId.HasValue)
+        {
+            // No tenant header/subdomain or authenticated claims — allow the request through.
             // Auth middleware will reject protected endpoints.
             await _next(context);
             return;
         }
 
-        var tenant = await db.Tenants
-            .AsNoTracking()
-            .FirstOrDefaultAsync(t => t.TenantCode == identifier || t.Subdomain == identifier);
+        Tenant? tenant = null;
+        if (!string.IsNullOrEmpty(identifier))
+        {
+            tenant = await db.Tenants
+                .AsNoTracking()
+                .FirstOrDefaultAsync(t => t.TenantCode == identifier || t.Subdomain == identifier);
+        }
+        else if (claimTenantId.HasValue)
+        {
+            tenant = await db.Tenants
+                .AsNoTracking()
+                .FirstOrDefaultAsync(t => t.TenantId == claimTenantId.Value);
+        }
 
         if (tenant is null || !tenant.IsActive)
         {
-            _logger.LogWarning("Tenant not found or inactive: {Identifier}", identifier);
+            var displayId = identifier ?? claimTenantId?.ToString() ?? "unknown";
+            _logger.LogWarning("Tenant not found or inactive: {Identifier}", displayId);
             context.Response.StatusCode = 404;
-            await context.Response.WriteAsJsonAsync(new { error = $"Tenant '{identifier}' not found." });
+            await context.Response.WriteAsJsonAsync(new { error = $"Tenant '{displayId}' not found or inactive." });
             return;
         }
 

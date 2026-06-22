@@ -36,45 +36,73 @@ public class StockMovementService : IStockMovementService
         if (!StockMovementType.All.Contains(movementType))
             throw new AppException($"Invalid movement type '{movementType}'.", 400);
 
-        var drug = await _db.DrugInventory
-            .FirstOrDefaultAsync(d => d.DrugInventoryId == drugInventoryId, ct)
-            ?? throw new NotFoundException("DrugInventory", drugInventoryId);
-
-        var previous = drug.CurrentStock;
-        int next;
-
-        if (StockMovementType.IsAdditive.Contains(movementType))
+        var ownsTransaction = _db.Database.CurrentTransaction == null;
+        var transaction = ownsTransaction ? await _db.Database.BeginTransactionAsync(ct) : null;
+        try
         {
-            next = previous + quantity;
+            await _db.AcquireAdvisoryLockAsync(_tenantContext.TenantId, $"DrugInventory_{drugInventoryId}", ct);
+
+            // Reload the drug inside the locked scope to get the latest updated stock level
+            var drug = await _db.DrugInventory
+                .FirstOrDefaultAsync(d => d.DrugInventoryId == drugInventoryId, ct)
+                ?? throw new NotFoundException("DrugInventory", drugInventoryId);
+
+            var previous = drug.CurrentStock;
+            int next;
+
+            if (StockMovementType.IsAdditive.Contains(movementType))
+            {
+                next = previous + quantity;
+            }
+            else
+            {
+                if (quantity > previous)
+                    throw new AppException($"Cannot deduct {quantity} from {drug.Name}: only {previous} in stock.", 400);
+                next = previous - quantity;
+            }
+
+            drug.CurrentStock = next;
+
+            var movement = new StockMovement
+            {
+                TenantId        = _tenantContext.TenantId,
+                DrugInventoryId = drugInventoryId,
+                MovementType    = movementType,
+                Quantity        = quantity,
+                PreviousStock   = previous,
+                NewStock        = next,
+                ReferenceId     = referenceId,
+                ReferenceType   = referenceType,
+                Notes           = notes?.Trim(),
+                CreatedByUserId = _currentUser.UserId,
+                CreatedAt       = DateTime.UtcNow,
+            };
+
+            _db.StockMovements.Add(movement);
+            await _db.SaveChangesAsync(ct);
+
+            if (ownsTransaction && transaction != null)
+            {
+                await transaction.CommitAsync(ct);
+            }
+
+            return ToResponse(movement, drug.Name);
         }
-        else
+        catch
         {
-            if (quantity > previous)
-                throw new AppException($"Cannot deduct {quantity} from {drug.Name}: only {previous} in stock.", 400);
-            next = previous - quantity;
+            if (ownsTransaction && transaction != null)
+            {
+                await transaction.RollbackAsync(ct);
+            }
+            throw;
         }
-
-        drug.CurrentStock = next;
-
-        var movement = new StockMovement
+        finally
         {
-            TenantId        = _tenantContext.TenantId,
-            DrugInventoryId = drugInventoryId,
-            MovementType    = movementType,
-            Quantity        = quantity,
-            PreviousStock   = previous,
-            NewStock        = next,
-            ReferenceId     = referenceId,
-            ReferenceType   = referenceType,
-            Notes           = notes?.Trim(),
-            CreatedByUserId = _currentUser.UserId,
-            CreatedAt       = DateTime.UtcNow,
-        };
-
-        _db.StockMovements.Add(movement);
-        await _db.SaveChangesAsync(ct);
-
-        return ToResponse(movement, drug.Name);
+            if (ownsTransaction && transaction != null)
+            {
+                await transaction.DisposeAsync();
+            }
+        }
     }
 
     public async Task<List<StockMovementResponse>> GetMovementsForDrugAsync(Guid drugInventoryId, CancellationToken ct = default)
@@ -124,39 +152,76 @@ public class StockMovementService : IStockMovementService
         if (drugs.Count == 0)
             return;  // nothing in inventory to deduct — do not block dispense
 
-        var drugByName = drugs
-            .GroupBy(d => d.Name.ToLower())
-            .ToDictionary(g => g.Key, g => g.First());
+        var sortedDrugIds = drugs.Select(d => d.DrugInventoryId).OrderBy(id => id).ToList();
 
-        foreach (var (medName, qty) in items)
+        var ownsTransaction = _db.Database.CurrentTransaction == null;
+        var transaction = ownsTransaction ? await _db.Database.BeginTransactionAsync(ct) : null;
+        try
         {
-            if (!drugByName.TryGetValue(medName.ToLower(), out var drug))
-                continue;  // drug not in inventory — skip silently
-
-            var deduct = Math.Min(qty, drug.CurrentStock);  // never go below 0
-            if (deduct <= 0)
-                continue;
-
-            var previous = drug.CurrentStock;
-            drug.CurrentStock -= deduct;
-
-            _db.StockMovements.Add(new StockMovement
+            foreach (var drugId in sortedDrugIds)
             {
-                TenantId        = _tenantContext.TenantId,
-                DrugInventoryId = drug.DrugInventoryId,
-                MovementType    = StockMovementType.Dispense,
-                Quantity        = deduct,
-                PreviousStock   = previous,
-                NewStock        = drug.CurrentStock,
-                ReferenceId     = prescriptionId,
-                ReferenceType   = "Prescription",
-                CreatedByUserId = userId,
-                CreatedAt       = now,
-            });
-        }
+                await _db.AcquireAdvisoryLockAsync(_tenantContext.TenantId, $"DrugInventory_{drugId}", ct);
+            }
 
-        if (_db.ChangeTracker.HasChanges())
-            await _db.SaveChangesAsync(ct);
+            // Reload locked entities inside transaction to get latest stock levels
+            var lockedDrugs = await _db.DrugInventory
+                .Where(d => sortedDrugIds.Contains(d.DrugInventoryId))
+                .ToListAsync(ct);
+
+            var drugByName = lockedDrugs
+                .GroupBy(d => d.Name.ToLower())
+                .ToDictionary(g => g.Key, g => g.First());
+
+            foreach (var (medName, qty) in items)
+            {
+                if (!drugByName.TryGetValue(medName.ToLower(), out var drug))
+                    continue;  // drug not in inventory — skip silently
+
+                var deduct = Math.Min(qty, drug.CurrentStock);  // never go below 0
+                if (deduct <= 0)
+                    continue;
+
+                var previous = drug.CurrentStock;
+                drug.CurrentStock -= deduct;
+
+                _db.StockMovements.Add(new StockMovement
+                {
+                    TenantId        = _tenantContext.TenantId,
+                    DrugInventoryId = drug.DrugInventoryId,
+                    MovementType    = StockMovementType.Dispense,
+                    Quantity        = deduct,
+                    PreviousStock   = previous,
+                    NewStock        = drug.CurrentStock,
+                    ReferenceId     = prescriptionId,
+                    ReferenceType   = "Prescription",
+                    CreatedByUserId = userId,
+                    CreatedAt       = now,
+                });
+            }
+
+            if (_db.ChangeTracker.HasChanges())
+                await _db.SaveChangesAsync(ct);
+
+            if (ownsTransaction && transaction != null)
+            {
+                await transaction.CommitAsync(ct);
+            }
+        }
+        catch
+        {
+            if (ownsTransaction && transaction != null)
+            {
+                await transaction.RollbackAsync(ct);
+            }
+            throw;
+        }
+        finally
+        {
+            if (ownsTransaction && transaction != null)
+            {
+                await transaction.DisposeAsync();
+            }
+        }
     }
 
     private static StockMovementResponse ToResponse(StockMovement m, string drugName) => new()

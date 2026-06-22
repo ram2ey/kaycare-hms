@@ -53,6 +53,9 @@ public class AdmissionService : IAdmissionService
 
     public async Task<AdmissionDetailResponse> AdmitAsync(AdmitPatientRequest request, CancellationToken ct = default)
     {
+        using var transaction = await _db.Database.BeginTransactionAsync(ct);
+        await _db.AcquireAdvisoryLockAsync(_tenantContext.TenantId, "AdmissionNumber", ct);
+
         var bed = await _db.Beds.Include(b => b.Ward)
             .FirstOrDefaultAsync(b => b.BedId == request.BedId, ct)
             ?? throw new NotFoundException("Bed", request.BedId);
@@ -93,7 +96,9 @@ public class AdmissionService : IAdmissionService
         _db.Admissions.Add(admission);
         await _db.SaveChangesAsync(ct);
 
-        return ToDetail(await LoadDetail(admission.AdmissionId, ct)!);
+        await transaction.CommitAsync(ct);
+
+        return ToDetail((await LoadDetail(admission.AdmissionId, ct))!);
     }
 
     public async Task<AdmissionDetailResponse> DischargeAsync(
@@ -118,7 +123,7 @@ public class AdmissionService : IAdmissionService
         admission.Bed.Status = BedStatus.Available;
 
         await _db.SaveChangesAsync(ct);
-        return ToDetail(await LoadDetail(admissionId, ct)!);
+        return ToDetail((await LoadDetail(admissionId, ct))!);
     }
 
     public async Task<AdmissionDetailResponse> TransferAsync(
@@ -164,7 +169,7 @@ public class AdmissionService : IAdmissionService
         _db.AdmissionTransfers.Add(transfer);
         await _db.SaveChangesAsync(ct);
 
-        return ToDetail(await LoadDetail(admissionId, ct)!);
+        return ToDetail((await LoadDetail(admissionId, ct))!);
     }
 
     public async Task<DischargeSummaryResponse> GetDischargeSummaryAsync(Guid admissionId, CancellationToken ct = default)
@@ -268,10 +273,17 @@ public class AdmissionService : IAdmissionService
 
     private async Task<string> GenerateAdmissionNumberAsync(CancellationToken ct)
     {
-        var year  = DateTime.UtcNow.Year;
-        var count = await _db.Admissions
-            .CountAsync(a => a.AdmissionDate.Year == year, ct);
-        return $"ADM-{year}-{(count + 1):D5}";
+        var year   = DateTime.UtcNow.Year;
+        var prefix = $"ADM-{year}-";
+        var last = await _db.Admissions
+            .Where(a => a.AdmissionNumber.StartsWith(prefix))
+            .OrderByDescending(a => a.AdmissionNumber)
+            .Select(a => a.AdmissionNumber)
+            .FirstOrDefaultAsync(ct);
+        var seq = 1;
+        if (last is not null && int.TryParse(last[prefix.Length..], out var lastNum))
+            seq = lastNum + 1;
+        return $"{prefix}{seq:D5}";
     }
 
     private static AdmissionSummaryResponse ToSummary(Admission a) => new()

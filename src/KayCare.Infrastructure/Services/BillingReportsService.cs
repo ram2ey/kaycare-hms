@@ -72,66 +72,73 @@ public class BillingReportsService : IBillingReportsService
     {
         var now         = DateTime.UtcNow;
         var thirtyAgo   = now.AddDays(-30);
-
-        var bills = await _db.Bills
-            .Include(b => b.Payer)
-            .AsNoTracking()
-            .ToListAsync(ct);
-
-        var payments = await _db.Payments
-            .AsNoTracking()
-            .ToListAsync(ct);
+        var startRange  = new DateTime(now.Year, now.Month, 1).AddMonths(-5);
 
         // ── Headline metrics ──────────────────────────────────────────────────
+        var headline = await _db.Bills
+            .Where(b => b.Status != BillStatus.Cancelled)
+            .GroupBy(b => 1)
+            .Select(g => new
+            {
+                TotalInvoiced    = g.Sum(b => b.TotalAmount),
+                TotalCollected   = g.Sum(b => b.PaidAmount),
+                TotalOutstanding = g.Where(b => b.Status == BillStatus.Issued || b.Status == BillStatus.PartiallyPaid).Sum(b => b.BalanceDue),
+                TotalDiscounts   = g.Sum(b => b.DiscountAmount),
+                TotalAdjustments = g.Sum(b => b.AdjustmentTotal),
+                TotalWrittenOff  = g.Sum(b => b.WriteOffAmount),
+                OutstandingBills = g.Count(b => b.Status == BillStatus.Issued || b.Status == BillStatus.PartiallyPaid),
+                OverdueBills     = g.Count(b => (b.Status == BillStatus.Issued || b.Status == BillStatus.PartiallyPaid) && (b.IssuedAt ?? b.CreatedAt) < thirtyAgo),
+                TotalBills       = g.Count()
+            })
+            .FirstOrDefaultAsync(ct);
 
-        var activeBills = bills.Where(b => b.Status != BillStatus.Cancelled).ToList();
+        var totalInvoiced    = headline?.TotalInvoiced ?? 0m;
+        var totalCollected   = headline?.TotalCollected ?? 0m;
+        var totalOutstanding = headline?.TotalOutstanding ?? 0m;
+        var totalDiscounts   = headline?.TotalDiscounts ?? 0m;
+        var totalAdjustments = headline?.TotalAdjustments ?? 0m;
+        var totalWrittenOff  = headline?.TotalWrittenOff ?? 0m;
+        var totalBills       = headline?.TotalBills ?? 0;
+        var outstandingBills = headline?.OutstandingBills ?? 0;
+        var overdueBills     = headline?.OverdueBills ?? 0;
 
-        var totalInvoiced    = activeBills.Sum(b => b.TotalAmount);
-        var totalCollected   = activeBills.Sum(b => b.PaidAmount);
-        var totalOutstanding = activeBills
-            .Where(b => b.Status == BillStatus.Issued || b.Status == BillStatus.PartiallyPaid)
-            .Sum(b => b.BalanceDue);
-        var totalDiscounts   = activeBills.Sum(b => b.DiscountAmount);
-        var totalAdjustments = activeBills.Sum(b => b.AdjustmentTotal);
-        var totalWrittenOff  = activeBills.Sum(b => b.WriteOffAmount);
-        var outstandingBills = activeBills
-            .Count(b => b.Status == BillStatus.Issued || b.Status == BillStatus.PartiallyPaid);
-        var overdueBills = activeBills
-            .Count(b => (b.Status == BillStatus.Issued || b.Status == BillStatus.PartiallyPaid)
-                     && (b.IssuedAt ?? b.CreatedAt) < thirtyAgo);
+        // ── Monthly revenue — last 6 calendar months (aggregated in DB) ───────
+        var monthlyInvoicedQuery = await _db.Bills
+            .Where(b => b.Status != BillStatus.Cancelled && b.CreatedAt >= startRange)
+            .GroupBy(b => new { Year = b.CreatedAt.Year, Month = b.CreatedAt.Month })
+            .Select(g => new { g.Key.Year, g.Key.Month, Total = g.Sum(b => b.TotalAmount) })
+            .ToListAsync(ct);
 
-        // ── Monthly revenue — last 6 calendar months ──────────────────────────
+        var monthlyCollectedQuery = await _db.Payments
+            .Where(p => p.PaymentDate >= startRange)
+            .GroupBy(p => new { Year = p.PaymentDate.Year, Month = p.PaymentDate.Month })
+            .Select(g => new { g.Key.Year, g.Key.Month, Total = g.Sum(p => p.Amount) })
+            .ToListAsync(ct);
+
+        var invoicedMap  = monthlyInvoicedQuery.ToDictionary(x => (x.Year, x.Month), x => x.Total);
+        var collectedMap = monthlyCollectedQuery.ToDictionary(x => (x.Year, x.Month), x => x.Total);
 
         var monthlyRevenue = new List<MonthlyRevenuePoint>();
         for (int i = 5; i >= 0; i--)
         {
-            var month     = new DateTime(now.Year, now.Month, 1).AddMonths(-i);
-            var monthEnd  = month.AddMonths(1);
-            var label     = month.ToString("MMM yyyy");
-
-            var invoiced  = activeBills
-                .Where(b => b.CreatedAt >= month && b.CreatedAt < monthEnd)
-                .Sum(b => b.TotalAmount);
-
-            var collected = payments
-                .Where(p => p.PaymentDate >= month && p.PaymentDate < monthEnd)
-                .Sum(p => p.Amount);
+            var month = new DateTime(now.Year, now.Month, 1).AddMonths(-i);
+            var label = month.ToString("MMM yyyy");
 
             monthlyRevenue.Add(new MonthlyRevenuePoint
             {
                 Month     = label,
-                Invoiced  = invoiced,
-                Collected = collected
+                Invoiced  = invoicedMap.GetValueOrDefault((month.Year, month.Month), 0m),
+                Collected = collectedMap.GetValueOrDefault((month.Year, month.Month), 0m)
             });
         }
 
-        // ── By payer ──────────────────────────────────────────────────────────
-
-        var byPayer = activeBills
-            .GroupBy(b => b.Payer?.Name ?? "Self-Pay")
+        // ── By payer (aggregated in DB) ───────────────────────────────────────
+        var byPayer = await _db.Bills
+            .Where(b => b.Status != BillStatus.Cancelled)
+            .GroupBy(b => b.Payer!.Name)
             .Select(g => new PayerRevenueRow
             {
-                PayerName   = g.Key,
+                PayerName   = g.Key ?? "Self-Pay",
                 BillCount   = g.Count(),
                 Invoiced    = g.Sum(b => b.TotalAmount),
                 Collected   = g.Sum(b => b.PaidAmount),
@@ -139,11 +146,11 @@ public class BillingReportsService : IBillingReportsService
                                .Sum(b => b.BalanceDue)
             })
             .OrderByDescending(r => r.Invoiced)
-            .ToList();
+            .ToListAsync(ct);
 
-        // ── By status ─────────────────────────────────────────────────────────
-
-        var byStatus = activeBills
+        // ── By status (aggregated in DB) ──────────────────────────────────────
+        var byStatus = await _db.Bills
+            .Where(b => b.Status != BillStatus.Cancelled)
             .GroupBy(b => b.Status)
             .Select(g => new StatusCount
             {
@@ -152,7 +159,7 @@ public class BillingReportsService : IBillingReportsService
                 Total  = g.Sum(b => b.TotalAmount)
             })
             .OrderByDescending(s => s.Count)
-            .ToList();
+            .ToListAsync(ct);
 
         return new RevenueDashboardResponse
         {
@@ -162,7 +169,7 @@ public class BillingReportsService : IBillingReportsService
             TotalDiscounts   = totalDiscounts,
             TotalAdjustments = totalAdjustments,
             TotalWrittenOff  = totalWrittenOff,
-            TotalBills       = activeBills.Count,
+            TotalBills       = totalBills,
             OutstandingBills = outstandingBills,
             OverdueBills     = overdueBills,
             MonthlyRevenue   = monthlyRevenue,

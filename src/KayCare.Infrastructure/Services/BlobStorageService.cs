@@ -10,10 +10,12 @@ namespace KayCare.Infrastructure.Services;
 public class BlobStorageService : IBlobStorageService
 {
     private readonly Supabase.Client _supabase;
+    private readonly Task _initTask;
 
     public BlobStorageService(Supabase.Client supabase)
     {
         _supabase = supabase;
+        _initTask = supabase.InitializeAsync();
     }
 
     // ── Upload ─────────────────────────────────────────────────────────────────
@@ -25,6 +27,7 @@ public class BlobStorageService : IBlobStorageService
         string contentType,
         CancellationToken ct = default)
     {
+        await _initTask;
         await EnsureBucketAsync(containerName);
 
         // Read stream into bytes — Supabase C# SDK requires byte[]
@@ -43,6 +46,7 @@ public class BlobStorageService : IBlobStorageService
         string blobPath,
         CancellationToken ct = default)
     {
+        await _initTask;
         await _supabase.Storage.From(containerName).Remove(new List<string> { blobPath });
     }
 
@@ -53,6 +57,7 @@ public class BlobStorageService : IBlobStorageService
         string blobPath,
         CancellationToken ct = default)
     {
+        await _initTask;
         try
         {
             return await _supabase.Storage.From(containerName).Download(blobPath, null);
@@ -72,6 +77,7 @@ public class BlobStorageService : IBlobStorageService
         TimeSpan expiry,
         CancellationToken ct = default)
     {
+        await _initTask;
         var expiresInSeconds = (int)expiry.TotalSeconds;
         var signedUrl = await _supabase.Storage
             .From(containerName)

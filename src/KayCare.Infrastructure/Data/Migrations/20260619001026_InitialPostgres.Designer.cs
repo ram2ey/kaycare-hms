@@ -30,7 +30,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("AdmissionId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<DateTime?>("ActualDischargeDate")
                         .HasColumnType("timestamp with time zone");
@@ -61,7 +61,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<Guid>("CreatedByUserId")
                         .HasColumnType("uuid");
@@ -119,7 +119,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<Guid>("WardId")
                         .HasColumnType("uuid");
@@ -151,7 +151,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("AdmissionTransferId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<Guid>("AdmissionId")
                         .HasColumnType("uuid");
@@ -203,7 +203,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("AppointmentId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<string>("AppointmentType")
                         .IsRequired()
@@ -227,7 +227,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<Guid>("CreatedByUserId")
                         .HasColumnType("uuid");
@@ -265,7 +265,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.HasKey("AppointmentId");
 
@@ -294,7 +294,7 @@ namespace KayCare.Infrastructure.Migrations
                         .HasColumnType("character varying(100)");
 
                     b.Property<string>("Details")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("text");
 
                     b.Property<Guid>("EntityId")
                         .HasColumnType("uuid");
@@ -317,7 +317,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("Timestamp")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<string>("UserEmail")
                         .IsRequired()
@@ -343,7 +343,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("BedId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<string>("BedNumber")
                         .IsRequired()
@@ -353,7 +353,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<string>("Notes")
                         .HasMaxLength(500)
@@ -370,7 +370,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<Guid>("WardId")
                         .HasColumnType("uuid");
@@ -390,7 +390,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("BillId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<decimal>("AdjustmentTotal")
                         .ValueGeneratedOnAdd()
@@ -403,7 +403,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<decimal>("BalanceDue")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("decimal(12,2)")
-                        .HasComputedColumnSql("[TotalAmount] + [AdjustmentTotal] - [DiscountAmount] - [WriteOffAmount] - [CreditNoteTotal] - [PaidAmount]", true);
+                        .HasComputedColumnSql("\"TotalAmount\" + \"AdjustmentTotal\" - \"DiscountAmount\" - \"WriteOffAmount\" - \"CreditNoteTotal\" - \"PaidAmount\"", true);
 
                     b.Property<string>("BillNumber")
                         .IsRequired()
@@ -416,7 +416,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<Guid>("CreatedByUserId")
                         .HasColumnType("uuid");
@@ -467,7 +467,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<decimal>("WriteOffAmount")
                         .ValueGeneratedOnAdd()
@@ -503,7 +503,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("BillAdjustmentId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<DateTime>("AdjustedAt")
                         .HasColumnType("timestamp with time zone");
@@ -541,7 +541,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("ItemId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<Guid>("BillId")
                         .HasColumnType("uuid");
@@ -570,7 +570,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<decimal>("TotalPrice")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("decimal(12,2)")
-                        .HasComputedColumnSql("[Quantity] * [UnitPrice]", true);
+                        .HasComputedColumnSql("\"Quantity\" * \"UnitPrice\"", true);
 
                     b.Property<decimal>("UnitPrice")
                         .HasColumnType("decimal(12,2)");
@@ -587,7 +587,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("BillTemplateId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<string>("Category")
                         .HasMaxLength(100)
@@ -596,7 +596,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<string>("Description")
                         .HasMaxLength(500)
@@ -616,7 +616,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.HasKey("BillTemplateId");
 
@@ -633,7 +633,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("BillTemplateItemId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<Guid>("BillTemplateId")
                         .HasColumnType("uuid");
@@ -656,7 +656,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<decimal>("TotalPrice")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("decimal(12,2)")
-                        .HasComputedColumnSql("[Quantity] * [UnitPrice]", true);
+                        .HasComputedColumnSql("\"Quantity\" * \"UnitPrice\"", true);
 
                     b.Property<decimal>("UnitPrice")
                         .HasColumnType("decimal(12,2)");
@@ -673,13 +673,13 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("ConsultationId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<Guid>("AppointmentId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("AssessmentNotes")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("text");
 
                     b.Property<int?>("BloodPressureDiastolic")
                         .HasColumnType("integer");
@@ -690,7 +690,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<Guid>("DoctorUserId")
                         .HasColumnType("uuid");
@@ -702,7 +702,7 @@ namespace KayCare.Infrastructure.Migrations
                         .HasColumnType("decimal(5,1)");
 
                     b.Property<string>("ObjectiveNotes")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("text");
 
                     b.Property<decimal?>("OxygenSaturationPct")
                         .HasColumnType("decimal(4,1)");
@@ -711,7 +711,7 @@ namespace KayCare.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("PlanNotes")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("text");
 
                     b.Property<string>("PrimaryDiagnosisCode")
                         .HasMaxLength(20)
@@ -724,7 +724,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<string>("SecondaryDiagnoses")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("text")
                         .HasDefaultValue("[]");
 
                     b.Property<DateTime?>("SignedAt")
@@ -738,7 +738,7 @@ namespace KayCare.Infrastructure.Migrations
                         .HasDefaultValue("Draft");
 
                     b.Property<string>("SubjectiveNotes")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("text");
 
                     b.Property<decimal?>("TemperatureCelsius")
                         .HasColumnType("decimal(4,1)");
@@ -749,7 +749,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<decimal?>("WeightKg")
                         .HasColumnType("decimal(5,2)");
@@ -773,7 +773,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("CreditNoteId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<decimal>("Amount")
                         .HasColumnType("decimal(12,2)");
@@ -793,7 +793,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<Guid>("CreatedByUserId")
                         .HasColumnType("uuid");
@@ -828,7 +828,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.HasKey("CreditNoteId");
 
@@ -855,7 +855,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("CriticalCallLogId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<DateTime>("CalledAt")
                         .HasColumnType("timestamp with time zone");
@@ -868,7 +868,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<Guid>("LabOrderItemId")
                         .HasColumnType("uuid");
@@ -889,7 +889,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.HasKey("CriticalCallLogId");
 
@@ -907,7 +907,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("DispenseEventId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<DateTime>("DispensedAt")
                         .HasColumnType("timestamp with time zone");
@@ -941,7 +941,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("DispenseEventItemId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<Guid>("DispenseEventId")
                         .HasColumnType("uuid");
@@ -969,7 +969,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("DrugInventoryId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<string>("Category")
                         .HasMaxLength(100)
@@ -978,7 +978,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<int>("CurrentStock")
                         .HasColumnType("integer");
@@ -1026,7 +1026,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.HasKey("DrugInventoryId");
 
@@ -1041,7 +1041,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("FacilitySettingsId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<string>("Address")
                         .HasMaxLength(500)
@@ -1050,7 +1050,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<string>("Email")
                         .HasMaxLength(200)
@@ -1075,7 +1075,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.HasKey("FacilitySettingsId");
 
@@ -1123,7 +1123,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("ImagingProcedureId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<string>("BodyPart")
                         .IsRequired()
@@ -1281,7 +1281,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("InpatientChargeId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<Guid>("AdmissionId")
                         .HasColumnType("uuid");
@@ -1297,7 +1297,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<Guid>("CreatedByUserId")
                         .HasColumnType("uuid");
@@ -1339,7 +1339,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("ClaimId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<decimal?>("ApprovedAmount")
                         .HasColumnType("decimal(12,2)");
@@ -1358,7 +1358,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<Guid>("CreatedByUserId")
                         .HasColumnType("uuid");
@@ -1403,7 +1403,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.HasKey("ClaimId");
 
@@ -1436,7 +1436,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("LabObservationId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<string>("AbnormalFlag")
                         .HasMaxLength(5)
@@ -1487,7 +1487,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("LabOrderId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<Guid?>("BillId")
                         .HasColumnType("uuid");
@@ -1498,7 +1498,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<string>("Notes")
                         .HasMaxLength(1000)
@@ -1526,7 +1526,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.HasKey("LabOrderId");
 
@@ -1552,7 +1552,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("LabOrderItemId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<string>("AccessionNumber")
                         .HasMaxLength(50)
@@ -1651,7 +1651,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("LabResultId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<string>("AccessionNumber")
                         .IsRequired()
@@ -1661,7 +1661,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<Guid?>("LabOrderItemId")
                         .HasColumnType("uuid");
@@ -1684,7 +1684,7 @@ namespace KayCare.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("RawHl7")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("ReceivedAt")
                         .HasColumnType("timestamp with time zone");
@@ -1702,7 +1702,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.HasKey("LabResultId");
 
@@ -1726,7 +1726,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("LabTestCatalogId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<string>("CriticalReferenceRange")
                         .HasMaxLength(100)
@@ -2006,7 +2006,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("MedicationAdministrationId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<DateTime>("AdministeredAt")
                         .HasColumnType("timestamp with time zone");
@@ -2078,7 +2078,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("NursingNoteId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<Guid?>("AdmissionId")
                         .HasColumnType("uuid");
@@ -2128,7 +2128,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("PatientId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<string>("AddressLine1")
                         .HasMaxLength(200)
@@ -2161,7 +2161,7 @@ namespace KayCare.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("RegisteredAt")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<DateOnly>("DateOfBirth")
                         .HasColumnType("date");
@@ -2256,7 +2256,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.HasKey("PatientId");
 
@@ -2273,7 +2273,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("AllergyId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<string>("AllergenName")
                         .IsRequired()
@@ -2295,7 +2295,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("RecordedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<Guid>("RecordedByUserId")
                         .HasColumnType("uuid");
@@ -2322,7 +2322,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("DocumentId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<string>("BlobPath")
                         .IsRequired()
@@ -2352,7 +2352,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<string>("Description")
                         .HasMaxLength(500)
@@ -2375,7 +2375,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<Guid>("UploadedByUserId")
                         .HasColumnType("uuid");
@@ -2398,7 +2398,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("PayerId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<string>("ContactEmail")
                         .HasMaxLength(256)
@@ -2411,7 +2411,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
@@ -2436,7 +2436,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.HasKey("PayerId");
 
@@ -2500,7 +2500,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("PaymentId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<decimal>("Amount")
                         .HasColumnType("decimal(12,2)");
@@ -2511,7 +2511,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<string>("Notes")
                         .HasMaxLength(500)
@@ -2538,7 +2538,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.HasKey("PaymentId");
 
@@ -2556,7 +2556,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("PrescriptionId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<Guid?>("BillId")
                         .HasColumnType("uuid");
@@ -2567,7 +2567,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<DateTime?>("DispensedAt")
                         .HasColumnType("timestamp with time zone");
@@ -2604,7 +2604,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.HasKey("PrescriptionId");
 
@@ -2628,7 +2628,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("ItemId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<string>("DosageForm")
                         .IsRequired()
@@ -2694,12 +2694,12 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("TemplateId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<Guid>("CreatedByUserId")
                         .HasColumnType("uuid");
@@ -2722,7 +2722,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.HasKey("TemplateId");
 
@@ -2740,7 +2740,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("TemplateItemId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<string>("DosageForm")
                         .IsRequired()
@@ -2800,12 +2800,12 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("PurchaseOrderId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<DateTime?>("ExpectedDeliveryDate")
                         .HasColumnType("timestamp with time zone");
@@ -2836,7 +2836,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.HasKey("PurchaseOrderId");
 
@@ -2855,7 +2855,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("PurchaseOrderItemId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<Guid>("DrugInventoryId")
                         .HasColumnType("uuid");
@@ -2891,7 +2891,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("RadiologyOrderId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<Guid?>("BillId")
                         .HasColumnType("uuid");
@@ -2903,7 +2903,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<string>("Notes")
                         .HasMaxLength(1000)
@@ -2931,7 +2931,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.HasKey("RadiologyOrderId");
 
@@ -2955,7 +2955,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("RadiologyOrderItemId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<string>("AccessionNumber")
                         .HasMaxLength(30)
@@ -3051,7 +3051,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("ReferralId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<string>("ClinicalNotes")
                         .HasMaxLength(4000)
@@ -3063,7 +3063,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<string>("ExternalFacility")
                         .HasMaxLength(200)
@@ -3112,7 +3112,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<string>("Urgency")
                         .IsRequired()
@@ -3146,7 +3146,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("RefundId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<decimal>("Amount")
                         .HasColumnType("decimal(12,2)");
@@ -3157,7 +3157,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<Guid>("CreatedByUserId")
                         .HasColumnType("uuid");
@@ -3210,7 +3210,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.HasKey("RefundId");
 
@@ -3314,7 +3314,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("ServiceCatalogItemId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<string>("Category")
                         .IsRequired()
@@ -3324,7 +3324,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<string>("Description")
                         .HasMaxLength(500)
@@ -3347,7 +3347,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.HasKey("ServiceCatalogItemId");
 
@@ -3363,12 +3363,12 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("StockMovementId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<Guid>("CreatedByUserId")
                         .HasColumnType("uuid");
@@ -3423,7 +3423,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("SupplierId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<string>("Address")
                         .HasMaxLength(500)
@@ -3436,7 +3436,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<string>("Email")
                         .HasMaxLength(200)
@@ -3464,7 +3464,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.HasKey("SupplierId");
 
@@ -3479,12 +3479,12 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("TenantId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
@@ -3520,7 +3520,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.HasKey("TenantId");
 
@@ -3538,12 +3538,12 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("UserId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<Guid?>("CreatedByUserId")
                         .HasColumnType("uuid");
@@ -3604,7 +3604,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.HasKey("UserId");
 
@@ -3621,7 +3621,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("VitalSignsId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<Guid?>("AdmissionId")
                         .HasColumnType("uuid");
@@ -3695,12 +3695,12 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<Guid>("WardId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<decimal>("DailyRate")
                         .HasColumnType("decimal(12,2)");
@@ -3723,7 +3723,7 @@ namespace KayCare.Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<string>("WardType")
                         .IsRequired()

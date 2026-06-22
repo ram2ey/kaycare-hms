@@ -28,6 +28,9 @@ public class PatientService : IPatientService
 
     public async Task<PatientDetailResponse> RegisterAsync(CreatePatientRequest req, CancellationToken ct = default)
     {
+        using var transaction = await _db.Database.BeginTransactionAsync(ct);
+        await _db.AcquireAdvisoryLockAsync(_tenantContext.TenantId, "PatientMrn", ct);
+
         var mrn = await GenerateMrnAsync(ct);
 
         var patient = new Patient
@@ -63,6 +66,8 @@ public class PatientService : IPatientService
         await _db.SaveChangesAsync(ct);
 
         await _audit.LogAsync(AuditActions.PatientCreate, nameof(Patient), patient.PatientId, patient.PatientId, ct: ct);
+
+        await transaction.CommitAsync(ct);
 
         return MapToDetail(patient);
     }

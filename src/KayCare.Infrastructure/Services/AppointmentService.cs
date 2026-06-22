@@ -23,33 +23,46 @@ public class AppointmentService : IAppointmentService
 
     public async Task<AppointmentDetailResponse> CreateAsync(CreateAppointmentRequest req, CancellationToken ct = default)
     {
-        var patientExists = await _db.Patients.AnyAsync(p => p.PatientId == req.PatientId, ct);
-        if (!patientExists) throw new NotFoundException(nameof(Patient), req.PatientId);
-
-        var doctorExists = await _db.Users
-            .AnyAsync(u => u.UserId == req.DoctorUserId && u.IsActive, ct);
-        if (!doctorExists) throw new NotFoundException("Doctor", req.DoctorUserId);
-
-        await CheckDoctorAvailabilityAsync(req.DoctorUserId, req.ScheduledAt, req.DurationMinutes, null, ct);
-
-        var appointment = new Appointment
+        using var transaction = await _db.Database.BeginTransactionAsync(ct);
+        try
         {
-            PatientId       = req.PatientId,
-            DoctorUserId    = req.DoctorUserId,
-            ScheduledAt     = req.ScheduledAt,
-            DurationMinutes = req.DurationMinutes,
-            AppointmentType = req.AppointmentType,
-            Status          = AppointmentStatus.Scheduled,
-            ChiefComplaint  = req.ChiefComplaint,
-            Room            = req.Room,
-            Notes           = req.Notes,
-            CreatedByUserId = _currentUser.UserId
-        };
+            var patientExists = await _db.Patients.AnyAsync(p => p.PatientId == req.PatientId, ct);
+            if (!patientExists) throw new NotFoundException(nameof(Patient), req.PatientId);
 
-        _db.Appointments.Add(appointment);
-        await _db.SaveChangesAsync(ct);
+            var doctorExists = await _db.Users
+                .AnyAsync(u => u.UserId == req.DoctorUserId && u.IsActive, ct);
+            if (!doctorExists) throw new NotFoundException("Doctor", req.DoctorUserId);
 
-        return await LoadDetailAsync(appointment.AppointmentId, ct);
+            await _db.AcquireAdvisoryLockAsync(_currentUser.TenantId, $"AppointmentDoctor_{req.DoctorUserId}", ct);
+
+            await CheckDoctorAvailabilityAsync(req.DoctorUserId, req.ScheduledAt, req.DurationMinutes, null, ct);
+
+            var appointment = new Appointment
+            {
+                PatientId       = req.PatientId,
+                DoctorUserId    = req.DoctorUserId,
+                ScheduledAt     = req.ScheduledAt,
+                DurationMinutes = req.DurationMinutes,
+                AppointmentType = req.AppointmentType,
+                Status          = AppointmentStatus.Scheduled,
+                ChiefComplaint  = req.ChiefComplaint,
+                Room            = req.Room,
+                Notes           = req.Notes,
+                CreatedByUserId = _currentUser.UserId
+            };
+
+            _db.Appointments.Add(appointment);
+            await _db.SaveChangesAsync(ct);
+
+            await transaction.CommitAsync(ct);
+
+            return await LoadDetailAsync(appointment.AppointmentId, ct);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(ct);
+            throw;
+        }
     }
 
     // ── Get ───────────────────────────────────────────────────────────────────
@@ -61,31 +74,45 @@ public class AppointmentService : IAppointmentService
 
     public async Task<AppointmentDetailResponse> UpdateAsync(Guid appointmentId, UpdateAppointmentRequest req, CancellationToken ct = default)
     {
-        var appt = await _db.Appointments
-            .FirstOrDefaultAsync(a => a.AppointmentId == appointmentId, ct)
-            ?? throw new NotFoundException(nameof(Appointment), appointmentId);
+        using var transaction = await _db.Database.BeginTransactionAsync(ct);
+        try
+        {
+            var appt = await _db.Appointments
+                .FirstOrDefaultAsync(a => a.AppointmentId == appointmentId, ct)
+                ?? throw new NotFoundException(nameof(Appointment), appointmentId);
 
-        if (appt.Status is AppointmentStatus.Completed or AppointmentStatus.Cancelled or AppointmentStatus.NoShow)
-            throw new AppException($"Cannot update a {appt.Status} appointment.", 400);
+            if (appt.Status is AppointmentStatus.Completed or AppointmentStatus.Cancelled or AppointmentStatus.NoShow)
+                throw new AppException($"Cannot update a {appt.Status} appointment.", 400);
 
-        var newDoctor    = req.DoctorUserId ?? appt.DoctorUserId;
-        var newTime      = req.ScheduledAt ?? appt.ScheduledAt;
-        var newDuration  = req.DurationMinutes ?? appt.DurationMinutes;
+            var newDoctor    = req.DoctorUserId ?? appt.DoctorUserId;
+            var newTime      = req.ScheduledAt ?? appt.ScheduledAt;
+            var newDuration  = req.DurationMinutes ?? appt.DurationMinutes;
 
-        // Only check availability if time or doctor changed
-        if (req.ScheduledAt.HasValue || req.DoctorUserId.HasValue)
-            await CheckDoctorAvailabilityAsync(newDoctor, newTime, newDuration, appointmentId, ct);
+            // Only check availability if time, duration, or doctor changed
+            if (req.ScheduledAt.HasValue || req.DoctorUserId.HasValue || req.DurationMinutes.HasValue)
+            {
+                await _db.AcquireAdvisoryLockAsync(_currentUser.TenantId, $"AppointmentDoctor_{newDoctor}", ct);
+                await CheckDoctorAvailabilityAsync(newDoctor, newTime, newDuration, appointmentId, ct);
+            }
 
-        if (req.DoctorUserId.HasValue)    appt.DoctorUserId    = req.DoctorUserId.Value;
-        if (req.ScheduledAt.HasValue)     appt.ScheduledAt     = req.ScheduledAt.Value;
-        if (req.DurationMinutes.HasValue) appt.DurationMinutes = req.DurationMinutes.Value;
-        if (req.AppointmentType is not null) appt.AppointmentType = req.AppointmentType;
-        if (req.ChiefComplaint is not null)  appt.ChiefComplaint  = req.ChiefComplaint;
-        if (req.Room is not null)            appt.Room            = req.Room;
-        if (req.Notes is not null)           appt.Notes           = req.Notes;
+            if (req.DoctorUserId.HasValue)    appt.DoctorUserId    = req.DoctorUserId.Value;
+            if (req.ScheduledAt.HasValue)     appt.ScheduledAt     = req.ScheduledAt.Value;
+            if (req.DurationMinutes.HasValue) appt.DurationMinutes = req.DurationMinutes.Value;
+            if (req.AppointmentType is not null) appt.AppointmentType = req.AppointmentType;
+            if (req.ChiefComplaint is not null)  appt.ChiefComplaint  = req.ChiefComplaint;
+            if (req.Room is not null)            appt.Room            = req.Room;
+            if (req.Notes is not null)           appt.Notes           = req.Notes;
 
-        await _db.SaveChangesAsync(ct);
-        return await LoadDetailAsync(appointmentId, ct);
+            await _db.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+
+            return await LoadDetailAsync(appointmentId, ct);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(ct);
+            throw;
+        }
     }
 
     // ── Status Transitions ────────────────────────────────────────────────────

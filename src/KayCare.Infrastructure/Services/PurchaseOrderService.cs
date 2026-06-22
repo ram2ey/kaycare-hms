@@ -70,6 +70,9 @@ public class PurchaseOrderService : IPurchaseOrderService
 
     public async Task<PurchaseOrderDetailResponse> CreateAsync(SavePurchaseOrderRequest request, CancellationToken ct = default)
     {
+        using var transaction = await _db.Database.BeginTransactionAsync(ct);
+        await _db.AcquireAdvisoryLockAsync(_tenantContext.TenantId, "PurchaseOrderNumber", ct);
+
         if (request.Items.Count == 0)
             throw new AppException("A purchase order must have at least one item.", 400);
 
@@ -107,6 +110,8 @@ public class PurchaseOrderService : IPurchaseOrderService
 
         _db.PurchaseOrders.Add(po);
         await _db.SaveChangesAsync(ct);
+
+        await transaction.CommitAsync(ct);
 
         return (await GetByIdAsync(po.PurchaseOrderId, ct))!;
     }
@@ -167,63 +172,96 @@ public class PurchaseOrderService : IPurchaseOrderService
         if (request.Items.Count == 0)
             throw new AppException("No items specified for goods receipt.", 400);
 
-        var po = await _db.PurchaseOrders
-            .Include(po => po.Items)
-                .ThenInclude(i => i.DrugInventory)
-            .FirstOrDefaultAsync(po => po.PurchaseOrderId == id, ct)
-            ?? throw new NotFoundException("PurchaseOrder", id);
-
-        if (po.Status != PurchaseOrderStatus.Ordered && po.Status != PurchaseOrderStatus.PartiallyReceived)
-            throw new AppException($"Goods can only be received for Ordered or PartiallyReceived purchase orders. Current status: {po.Status}.", 409);
-
-        var now    = DateTime.UtcNow;
-        var userId = _currentUser.UserId;
-
-        foreach (var incoming in request.Items)
+        using var transaction = await _db.Database.BeginTransactionAsync(ct);
+        try
         {
-            if (incoming.QuantityReceived <= 0)
-                continue;
+            var po = await _db.PurchaseOrders
+                .Include(po => po.Items)
+                    .ThenInclude(i => i.DrugInventory)
+                .FirstOrDefaultAsync(po => po.PurchaseOrderId == id, ct)
+                ?? throw new NotFoundException("PurchaseOrder", id);
 
-            var lineItem = po.Items.FirstOrDefault(i => i.PurchaseOrderItemId == incoming.PurchaseOrderItemId)
-                ?? throw new AppException($"Item {incoming.PurchaseOrderItemId} does not belong to this purchase order.", 400);
+            if (po.Status != PurchaseOrderStatus.Ordered && po.Status != PurchaseOrderStatus.PartiallyReceived)
+                throw new AppException($"Goods can only be received for Ordered or PartiallyReceived purchase orders. Current status: {po.Status}.", 409);
 
-            var remaining = lineItem.Quantity - lineItem.QuantityReceived;
-            if (incoming.QuantityReceived > remaining)
-                throw new AppException(
-                    $"Cannot receive {incoming.QuantityReceived} of '{lineItem.DrugInventory.Name}': only {remaining} units are pending.", 400);
+            var now    = DateTime.UtcNow;
+            var userId = _currentUser.UserId;
 
-            var drug     = lineItem.DrugInventory;
-            var previous = drug.CurrentStock;
-            drug.CurrentStock += incoming.QuantityReceived;
+            // Sort incoming items to avoid deadlocks when acquiring advisory locks
+            var lineItemIds = request.Items
+                .Where(incoming => incoming.QuantityReceived > 0)
+                .Select(incoming => po.Items.FirstOrDefault(i => i.PurchaseOrderItemId == incoming.PurchaseOrderItemId)?.DrugInventoryId)
+                .Where(drugId => drugId.HasValue)
+                .Select(drugId => drugId!.Value)
+                .Distinct()
+                .OrderBy(drugId => drugId)
+                .ToList();
 
-            lineItem.QuantityReceived += incoming.QuantityReceived;
-
-            _db.StockMovements.Add(new StockMovement
+            foreach (var drugId in lineItemIds)
             {
-                TenantId        = _tenantContext.TenantId,
-                DrugInventoryId = drug.DrugInventoryId,
-                MovementType    = StockMovementType.Receive,
-                Quantity        = incoming.QuantityReceived,
-                PreviousStock   = previous,
-                NewStock        = drug.CurrentStock,
-                ReferenceId     = po.PurchaseOrderId,
-                ReferenceType   = "PurchaseOrder",
-                Notes           = $"Received via PO {po.OrderNumber}",
-                CreatedByUserId = userId,
-                CreatedAt       = now,
-            });
+                await _db.AcquireAdvisoryLockAsync(_tenantContext.TenantId, $"DrugInventory_{drugId}", ct);
+            }
+
+            // Reload drug inventories inside transaction to get latest stock levels
+            var drugs = await _db.DrugInventory
+                .Where(d => lineItemIds.Contains(d.DrugInventoryId))
+                .ToListAsync(ct);
+            var drugMap = drugs.ToDictionary(d => d.DrugInventoryId);
+
+            foreach (var incoming in request.Items)
+            {
+                if (incoming.QuantityReceived <= 0)
+                    continue;
+
+                var lineItem = po.Items.FirstOrDefault(i => i.PurchaseOrderItemId == incoming.PurchaseOrderItemId)
+                    ?? throw new AppException($"Item {incoming.PurchaseOrderItemId} does not belong to this purchase order.", 400);
+
+                var remaining = lineItem.Quantity - lineItem.QuantityReceived;
+                if (incoming.QuantityReceived > remaining)
+                    throw new AppException(
+                        $"Cannot receive {incoming.QuantityReceived} of '{lineItem.DrugInventory.Name}': only {remaining} units are pending.", 400);
+
+                if (!drugMap.TryGetValue(lineItem.DrugInventoryId, out var drug))
+                    throw new AppException($"Drug inventory record not found for '{lineItem.DrugInventory.Name}'.", 400);
+
+                var previous = drug.CurrentStock;
+                drug.CurrentStock += incoming.QuantityReceived;
+
+                lineItem.QuantityReceived += incoming.QuantityReceived;
+
+                _db.StockMovements.Add(new StockMovement
+                {
+                    TenantId        = _tenantContext.TenantId,
+                    DrugInventoryId = drug.DrugInventoryId,
+                    MovementType    = StockMovementType.Receive,
+                    Quantity        = incoming.QuantityReceived,
+                    PreviousStock   = previous,
+                    NewStock        = drug.CurrentStock,
+                    ReferenceId     = po.PurchaseOrderId,
+                    ReferenceType   = "PurchaseOrder",
+                    Notes           = $"Received via PO {po.OrderNumber}",
+                    CreatedByUserId = userId,
+                    CreatedAt       = now,
+                });
+            }
+
+            // Determine new status
+            bool allReceived     = po.Items.All(i => i.QuantityReceived >= i.Quantity);
+            bool anyReceived     = po.Items.Any(i => i.QuantityReceived > 0);
+
+            po.Status = allReceived  ? PurchaseOrderStatus.Received :
+                        anyReceived  ? PurchaseOrderStatus.PartiallyReceived :
+                                       po.Status;
+
+            await _db.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+            return (await GetByIdAsync(po.PurchaseOrderId, ct))!;
         }
-
-        // Determine new status
-        bool allReceived     = po.Items.All(i => i.QuantityReceived >= i.Quantity);
-        bool anyReceived     = po.Items.Any(i => i.QuantityReceived > 0);
-
-        po.Status = allReceived  ? PurchaseOrderStatus.Received :
-                    anyReceived  ? PurchaseOrderStatus.PartiallyReceived :
-                                   po.Status;
-
-        await _db.SaveChangesAsync(ct);
-        return (await GetByIdAsync(po.PurchaseOrderId, ct))!;
+        catch
+        {
+            await transaction.RollbackAsync(ct);
+            throw;
+        }
     }
 
     public async Task<PurchaseOrderDetailResponse> CancelAsync(Guid id, CancellationToken ct = default)
