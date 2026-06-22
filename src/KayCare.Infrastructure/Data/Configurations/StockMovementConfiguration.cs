@@ -18,7 +18,7 @@ public class StockMovementConfiguration : IEntityTypeConfiguration<StockMovement
         builder.Property(m => m.CreatedAt).HasDefaultValueSql("SYSUTCDATETIME()");
 
         builder.HasIndex(m => new { m.TenantId, m.DrugInventoryId, m.CreatedAt });
-        builder.HasIndex(m => new { m.TenantId, m.ReferenceId }).HasFilter("[ReferenceId] IS NOT NULL");
+        builder.HasIndex(m => new { m.TenantId, m.ReferenceId }).HasFilter("\"ReferenceId\" IS NOT NULL");
 
         builder.HasOne(m => m.CreatedBy)
                .WithMany()

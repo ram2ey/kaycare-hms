@@ -35,3 +35,6 @@ pharmos/
 # Frontend build artifacts
 frontend/node_modules/
 frontend/dist/
+
+# Local client overview documentation
+docs/KAYCARE_HMS_OVERVIEW.md

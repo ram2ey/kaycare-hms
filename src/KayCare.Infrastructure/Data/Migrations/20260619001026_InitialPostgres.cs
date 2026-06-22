@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -2220,7 +2220,7 @@ namespace KayCare.Infrastructure.Migrations
                 table: "LabOrderItems",
                 columns: new[] { "TenantId", "AccessionNumber" },
                 unique: true,
-                filter: "[AccessionNumber] IS NOT NULL");
+                filter: "\"AccessionNumber\" IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_LabOrders_BillId",
@@ -2691,7 +2691,7 @@ namespace KayCare.Infrastructure.Migrations
                 name: "IX_StockMovements_TenantId_ReferenceId",
                 table: "StockMovements",
                 columns: new[] { "TenantId", "ReferenceId" },
-                filter: "[ReferenceId] IS NOT NULL");
+                filter: "\"ReferenceId\" IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Suppliers_TenantId_Name",

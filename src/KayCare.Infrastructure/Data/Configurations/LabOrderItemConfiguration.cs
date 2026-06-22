@@ -25,7 +25,7 @@ public class LabOrderItemConfiguration : IEntityTypeConfiguration<LabOrderItem>
         // Accession number unique per tenant (once assigned)
         builder.HasIndex(i => new { i.TenantId, i.AccessionNumber })
                .IsUnique()
-               .HasFilter("[AccessionNumber] IS NOT NULL");
+               .HasFilter("\"AccessionNumber\" IS NOT NULL");
 
         builder.HasOne(i => i.LabTestCatalog)
                .WithMany()
