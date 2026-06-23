@@ -21,11 +21,11 @@ RUN dotnet publish src/KayCare.API \
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 
-# Railway injects PORT env var; ASP.NET Core reads ASPNETCORE_URLS
-ENV ASPNETCORE_URLS=http://+:$PORT
 ENV ASPNETCORE_ENVIRONMENT=Production
 
 COPY --from=build /app/publish .
 
-EXPOSE 8080
-ENTRYPOINT ["dotnet", "KayCare.API.dll"]
+# Render injects PORT at runtime (default 10000).
+# Shell-form CMD expands ${PORT} when the container starts — not at build time.
+EXPOSE 10000
+CMD ASPNETCORE_URLS=http://+:${PORT:-10000} dotnet KayCare.API.dll

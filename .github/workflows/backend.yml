@@ -48,10 +48,6 @@ jobs:
           TEST_DB_CONNECTION: "Host=localhost;Port=5432;Database=KayCareTestDb;Username=postgres;Password=CI_TestPass123!"
         run: dotnet test src/KayCare.Tests --configuration Release --no-build
 
-      - name: Install Railway CLI
-        run: npm install -g @railway/cli
+      - name: Trigger Render deploy
+        run: curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
 
-      - name: Deploy to Railway
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: railway up --service kaycare-api --detach
