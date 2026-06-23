@@ -24,7 +24,7 @@ services:
       - key: ConnectionStrings__DefaultConnection
         fromDatabase:
           name: kaycare-hms-db
-          property: internalConnectionString
+          property: connectionString
 
       # JWT — set in Render dashboard (min 32 random chars)
       - key: Jwt__Key
