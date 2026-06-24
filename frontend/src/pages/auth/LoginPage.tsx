@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { Roles } from '../../types';
 
@@ -11,10 +11,9 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Already logged in
+  // Already logged in — redirect declaratively (no render-phase side effects)
   if (user) {
-    navigate(user.role === Roles.SuperAdmin ? '/platform/tenants' : '/patients', { replace: true });
-    return null;
+    return <Navigate to={user.role === Roles.SuperAdmin ? '/platform/tenants' : '/patients'} replace />;
   }
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
