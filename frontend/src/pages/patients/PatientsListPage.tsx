@@ -16,7 +16,7 @@ export default function PatientsListPage() {
   const [dob, setDob] = useState('');
   const [page, setPage] = useState(1);
   const [result, setResult] = useState<PagedResult<PatientResponse> | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // true = show spinner on first render before fetch completes
   const [error, setError] = useState('');
 
   const fetch = useCallback(async (params: PatientSearchRequest) => {
@@ -113,7 +113,7 @@ export default function PatientsListPage() {
                 </td>
               </tr>
             )}
-            {!loading && result?.items.length === 0 && (
+            {!loading && result?.items?.length === 0 && (
               <tr>
                 <td colSpan={7} className="px-5 py-8 text-center text-gray-400">
                   No patients found.
@@ -121,7 +121,7 @@ export default function PatientsListPage() {
               </tr>
             )}
             {!loading &&
-              result?.items.map((p) => (
+              result?.items?.map((p) => (
                 <tr key={p.patientId} className="hover:bg-gray-50 transition-colors">
                   <td className="px-5 py-3 font-mono text-xs text-blue-700">
                     <Link to={`/patients/${p.patientId}`}>{p.medicalRecordNumber}</Link>

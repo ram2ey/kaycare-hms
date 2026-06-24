@@ -10,7 +10,7 @@ import { Link } from 'react-router-dom';
 export default function AuditLogsPage() {
   const [filters, setFilters] = useState<AuditLogQueryRequest>({ page: 1, pageSize: 50 });
   const [result, setResult] = useState<PagedResult<AuditLogResponse> | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   // Patient picker for patientId filter
   const [patientQuery, setPatientQuery] = useState('');
@@ -161,10 +161,10 @@ export default function AuditLogsPage() {
             {loading && (
               <tr><td colSpan={7} className="px-5 py-8 text-center text-gray-400">Loading…</td></tr>
             )}
-            {!loading && result?.items.length === 0 && (
+            {!loading && result?.items?.length === 0 && (
               <tr><td colSpan={7} className="px-5 py-8 text-center text-gray-400">No audit log entries found.</td></tr>
             )}
-            {!loading && result?.items.map((log) => (
+            {!loading && result?.items?.map((log) => (
               <tr key={log.auditLogId} className="hover:bg-gray-50 transition-colors">
                 <td className="px-5 py-2.5 text-gray-600 text-xs whitespace-nowrap">
                   {new Date(log.timestamp).toLocaleString('en-GB', {
