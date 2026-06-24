@@ -4,9 +4,10 @@ WORKDIR /src
 
 # Copy solution and project files first for layer-cached restore
 COPY KayCare.sln .
-COPY src/KayCare.API/KayCare.API.csproj          src/KayCare.API/
-COPY src/KayCare.Core/KayCare.Core.csproj        src/KayCare.Core/
-COPY src/KayCare.Infrastructure/KayCare.Infrastructure.csproj src/KayCare.Infrastructure/
+COPY src/KayCare.API/KayCare.API.csproj                       src/KayCare.API/
+COPY src/KayCare.Core/KayCare.Core.csproj                     src/KayCare.Core/
+COPY src/KayCare.Infrastructure/KayCare.Infrastructure.csproj  src/KayCare.Infrastructure/
+COPY src/KayCare.Tests/KayCare.Tests.csproj                   src/KayCare.Tests/
 
 RUN dotnet restore KayCare.sln
 
