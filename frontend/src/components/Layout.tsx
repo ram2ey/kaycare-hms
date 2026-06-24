@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Roles } from '../types';
+import { ErrorBoundary } from './ErrorBoundary';
 
 const CLINICAL = [Roles.Doctor, Roles.Nurse, Roles.Pharmacist, Roles.LabTechnician, Roles.Admin, Roles.SuperAdmin];
 const BILLING  = [Roles.Admin, Roles.SuperAdmin, Roles.BillingOfficer];
@@ -103,7 +104,9 @@ export default function Layout() {
 
       {/* Main content */}
       <main className="flex-1 overflow-y-auto">
-        <Outlet />
+        <ErrorBoundary>
+          <Outlet />
+        </ErrorBoundary>
       </main>
     </div>
   );

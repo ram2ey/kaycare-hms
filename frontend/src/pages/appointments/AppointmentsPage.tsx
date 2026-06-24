@@ -38,7 +38,7 @@ export default function AppointmentsPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [doctors, setDoctors] = useState<UserSummary[]>([]);
   const [appointments, setAppointments] = useState<AppointmentResponse[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     listDoctors().then(setDoctors).catch(() => {});
@@ -71,7 +71,7 @@ export default function AppointmentsPage() {
     const key = fmtDate(addDays(weekOf, i));
     byDay[key] = [];
   }
-  for (const appt of appointments) {
+  for (const appt of (Array.isArray(appointments) ? appointments : [])) {
     const key = appt.scheduledAt.slice(0, 10);
     if (byDay[key]) byDay[key].push(appt);
   }
@@ -213,7 +213,7 @@ export default function AppointmentsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {appointments.length === 0 && !loading && (
+              {(appointments ?? []).length === 0 && !loading && (
                 <tr>
                   <td colSpan={6} className="px-5 py-8 text-center text-gray-400">No appointments found.</td>
                 </tr>
