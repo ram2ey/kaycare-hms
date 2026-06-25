@@ -19,7 +19,10 @@ export default function LabTab({ patientId }: { patientId: string }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getLabOrdersByPatient(patientId).then(setOrders).finally(() => setLoading(false));
+    getLabOrdersByPatient(patientId)
+      .then((data) => setOrders(Array.isArray(data) ? data : []))
+      .catch(() => setOrders([]))
+      .finally(() => setLoading(false));
   }, [patientId]);
 
   const canCreate = [Roles.Doctor, Roles.Admin, Roles.SuperAdmin].includes(user?.role as never);
