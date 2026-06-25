@@ -26,7 +26,10 @@ export default function ReferralsTab({ patientId }: { patientId: string }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getReferralsForPatient(patientId).then(setReferrals).finally(() => setLoading(false));
+    getReferralsForPatient(patientId)
+      .then((data) => setReferrals(Array.isArray(data) ? data : []))
+      .catch(() => setReferrals([]))
+      .finally(() => setLoading(false));
   }, [patientId]);
 
   const canCreate = [Roles.Doctor, Roles.Admin, Roles.SuperAdmin].includes(user?.role as never);

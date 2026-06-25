@@ -14,7 +14,10 @@ export default function AdmissionsTab({ patientId }: { patientId: string }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getPatientAdmissions(patientId).then(setAdmissions).finally(() => setLoading(false));
+    getPatientAdmissions(patientId)
+      .then((data) => setAdmissions(Array.isArray(data) ? data : []))
+      .catch(() => setAdmissions([]))
+      .finally(() => setLoading(false));
   }, [patientId]);
 
   if (loading) return <div className="text-gray-400 text-sm">Loading…</div>;

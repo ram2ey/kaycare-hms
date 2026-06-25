@@ -17,7 +17,10 @@ export default function DocumentsTab({ patientId }: { patientId: string }) {
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    getPatientDocuments(patientId).then(setDocuments).finally(() => setLoading(false));
+    getPatientDocuments(patientId)
+      .then((data) => setDocuments(Array.isArray(data) ? data : []))
+      .catch(() => setDocuments([]))
+      .finally(() => setLoading(false));
   }, [patientId]);
 
   const canUpload = [Roles.Doctor, Roles.Nurse, Roles.Admin, Roles.SuperAdmin, Roles.Receptionist].includes(user?.role as never);

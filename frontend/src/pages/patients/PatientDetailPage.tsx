@@ -45,7 +45,7 @@ export default function PatientDetailPage() {
     if (!id) return;
     setLoading(true);
     Promise.all([getPatient(id), getAllergies(id)])
-      .then(([p, a]) => { setPatient(p); setAllergies(a); })
+      .then(([p, a]) => { setPatient(p); setAllergies(Array.isArray(a) ? a : []); })
       .catch(() => setError('Failed to load patient.'))
       .finally(() => setLoading(false));
   }, [id]);

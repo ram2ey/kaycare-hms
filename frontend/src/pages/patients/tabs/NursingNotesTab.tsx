@@ -16,7 +16,10 @@ export default function NursingNotesTab({ patientId }: { patientId: string }) {
   const [saveError, setSaveError] = useState('');
 
   useEffect(() => {
-    getNursingNotesForPatient(patientId).then(setNotes).finally(() => setLoading(false));
+    getNursingNotesForPatient(patientId)
+      .then((data) => setNotes(Array.isArray(data) ? data : []))
+      .catch(() => setNotes([]))
+      .finally(() => setLoading(false));
   }, [patientId]);
 
   const canAdd    = [Roles.Nurse, Roles.Doctor, Roles.Admin, Roles.SuperAdmin].includes(user?.role as never);

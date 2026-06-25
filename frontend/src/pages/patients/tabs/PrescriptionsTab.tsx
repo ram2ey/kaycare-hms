@@ -19,7 +19,10 @@ export default function PrescriptionsTab({ patientId }: { patientId: string }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getPatientPrescriptions(patientId).then(setPrescriptions).finally(() => setLoading(false));
+    getPatientPrescriptions(patientId)
+      .then((data) => setPrescriptions(Array.isArray(data) ? data : []))
+      .catch(() => setPrescriptions([]))
+      .finally(() => setLoading(false));
   }, [patientId]);
 
   const canCreate = [Roles.Doctor, Roles.Admin, Roles.SuperAdmin].includes(user?.role as never);

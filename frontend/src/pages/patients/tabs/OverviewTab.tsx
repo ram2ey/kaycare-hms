@@ -42,9 +42,9 @@ export default function OverviewTab({ patient, allergies, onAllergyChange }: Pro
 
   useEffect(() => {
     const pid = patient.patientId;
-    getPatientConsultations(pid).then(c => setLastConsult(c[0] ?? null)).catch(() => {});
-    getPatientPrescriptions(pid).then(p => setActivePrescriptions(p.filter(x => x.status === 'Active' || x.status === 'PartiallyDispensed'))).catch(() => {});
-    getPatientBills(pid).then(b => setOutstandingBill(b.find(x => x.status === 'Issued' || x.status === 'PartiallyPaid') ?? null)).catch(() => {});
+    getPatientConsultations(pid).then(c => setLastConsult(Array.isArray(c) ? (c[0] ?? null) : null)).catch(() => {});
+    getPatientPrescriptions(pid).then(p => setActivePrescriptions(Array.isArray(p) ? p.filter(x => x.status === 'Active' || x.status === 'PartiallyDispensed') : [])).catch(() => {});
+    getPatientBills(pid).then(b => setOutstandingBill(Array.isArray(b) ? (b.find(x => x.status === 'Issued' || x.status === 'PartiallyPaid') ?? null) : null)).catch(() => {});
     getLatestVitals(pid).then(setLatestVitals).catch(() => {});
   }, [patient.patientId]);
 

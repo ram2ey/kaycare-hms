@@ -17,7 +17,8 @@ export default function ConsultationsTab({ patientId }: { patientId: string }) {
 
   useEffect(() => {
     getPatientConsultations(patientId)
-      .then(setConsultations)
+      .then((data) => setConsultations(Array.isArray(data) ? data : []))
+      .catch(() => setConsultations([]))
       .finally(() => setLoading(false));
   }, [patientId]);
 

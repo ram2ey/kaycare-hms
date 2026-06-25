@@ -21,7 +21,10 @@ export default function BillingTab({ patientId }: { patientId: string }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getPatientBills(patientId).then(setBills).finally(() => setLoading(false));
+    getPatientBills(patientId)
+      .then((data) => setBills(Array.isArray(data) ? data : []))
+      .catch(() => setBills([]))
+      .finally(() => setLoading(false));
   }, [patientId]);
 
   const canCreate = [Roles.Doctor, Roles.Admin, Roles.SuperAdmin, Roles.Receptionist, Roles.BillingOfficer].includes(user?.role as never);

@@ -20,7 +20,10 @@ export default function VitalsTab({ patientId }: { patientId: string }) {
   const [saveError, setSaveError] = useState('');
 
   useEffect(() => {
-    getVitalsForPatient(patientId, 50).then(setVitals).finally(() => setLoading(false));
+    getVitalsForPatient(patientId, 50)
+      .then((data) => setVitals(Array.isArray(data) ? data : []))
+      .catch(() => setVitals([]))
+      .finally(() => setLoading(false));
   }, [patientId]);
 
   const canRecord = [Roles.Nurse, Roles.Doctor, Roles.Admin, Roles.SuperAdmin].includes(user?.role as never);
