@@ -33,10 +33,10 @@ export default function ClinicalTab({ range }: { range: { from: string; to: stri
         <StatCard label="Appointments"   value={data.totalAppointments}   sub={apptPct} />
         <StatCard label="New Patients"   value={data.newPatients}         color="text-teal-700" />
       </div>
-      <MiniLineChart title="Consultations per Day" data={data.consultationsByDay} />
+      <MiniLineChart title="Consultations per Day" data={Array.isArray(data.consultationsByDay) ? data.consultationsByDay : []} />
       <div className="grid grid-cols-2 gap-5">
-        <BarTable title="Top Diagnoses"           rows={data.topDiagnoses} />
-        <BarTable title="Appointments by Status"  rows={data.appointmentsByStatus} />
+        <BarTable title="Top Diagnoses"           rows={Array.isArray(data.topDiagnoses) ? data.topDiagnoses : []} />
+        <BarTable title="Appointments by Status"  rows={Array.isArray(data.appointmentsByStatus) ? data.appointmentsByStatus : []} />
       </div>
     </div>
   );

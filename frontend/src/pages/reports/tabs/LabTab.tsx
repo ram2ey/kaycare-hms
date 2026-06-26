@@ -30,10 +30,10 @@ export default function LabTab({ range }: { range: { from: string; to: string } 
         <StatCard label="Completed"        value={data.completedOrders} color="text-green-700" />
         <StatCard label="Pending / Active" value={data.pendingOrders}   color={data.pendingOrders > 20 ? 'text-orange-600' : 'text-gray-800'} />
       </div>
-      <MiniLineChart title="Lab Orders per Day" data={data.ordersByDay} />
+      <MiniLineChart title="Lab Orders per Day" data={Array.isArray(data.ordersByDay) ? data.ordersByDay : []} />
       <div className="grid grid-cols-2 gap-5">
-        <BarTable title="Top Tests Ordered"  rows={data.topTests} />
-        <BarTable title="Orders by Status"   rows={data.ordersByStatus} />
+        <BarTable title="Top Tests Ordered"  rows={Array.isArray(data.topTests) ? data.topTests : []} />
+        <BarTable title="Orders by Status"   rows={Array.isArray(data.ordersByStatus) ? data.ordersByStatus : []} />
       </div>
     </div>
   );

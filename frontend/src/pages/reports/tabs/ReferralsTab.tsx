@@ -34,9 +34,9 @@ export default function ReferralsTab({ range }: { range: { from: string; to: str
         <StatCard label="Pending"          value={data.pendingReferrals}  color="text-blue-600" />
       </div>
       <div className="grid grid-cols-3 gap-5">
-        <BarTable title="By Status"               rows={data.byStatus} />
-        <BarTable title="By Urgency"              rows={data.byUrgency} />
-        <BarTable title="Top Referring Doctors"   rows={data.topReferringDoctors} />
+        <BarTable title="By Status"               rows={Array.isArray(data.byStatus) ? data.byStatus : []} />
+        <BarTable title="By Urgency"              rows={Array.isArray(data.byUrgency) ? data.byUrgency : []} />
+        <BarTable title="Top Referring Doctors"   rows={Array.isArray(data.topReferringDoctors) ? data.topReferringDoctors : []} />
       </div>
     </div>
   );

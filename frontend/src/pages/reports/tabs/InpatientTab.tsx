@@ -30,10 +30,10 @@ export default function InpatientTab({ range }: { range: { from: string; to: str
         <StatCard label="Occupied Beds"     value={data.occupiedBeds}    sub={`${data.occupancyRate}% occupancy`}
           color={data.occupancyRate >= 90 ? 'text-red-600' : data.occupancyRate >= 70 ? 'text-orange-600' : 'text-teal-700'} />
       </div>
-      <MiniLineChart title="Admissions per Day" data={data.admissionsByDay} />
+      <MiniLineChart title="Admissions per Day" data={Array.isArray(data.admissionsByDay) ? data.admissionsByDay : []} />
       <div className="grid grid-cols-2 gap-5">
-        <BarTable title="Admissions by Ward"   rows={data.admissionsByWard} />
-        <BarTable title="Discharges by Type"   rows={data.dischargesByType} />
+        <BarTable title="Admissions by Ward"   rows={Array.isArray(data.admissionsByWard) ? data.admissionsByWard : []} />
+        <BarTable title="Discharges by Type"   rows={Array.isArray(data.dischargesByType) ? data.dischargesByType : []} />
       </div>
     </div>
   );

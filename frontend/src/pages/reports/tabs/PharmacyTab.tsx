@@ -31,8 +31,8 @@ export default function PharmacyTab({ range }: { range: { from: string; to: stri
           color={data.outOfStockItems > 0 ? 'text-red-600' : 'text-gray-400'} />
       </div>
       <div className="grid grid-cols-2 gap-5">
-        <BarTable title="Top Dispensed Drugs (by units)"  rows={data.topDispensedDrugs} />
-        <BarTable title="Stock by Category"               rows={data.stockByCategory} />
+        <BarTable title="Top Dispensed Drugs (by units)"  rows={Array.isArray(data.topDispensedDrugs) ? data.topDispensedDrugs : []} />
+        <BarTable title="Stock by Category"               rows={Array.isArray(data.stockByCategory) ? data.stockByCategory : []} />
       </div>
     </div>
   );
