@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { getArAging } from '../../api/billingReports';
 import type { ArAgingReport, ArAgingRow } from '../../types/billingReports';
 
-function fmt(n: number) { return `GHS ${n.toFixed(2)}`; }
+function fmt(n: number | undefined | null) { return `GHS ${(n ?? 0).toFixed(2)}`; }
 
 const BUCKET_COLORS: Record<string, string> = {
   '0-30':  'bg-green-100 text-green-700',
@@ -25,9 +25,8 @@ export default function ARAgingPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const rows: ArAgingRow[] = report
-    ? (filter === 'All' ? report.rows : report.rows.filter(r => r.agingBucket === filter))
-    : [];
+  const allRows: ArAgingRow[] = report?.rows ?? [];
+  const rows: ArAgingRow[] = filter === 'All' ? allRows : allRows.filter(r => r.agingBucket === filter);
 
   return (
     <div className="p-6 max-w-6xl">
@@ -68,7 +67,7 @@ export default function ARAgingPage() {
                 <p className="text-xl font-bold text-gray-800">{fmt(value)}</p>
                 {bucket !== 'All' && (
                   <p className="text-xs text-gray-400 mt-0.5">
-                    {report.rows.filter(r => r.agingBucket === bucket).length} bill{report.rows.filter(r => r.agingBucket === bucket).length !== 1 ? 's' : ''}
+                    {allRows.filter(r => r.agingBucket === bucket).length} bill{allRows.filter(r => r.agingBucket === bucket).length !== 1 ? 's' : ''}
                   </p>
                 )}
               </button>
@@ -137,7 +136,7 @@ export default function ARAgingPage() {
                   <tr>
                     <td colSpan={7} className="px-5 py-3 text-right font-semibold text-gray-700">Total Balance Due</td>
                     <td className="px-5 py-3 text-right font-bold text-red-600">
-                      {fmt(rows.reduce((s, r) => s + r.balanceDue, 0))}
+                      {fmt(rows.reduce((s, r) => s + (r.balanceDue ?? 0), 0))}
                     </td>
                     <td />
                   </tr>
