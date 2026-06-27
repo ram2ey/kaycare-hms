@@ -33,7 +33,9 @@ export default function CreateAppointmentPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    listDoctors().then(setDoctors).catch(() => {});
+    listDoctors()
+      .then((d: any) => setDoctors(Array.isArray(d) ? d : (d?.items || d?.data || [])))
+      .catch(() => {});
   }, []);
 
   // Pre-fill patient if passed via query param

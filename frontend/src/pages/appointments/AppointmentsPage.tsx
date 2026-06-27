@@ -41,7 +41,9 @@ export default function AppointmentsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    listDoctors().then(setDoctors).catch(() => {});
+    listDoctors()
+      .then((d: any) => setDoctors(Array.isArray(d) ? d : (d?.items || d?.data || [])))
+      .catch(() => {});
   }, []);
 
   const load = useCallback(async () => {
@@ -49,13 +51,13 @@ export default function AppointmentsPage() {
     try {
       const from = fmtDate(weekOf);
       const to = fmtDate(addDays(weekOf, 7));
-      const data = await getCalendar({
+      const data: any = await getCalendar({
         doctorUserId: selectedDoctor || undefined,
         from,
         to,
         status: statusFilter || undefined,
       });
-      setAppointments(data);
+      setAppointments(Array.isArray(data) ? data : (data?.items || data?.data || []));
     } catch {
       setAppointments([]);
     } finally {
