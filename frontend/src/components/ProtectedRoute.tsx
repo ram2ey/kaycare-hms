@@ -17,8 +17,19 @@ export default function ProtectedRoute({ allowedRoles }: Props) {
     return <Navigate to="/change-password" replace />;
   }
 
-  if (allowedRoles && !allowedRoles.includes(user.role as Role)) {
-    return <Navigate to="/unauthorized" replace />;
+  const userRole = user?.role?.toLowerCase() ?? '';
+  const isAdminUser = userRole === 'admin' || userRole === 'superadmin' || userRole.includes('admin');
+
+  if (allowedRoles) {
+    const hasAccess = allowedRoles.some((r) => {
+      const targetRole = r.toLowerCase();
+      if (targetRole === userRole) return true;
+      if (isAdminUser && (targetRole === 'admin' || targetRole === 'superadmin')) return true;
+      return false;
+    });
+    if (!hasAccess) {
+      return <Navigate to="/unauthorized" replace />;
+    }
   }
 
   return <Outlet />;

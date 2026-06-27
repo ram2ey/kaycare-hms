@@ -55,9 +55,19 @@ export default function Layout() {
     navigate('/login');
   }
 
-  const visibleNav = navItems.filter(
-    (item) => !item.roles || (user && item.roles.includes(user.role as never))
-  );
+  const userRole = user?.role?.toLowerCase() ?? '';
+  const isAdminUser = userRole === 'admin' || userRole === 'superadmin' || userRole.includes('admin');
+
+  const visibleNav = navItems.filter((item) => {
+    if (!item.roles) return true;
+    if (!userRole) return false;
+    return item.roles.some((r) => {
+      const targetRole = r.toLowerCase();
+      if (targetRole === userRole) return true;
+      if (isAdminUser && (targetRole === 'admin' || targetRole === 'superadmin')) return true;
+      return false;
+    });
+  });
 
   return (
     <div className="flex h-screen bg-gray-100">

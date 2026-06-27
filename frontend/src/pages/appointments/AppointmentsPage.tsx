@@ -120,7 +120,7 @@ export default function AppointmentsPage() {
           className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
         >
           <option value="">All Doctors</option>
-          {doctors.map((d) => (
+          {Array.isArray(doctors) && doctors.map((d) => (
             <option key={d.userId} value={d.userId}>{d.fullName}</option>
           ))}
         </select>
@@ -180,7 +180,7 @@ export default function AppointmentsPage() {
                   <div className="text-base font-semibold">{date.getDate()}</div>
                 </div>
                 <div className="space-y-1.5">
-                  {dayAppts.map((a) => (
+                  {Array.isArray(dayAppts) && dayAppts.map((a) => (
                     <Link
                       key={a.appointmentId}
                       to={`/appointments/${a.appointmentId}`}
@@ -215,12 +215,12 @@ export default function AppointmentsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {(appointments ?? []).length === 0 && !loading && (
+              {(Array.isArray(appointments) ? appointments : []).length === 0 && !loading && (
                 <tr>
                   <td colSpan={6} className="px-5 py-8 text-center text-gray-400">No appointments found.</td>
                 </tr>
               )}
-              {appointments.map((a) => (
+              {Array.isArray(appointments) && appointments.map((a) => (
                 <tr key={a.appointmentId} className="hover:bg-gray-50 transition-colors">
                   <td className="px-5 py-3 text-gray-700">
                     {new Date(a.scheduledAt).toLocaleString('en-GB', {
