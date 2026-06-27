@@ -46,27 +46,7 @@ const navItems = [
   { to: '/admin/settings',             label: 'Facility Settings',roles: [Roles.SuperAdmin, Roles.Admin] },
 ];
 
-function extractRole(user: any): string {
-  if (!user) return '';
-  if (typeof user.role === 'string' && user.role) return user.role;
-  if (typeof user.roleName === 'string' && user.roleName) return user.roleName;
-  if (Array.isArray(user.roles) && user.roles.length > 0) return String(user.roles[0]);
-  if (user.token && typeof user.token === 'string') {
-    try {
-      const base64Url = user.token.split('.')[1];
-      if (base64Url) {
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(atob(base64).split('').map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
-        const payload = JSON.parse(jsonPayload);
-        const jwtRole = payload.role || payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || payload['roles'];
-        if (typeof jwtRole === 'string') return jwtRole;
-        if (Array.isArray(jwtRole) && jwtRole.length > 0) return String(jwtRole[0]);
-      }
-    } catch {}
-  }
-  if (user.email && user.email.toLowerCase().includes('admin')) return 'Admin';
-  return '';
-}
+
 
 export default function Layout() {
   const { user, logout } = useAuth();
@@ -77,16 +57,7 @@ export default function Layout() {
     navigate('/login');
   }
 
-  const rawRole = extractRole(user);
-  const userRole = rawRole.toLowerCase();
-  const isAdminUser = userRole === 'admin' || userRole === 'superadmin' || userRole.includes('admin') || (user?.email && user.email.toLowerCase().includes('admin'));
-
-  const visibleNav = navItems.filter((item) => {
-    if (!item.roles) return true;
-    if (isAdminUser) return true; // Admins have access to all facility modules
-    if (!userRole) return false;
-    return item.roles.some((r) => r.toLowerCase() === userRole);
-  });
+  const visibleNav = navItems;
 
   return (
     <div className="flex h-screen bg-gray-100">
