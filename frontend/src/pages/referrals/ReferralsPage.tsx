@@ -22,7 +22,7 @@ export default function ReferralsPage() {
     setLoading(true);
     const fetch = view === 'incoming' ? getIncomingReferrals() : getReferrals(status || undefined);
     fetch
-      .then(setReferrals)
+      .then(res => setReferrals(Array.isArray(res) ? res : ((res as any)?.items || (res as any)?.data || [])))
       .catch(() => setReferrals([]))
       .finally(() => setLoading(false));
   }, [status, view]);

@@ -26,7 +26,10 @@ export default function PrescriptionsPage() {
   useEffect(() => {
     if (tab === 'queue' && isPharmacist) {
       setLoading(true);
-      getPending().then(setPending).catch(() => {}).finally(() => setLoading(false));
+      getPending()
+        .then((res: any) => setPending(Array.isArray(res) ? res : (res?.items || res?.data || [])))
+        .catch(() => setPending([]))
+        .finally(() => setLoading(false));
     }
   }, [tab, isPharmacist]);
 
@@ -35,7 +38,7 @@ export default function PrescriptionsPage() {
     setSearching(true);
     try {
       const res = await searchPatients({ query: patientQuery, pageSize: 5 });
-      setPatientResults(res.items);
+      setPatientResults(Array.isArray(res?.items) ? res.items : []);
     } finally {
       setSearching(false);
     }
@@ -48,13 +51,14 @@ export default function PrescriptionsPage() {
     setLoading(true);
     try {
       const data = await getPatientPrescriptions(p.patientId);
-      setPatientRx(data);
+      setPatientRx(Array.isArray(data) ? data : ((data as any)?.items || (data as any)?.data || []));
     } finally {
       setLoading(false);
     }
   }
 
-  const displayList = tab === 'queue' ? pending : patientRx;
+  const rawDisplayList = tab === 'queue' ? pending : patientRx;
+  const displayList = Array.isArray(rawDisplayList) ? rawDisplayList : [];
 
   return (
     <div className="p-6">

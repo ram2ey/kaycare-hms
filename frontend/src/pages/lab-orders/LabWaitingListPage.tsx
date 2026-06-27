@@ -111,8 +111,8 @@ export default function LabWaitingListPage() {
   const load = async () => {
     setLoading(true);
     try {
-      const data = await getWaitingList(date, status || undefined, department || undefined);
-      setOrders(data);
+      const data: any = await getWaitingList(date, status || undefined, department || undefined);
+      setOrders(Array.isArray(data) ? data : (data?.items || data?.data || []));
     } finally {
       setLoading(false);
     }
@@ -120,9 +120,10 @@ export default function LabWaitingListPage() {
 
   useEffect(() => { load(); }, [date, status, department]);
 
-  const totalIncomplete = orders.reduce((s, o) => s + o.incompleteCount, 0);
-  const totalCompleted  = orders.reduce((s, o) => s + o.completedCount, 0);
-  const totalSigned     = orders.reduce((s, o) => s + o.signedCount, 0);
+  const safeOrders = Array.isArray(orders) ? orders : [];
+  const totalIncomplete = safeOrders.reduce((s, o) => s + (o?.incompleteCount ?? 0), 0);
+  const totalCompleted  = safeOrders.reduce((s, o) => s + (o?.completedCount ?? 0), 0);
+  const totalSigned     = safeOrders.reduce((s, o) => s + (o?.signedCount ?? 0), 0);
 
   const handleReceive = async (itemId: string) => {
     await receiveSample(itemId);
@@ -196,7 +197,7 @@ export default function LabWaitingListPage() {
               Refresh
             </button>
             <div className="ml-auto flex gap-4 text-sm text-gray-600">
-              <span>Rows: <strong>{orders.length}</strong></span>
+              <span>Rows: <strong>{safeOrders.length}</strong></span>
               <span className="text-orange-600">Incomplete: <strong>{totalIncomplete}</strong></span>
               <span className="text-green-600">Completed: <strong>{totalCompleted}</strong></span>
               <span className="text-purple-600">Signed: <strong>{totalSigned}</strong></span>
@@ -208,7 +209,7 @@ export default function LabWaitingListPage() {
         <div className="flex-1 overflow-y-auto p-4">
           {loading ? (
             <div className="text-center py-16 text-gray-400">Loading…</div>
-          ) : orders.length === 0 ? (
+          ) : safeOrders.length === 0 ? (
             <div className="text-center py-16 text-gray-400">No orders found for this date.</div>
           ) : (
             <div className="bg-white rounded-lg border overflow-hidden">
@@ -226,7 +227,7 @@ export default function LabWaitingListPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {orders.map(order => (
+                  {safeOrders.map(order => (
                     <OrderRow
                       key={order.labOrderId}
                       order={order}
@@ -277,8 +278,8 @@ function OrderRow({
   const toggleExpand = async () => {
     if (!expanded && items.length === 0) {
       setLoadingItems(true);
-      const detail = await getLabOrderById(order.labOrderId);
-      setItems(detail.items);
+      const detail: any = await getLabOrderById(order.labOrderId);
+      setItems(Array.isArray(detail?.items) ? detail.items : (Array.isArray(detail) ? detail : []));
       setLoadingItems(false);
     }
     setExpanded(e => !e);

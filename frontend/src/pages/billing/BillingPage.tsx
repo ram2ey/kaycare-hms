@@ -32,7 +32,10 @@ export default function BillingPage() {
   useEffect(() => {
     if (tab === 'outstanding' && canViewOutstanding) {
       setLoading(true);
-      getOutstanding().then(setOutstanding).catch(() => {}).finally(() => setLoading(false));
+      getOutstanding()
+        .then((res: any) => setOutstanding(Array.isArray(res) ? res : (res?.items || res?.data || [])))
+        .catch(() => setOutstanding([]))
+        .finally(() => setLoading(false));
     }
   }, [tab, canViewOutstanding]);
 
@@ -41,7 +44,7 @@ export default function BillingPage() {
     setSearching(true);
     try {
       const res = await searchPatients({ query: patientQuery, pageSize: 5 });
-      setPatientResults(res.items);
+      setPatientResults(Array.isArray(res?.items) ? res.items : []);
     } finally {
       setSearching(false);
     }
@@ -53,16 +56,18 @@ export default function BillingPage() {
     setPatientQuery('');
     setLoading(true);
     try {
-      setPatientBills(await getPatientBills(p.patientId));
+      const res: any = await getPatientBills(p.patientId);
+      setPatientBills(Array.isArray(res) ? res : (res?.items || res?.data || []));
     } finally {
       setLoading(false);
     }
   }
 
-  const displayList = tab === 'outstanding' ? outstanding : patientBills;
+  const rawDisplayList = tab === 'outstanding' ? outstanding : patientBills;
+  const displayList = Array.isArray(rawDisplayList) ? rawDisplayList : [];
 
   // Summary totals for outstanding tab
-  const totalOutstanding = outstanding.reduce((s, b) => s + b.balanceDue, 0);
+  const totalOutstanding = (Array.isArray(outstanding) ? outstanding : []).reduce((s, b) => s + (b?.balanceDue ?? 0), 0);
 
   return (
     <div className="p-6">

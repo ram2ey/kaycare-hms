@@ -12,12 +12,14 @@ export default function ReorderAlertsPage() {
     setLoading(true);
     setError('');
     getReorderAlerts()
-      .then(setAlerts)
+      .then((res: any) => setAlerts(Array.isArray(res) ? res : (res?.items || res?.data || [])))
       .catch(() => setError('Failed to load reorder alerts.'))
       .finally(() => setLoading(false));
   }, []);
 
-  const grouped = alerts.reduce<Record<string, ReorderAlertResponse[]>>((acc, a) => {
+  const safeAlerts = Array.isArray(alerts) ? alerts : [];
+
+  const grouped = safeAlerts.reduce<Record<string, ReorderAlertResponse[]>>((acc, a) => {
     const key = a.category ?? 'Uncategorised';
     (acc[key] ??= []).push(a);
     return acc;
@@ -40,7 +42,7 @@ export default function ReorderAlertsPage() {
         <div className="text-gray-400 py-8">Loading…</div>
       ) : error ? (
         <div className="text-red-600 py-4">{error}</div>
-      ) : alerts.length === 0 ? (
+      ) : safeAlerts.length === 0 ? (
         <div className="bg-white rounded-xl border border-green-200 px-6 py-12 text-center">
           <p className="text-green-700 font-medium">All drugs are above their reorder thresholds.</p>
           <p className="text-sm text-gray-400 mt-1">No action required right now.</p>
@@ -48,8 +50,8 @@ export default function ReorderAlertsPage() {
       ) : (
         <>
           <div className="mb-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-center gap-2">
-            <span className="text-red-600 font-semibold">{alerts.length}</span>
-            <span className="text-red-700 text-sm">drug{alerts.length !== 1 ? 's' : ''} need{alerts.length === 1 ? 's' : ''} to be reordered.</span>
+            <span className="text-red-600 font-semibold">{safeAlerts.length}</span>
+            <span className="text-red-700 text-sm">drug{safeAlerts.length !== 1 ? 's' : ''} need{safeAlerts.length === 1 ? 's' : ''} to be reordered.</span>
           </div>
           <div className="space-y-6">
             {Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b)).map(([category, group]) => (

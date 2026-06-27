@@ -14,18 +14,21 @@ export function RadiologyOrdersPage() {
   function load() {
     setLoading(true)
     getRadiologyWorklist(date, statusFilter || undefined)
-      .then(setOrders)
+      .then((res: any) => setOrders(Array.isArray(res) ? res : (res?.items || res?.data || [])))
+      .catch(() => setOrders([]))
       .finally(() => setLoading(false))
   }
 
   useEffect(() => { load() }, [date, statusFilter])
+
+  const safeOrders = Array.isArray(orders) ? orders : []
 
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Radiology Orders</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{orders.length} order{orders.length !== 1 ? 's' : ''} today</p>
+          <p className="text-sm text-gray-500 mt-0.5">{safeOrders.length} order{safeOrders.length !== 1 ? 's' : ''} today</p>
         </div>
         <button
           onClick={() => navigate('/radiology/new')}
@@ -60,7 +63,7 @@ export function RadiologyOrdersPage() {
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         {loading ? (
           <div className="p-8 text-center text-gray-400 text-sm">Loading…</div>
-        ) : orders.length === 0 ? (
+        ) : safeOrders.length === 0 ? (
           <div className="p-8 text-center text-gray-400 text-sm">No radiology orders found.</div>
         ) : (
           <table className="w-full text-sm">
@@ -76,7 +79,7 @@ export function RadiologyOrdersPage() {
               </tr>
             </thead>
             <tbody>
-              {orders.map((order) => (
+              {safeOrders.map((order) => (
                 <tr
                   key={order.radiologyOrderId}
                   onClick={() => navigate(`/radiology/${order.radiologyOrderId}`)}

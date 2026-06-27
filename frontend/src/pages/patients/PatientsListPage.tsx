@@ -23,8 +23,16 @@ export default function PatientsListPage() {
     setLoading(true);
     setError('');
     try {
-      const data = await searchPatients(params);
-      setResult(data);
+      const data: any = await searchPatients(params);
+      const normalized: PagedResult<PatientResponse> = Array.isArray(data)
+        ? { items: data, totalCount: data.length, page: 1, pageSize: 20 }
+        : {
+            items: Array.isArray(data?.items) ? data.items : (Array.isArray(data?.data) ? data.data : []),
+            totalCount: data?.totalCount ?? data?.total ?? (Array.isArray(data?.items) ? data.items.length : 0),
+            page: data?.page ?? 1,
+            pageSize: data?.pageSize ?? 20,
+          };
+      setResult(normalized);
     } catch {
       setError('Failed to load patients.');
     } finally {
