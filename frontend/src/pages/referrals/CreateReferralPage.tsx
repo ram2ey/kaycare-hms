@@ -6,6 +6,8 @@ import { searchPatients } from '../../api/patients';
 import type { CreateReferralRequest } from '../../types/referrals';
 import type { UserResponse } from '../../types/users';
 import type { PatientResponse } from '../../types/patients';
+import { safeArray } from '../../utils/array';
+
 
 const inp = 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
 
@@ -31,7 +33,7 @@ export default function CreateReferralPage() {
   useEffect(() => {
     getUsers({ role: 'Doctor' }).then(setDoctors).catch(() => {});
     if (!prefillPatient) {
-      searchPatients({ page: 1, pageSize: 200 }).then(r => setPatients(r.items)).catch(() => {});
+      searchPatients({ page: 1, pageSize: 200 }).then(r => setPatients(safeArray(r.items))).catch(() => {});
     }
   }, [prefillPatient]);
 

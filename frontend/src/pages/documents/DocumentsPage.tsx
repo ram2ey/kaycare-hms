@@ -4,6 +4,8 @@ import { searchPatients } from '../../api/patients';
 import type { DocumentResponse } from '../../types/documents';
 import type { PatientResponse } from '../../types/patients';
 import { DOCUMENT_CATEGORIES, formatBytes } from '../../types/documents';
+import { safeArray } from '../../utils/array';
+
 
 const ICON: Record<string, string> = {
   'application/pdf': '📄',
@@ -36,7 +38,7 @@ export default function DocumentsPage() {
     setSearching(true);
     try {
       const res = await searchPatients({ query: patientQuery, pageSize: 5 });
-      setPatientResults(res.items);
+      setPatientResults(safeArray(res.items));
     } finally {
       setSearching(false);
     }

@@ -5,6 +5,8 @@ import { searchPatients, getPatient } from '../../api/patients'
 import { useDebounce } from '../../hooks/useDebounce'
 import type { ImagingProcedureItem } from '../../types/radiology'
 import { PRIORITY_OPTIONS } from '../../types/radiology'
+import { safeArray } from '../../utils/array';
+
 
 export function NewRadiologyOrderPage() {
   const navigate = useNavigate()
@@ -44,7 +46,7 @@ export function NewRadiologyOrderPage() {
 
     searchPatients({ query: debouncedQuery, page: 1, pageSize: 6 }).then((res) => {
       setSuggestions(
-        res.items.map((p) => ({
+        safeArray(res.items).map((p) => ({
           patientId: p.patientId,
           name: p.fullName,
           mrn: p.medicalRecordNumber,

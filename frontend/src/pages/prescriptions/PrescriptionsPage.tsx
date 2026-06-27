@@ -7,6 +7,8 @@ import type { PatientResponse } from '../../types/patients';
 import { STATUS_COLORS } from '../../types/prescriptions';
 import { useAuth } from '../../contexts/AuthContext';
 import { Roles } from '../../types';
+import { safeArray } from '../../utils/array';
+
 
 const PHARMACIST_ROLES = [Roles.Pharmacist, Roles.Admin, Roles.SuperAdmin];
 
@@ -38,7 +40,7 @@ export default function PrescriptionsPage() {
     setSearching(true);
     try {
       const res = await searchPatients({ query: patientQuery, pageSize: 5 });
-      setPatientResults(Array.isArray(res?.items) ? res.items : []);
+      setPatientResults(safeArray(Array.isArray(res?.items)) ? res.items : []);
     } finally {
       setSearching(false);
     }

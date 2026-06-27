@@ -3,6 +3,8 @@ import { useParams, Link } from 'react-router-dom';
 import { getLabOrderById, receiveSample, enterManualResult, signItem, downloadLabReport, recordCriticalCallLog } from '../../api/labOrders';
 import type { LabOrderDetail, LabOrderItemResponse, LabOrderItem } from '../../types/labOrders';
 import { ITEM_STATUS_COLORS, ORDER_STATUS_COLORS } from '../../types/labOrders';
+import { safeArray } from '../../utils/array';
+
 
 
 function printBarcode(item: LabOrderItem, patientName: string, patientMrn: string) {
@@ -220,7 +222,7 @@ export default function LabOrderDetailPage() {
           <h2 className="text-sm font-semibold text-gray-700">Tests ({order.items.length})</h2>
         </div>
         <div className="divide-y">
-          {order.items.map(item => (
+          {safeArray(order.items).map(item => (
             <div key={item.labOrderItemId} className="p-4">
               <div className="flex items-start justify-between">
                 <div className="flex-1">

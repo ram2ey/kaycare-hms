@@ -4,6 +4,8 @@ import { getPatientLabResults } from '../../api/labResults';
 import { searchPatients } from '../../api/patients';
 import type { LabResultResponse } from '../../types/labResults';
 import type { PatientResponse } from '../../types/patients';
+import { safeArray } from '../../utils/array';
+
 
 const STATUS_COLORS: Record<string, string> = {
   Received: 'bg-blue-100 text-blue-700',
@@ -23,7 +25,7 @@ export default function LabResultsPage() {
     setSearching(true);
     try {
       const res = await searchPatients({ query: patientQuery, pageSize: 5 });
-      setPatientResults(res.items);
+      setPatientResults(safeArray(res.items));
     } finally {
       setSearching(false);
     }

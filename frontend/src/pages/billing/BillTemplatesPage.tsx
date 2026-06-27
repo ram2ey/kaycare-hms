@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { getBillTemplates, createBillTemplate, updateBillTemplate, deleteBillTemplate, toggleBillTemplate } from '../../api/billTemplates';
 import type { BillTemplateResponse, SaveBillTemplateRequest, BillTemplateItemRequest } from '../../types/billTemplates';
 import { BILL_CATEGORIES } from '../../types/billing';
+import { safeArray } from '../../utils/array';
+
 
 const inp = 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
 const emptyItem = (): BillTemplateItemRequest => ({ description: '', quantity: 1, unitPrice: 0 });
@@ -48,13 +50,13 @@ export default function BillTemplatesPage() {
       description: t.description ?? '',
       category:    t.category    ?? '',
       isActive:    t.isActive,
-      items:       t.items.map(i => ({ description: i.description, category: i.category ?? '', quantity: i.quantity, unitPrice: i.unitPrice })),
+      items:       safeArray(t.items).map(i => ({ description: i.description, category: i.category ?? '', quantity: i.quantity, unitPrice: i.unitPrice })),
     });
     setShowForm(true);
   }
 
   function updateItem(i: number, field: keyof BillTemplateItemRequest, value: unknown) {
-    setForm(f => ({ ...f, items: f.items.map((it, idx) => idx === i ? { ...it, [field]: value } : it) }));
+    setForm(f => ({ ...f, items: safeArray(f.items).map((it, idx) => idx === i ? { ...it, [field]: value } : it) }));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -66,7 +68,7 @@ export default function BillTemplatesPage() {
         ...form,
         description: form.description || undefined,
         category:    form.category    || undefined,
-        items:       form.items.map(i => ({ ...i, category: i.category || undefined })),
+        items:       safeArray(form.items).map(i => ({ ...i, category: i.category || undefined })),
       };
       if (editTarget) {
         await updateBillTemplate(editTarget.billTemplateId, payload);
@@ -238,7 +240,7 @@ export default function BillTemplatesPage() {
                     className="text-xs text-blue-600 hover:underline">+ Add item</button>
                 </div>
                 <div className="space-y-2">
-                  {form.items.map((item, i) => (
+                  {safeArray(form.items).map((item, i) => (
                     <div key={i} className="grid grid-cols-12 gap-2 items-start">
                       <div className="col-span-4">
                         {i === 0 && <div className="text-xs text-gray-400 mb-1">Description *</div>}

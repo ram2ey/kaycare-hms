@@ -6,6 +6,8 @@ import type { PagedResult } from '../../types';
 import type { PatientResponse } from '../../types/patients';
 import { AUDIT_ACTIONS } from '../../types/audit';
 import { Link } from 'react-router-dom';
+import { safeArray } from '../../utils/array';
+
 
 export default function AuditLogsPage() {
   const [filters, setFilters] = useState<AuditLogQueryRequest>({ page: 1, pageSize: 50 });
@@ -40,7 +42,7 @@ export default function AuditLogsPage() {
     setSearching(true);
     try {
       const res = await searchPatients({ query: patientQuery, pageSize: 5 });
-      setPatientResults(res.items);
+      setPatientResults(safeArray(res.items));
     } finally {
       setSearching(false);
     }

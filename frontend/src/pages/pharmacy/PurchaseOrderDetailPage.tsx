@@ -18,6 +18,8 @@ import type {
 } from '../../types/pharmacy';
 import type { DrugInventoryResponse } from '../../types/pharmacy';
 import { PO_STATUS_LABELS, PO_STATUS_COLORS } from '../../types/pharmacy';
+import { safeArray } from '../../utils/array';
+
 
 const inp = 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
 const fmt = (n: number) => `$${n.toFixed(2)}`;
@@ -77,7 +79,7 @@ export default function PurchaseOrderDetailPage() {
     setEditSupplierId(po.supplierId ?? '');
     setEditExpectedDate(po.expectedDeliveryDate ? po.expectedDeliveryDate.split('T')[0] : '');
     setEditNotes(po.notes ?? '');
-    setEditItems(po.items.map(i => ({
+    setEditItems(safeArray(po.items).map(i => ({
       _key: Math.random(),
       drugInventoryId: i.drugInventoryId,
       quantity: i.quantity,
@@ -270,7 +272,7 @@ export default function PurchaseOrderDetailPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
-            {po.items.map(item => (
+            {safeArray(po.items).map(item => (
               <tr key={item.purchaseOrderItemId} className={item.isFullyReceived ? 'bg-green-50' : ''}>
                 <td className="px-4 py-3">
                   <p className="font-medium text-gray-800">{item.drugName}</p>

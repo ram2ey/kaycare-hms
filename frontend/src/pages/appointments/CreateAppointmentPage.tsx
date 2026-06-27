@@ -7,6 +7,8 @@ import type { PatientResponse } from '../../types/patients';
 import { AppointmentTypes } from '../../types/appointments';
 import { useAuth } from '../../contexts/AuthContext';
 import { Roles } from '../../types';
+import { safeArray } from '../../utils/array';
+
 
 export default function CreateAppointmentPage() {
   const navigate = useNavigate();
@@ -49,7 +51,7 @@ export default function CreateAppointmentPage() {
     setSearching(true);
     try {
       const res = await searchPatients({ query: patientQuery, pageSize: 5 });
-      setPatientResults(res.items);
+      setPatientResults(safeArray(res.items));
     } catch {
       setPatientResults([]);
     } finally {

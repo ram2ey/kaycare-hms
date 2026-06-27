@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { getMyTemplates, getSharedTemplates, getTemplate } from '../api/prescriptionTemplates';
 import type { PrescriptionTemplateResponse } from '../types/prescriptionTemplates';
 import type { PrescriptionItemRequest } from '../types/prescriptions';
+import { safeArray } from '../utils/array';
+
 
 interface Props {
   onSelect: (items: PrescriptionItemRequest[], templateName: string) => void;
@@ -25,7 +27,7 @@ export default function TemplatePickerModal({ onSelect, onClose }: Props) {
     setApplying(templateId);
     try {
       const detail = await getTemplate(templateId);
-      const items: PrescriptionItemRequest[] = detail.items.map((i) => ({
+      const items: PrescriptionItemRequest[] = safeArray(detail.items).map((i) => ({
         medicationName:        i.medicationName,
         genericName:           i.genericName ?? '',
         strength:              i.strength,

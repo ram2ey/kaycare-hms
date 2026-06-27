@@ -7,6 +7,8 @@ import type { PatientResponse } from '../../types/patients';
 import { STATUS_COLORS } from '../../types/billing';
 import { useAuth } from '../../contexts/AuthContext';
 import { Roles } from '../../types';
+import { safeArray } from '../../utils/array';
+
 
 const BILLING_ROLES = [Roles.Admin, Roles.SuperAdmin, Roles.Receptionist];
 
@@ -44,7 +46,7 @@ export default function BillingPage() {
     setSearching(true);
     try {
       const res = await searchPatients({ query: patientQuery, pageSize: 5 });
-      setPatientResults(Array.isArray(res?.items) ? res.items : []);
+      setPatientResults(safeArray(Array.isArray(res?.items)) ? res.items : []);
     } finally {
       setSearching(false);
     }

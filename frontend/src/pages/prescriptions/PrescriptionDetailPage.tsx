@@ -11,6 +11,8 @@ import { STATUS_COLORS } from '../../types/prescriptions';
 import { useAuth } from '../../contexts/AuthContext';
 import { Roles } from '../../types';
 import { getDrugSafety } from '../../api/ai';
+import { safeArray } from '../../utils/array';
+
 
 export default function PrescriptionDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -74,7 +76,7 @@ export default function PrescriptionDetailPage() {
     setSafetyOpen(true);
     setSafetyLoading(true);
     try {
-      const drugItems = rx.items.map(i => ({
+      const drugItems = safeArray(rx.items).map(i => ({
         drugName: i.medicationName,
         genericName: i.genericName ?? '',
         dosage: `${i.strength} ${i.dosageForm}`,
@@ -211,7 +213,7 @@ export default function PrescriptionDetailPage() {
             )}
           </div>
           <div className="divide-y divide-gray-100">
-            {rx.items.map((item, i) => {
+            {safeArray(rx.items).map((item, i) => {
               const remaining = item.quantity - item.quantityDispensed;
               return (
                 <div key={item.itemId} className="px-5 py-4">
@@ -277,7 +279,7 @@ export default function PrescriptionDetailPage() {
                       <span className="text-xs text-gray-500">By {event.dispensedByName}</span>
                     </div>
                     <div className="space-y-1">
-                      {event.items.map((ei) => (
+                      {safeArray(event.items).map((ei) => (
                         <div key={ei.prescriptionItemId} className="flex items-center justify-between text-sm text-gray-600">
                           <span>{ei.medicationName}</span>
                           <span className="text-xs font-medium text-gray-500">Qty: {ei.quantityDispensed}</span>
@@ -362,7 +364,7 @@ function PartialDispenseModal({
   onClose: () => void;
 }) {
   const [qtys, setQtys]     = useState<Record<string, number>>(() =>
-    Object.fromEntries(rx.items.map((i) => [i.itemId, i.quantity - i.quantityDispensed]))
+    Object.fromEntries(safeArray(rx.items).map((i) => [i.itemId, i.quantity - i.quantityDispensed]))
   );
   const [notes, setNotes]   = useState('');
   const [saving, setSaving] = useState(false);
@@ -393,7 +395,7 @@ function PartialDispenseModal({
         </p>
 
         <div className="overflow-y-auto flex-1 space-y-3 mb-4">
-          {rx.items.map((item) => {
+          {safeArray(rx.items).map((item) => {
             const remaining = item.quantity - item.quantityDispensed;
             return (
               <div key={item.itemId} className="border border-gray-200 rounded-lg p-3">

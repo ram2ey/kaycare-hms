@@ -4,6 +4,8 @@ import { getPatientConsultations } from '../../api/consultations';
 import { searchPatients } from '../../api/patients';
 import type { ConsultationSummaryResponse } from '../../types/consultations';
 import type { PatientResponse } from '../../types/patients';
+import { safeArray } from '../../utils/array';
+
 
 export default function ConsultationsPage() {
   const navigate = useNavigate();
@@ -19,7 +21,7 @@ export default function ConsultationsPage() {
     setSearching(true);
     try {
       const res = await searchPatients({ query: patientQuery, pageSize: 5 });
-      setPatientResults(res.items);
+      setPatientResults(safeArray(res.items));
     } finally {
       setSearching(false);
     }

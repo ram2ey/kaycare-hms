@@ -6,6 +6,8 @@ import type { PrescriptionItemRequest } from '../../types/prescriptions';
 import { DOSAGE_FORMS, FREQUENCIES } from '../../types/prescriptions';
 import MedicationAutocomplete from '../../components/MedicationAutocomplete';
 import type { MedicationEntry } from '../../data/medications';
+import { safeArray } from '../../utils/array';
+
 
 const emptyItem = (): PrescriptionItemRequest => ({
   medicationName: '',
@@ -46,7 +48,7 @@ export default function CreateEditTemplatePage({ mode }: Props) {
           setName(t.name);
           setDesc(t.description ?? '');
           setIsShared(t.isShared);
-          setItems(t.items.map((i) => ({
+          setItems(safeArray(t.items).map((i) => ({
             medicationName:        i.medicationName,
             genericName:           i.genericName ?? '',
             strength:              i.strength,
@@ -58,7 +60,7 @@ export default function CreateEditTemplatePage({ mode }: Props) {
             instructions:          i.instructions ?? '',
             isControlledSubstance: i.isControlledSubstance,
           })));
-          setSelectedMeds(t.items.map(() => null));
+          setSelectedMeds(safeArray(t.items).map(() => null));
         })
         .catch(() => setError('Failed to load template.'))
         .finally(() => setLoading(false));

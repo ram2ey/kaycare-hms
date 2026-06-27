@@ -11,6 +11,8 @@ import type { ServiceCatalogItem } from '../../types/serviceCatalog';
 import type { PayerResponse } from '../../types/payers';
 import type { BillTemplateResponse } from '../../types/billTemplates';
 import { BILL_CATEGORIES } from '../../types/billing';
+import { safeArray } from '../../utils/array';
+
 
 const inp = 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
 
@@ -59,7 +61,7 @@ export default function CreateBillPage() {
     setSearching(true);
     try {
       const res = await searchPatients({ query: patientQuery, pageSize: 5 });
-      setPatientResults(res.items);
+      setPatientResults(safeArray(res.items));
     } finally {
       setSearching(false);
     }
@@ -103,7 +105,7 @@ export default function CreateBillPage() {
     : templates;
 
   function applyTemplate(t: BillTemplateResponse) {
-    const newItems: BillItemRequest[] = t.items.map(i => ({
+    const newItems: BillItemRequest[] = safeArray(t.items).map(i => ({
       description: i.description,
       category:    i.category ?? '',
       quantity:    i.quantity,

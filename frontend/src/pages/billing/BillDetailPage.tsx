@@ -10,6 +10,8 @@ import type { BillDetailResponse, AddPaymentRequest, ApplyDiscountRequest, AddAd
 import { STATUS_COLORS, PAYMENT_METHODS } from '../../types/billing';
 import { useAuth } from '../../contexts/AuthContext';
 import { Roles } from '../../types';
+import { safeArray } from '../../utils/array';
+
 
 const BILLING_ROLES = [Roles.Admin, Roles.SuperAdmin, Roles.Receptionist];
 
@@ -301,7 +303,7 @@ export default function BillDetailPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {bill.items.map((item) => (
+              {safeArray(bill.items).map((item) => (
                 <tr key={item.itemId}>
                   <td className="px-5 py-3 text-gray-800">
                     <span>{item.description}</span>

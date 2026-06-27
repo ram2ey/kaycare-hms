@@ -5,6 +5,8 @@ import { searchPatients } from '../../api/patients';
 import type { LabTestCatalog } from '../../types/labOrders';
 import type { PatientResponse } from '../../types/patients';
 import { DEPARTMENTS } from '../../types/labOrders';
+import { safeArray } from '../../utils/array';
+
 
 export default function PlaceLabOrderPage() {
   const navigate = useNavigate();
@@ -45,7 +47,7 @@ export default function PlaceLabOrderPage() {
     if (q.trim().length < 2) { setPatientResults([]); return; }
     setSearchingPatient(true);
     const res = await searchPatients({ query: q });
-    setPatientResults(res.items);
+    setPatientResults(safeArray(res.items));
     setSearchingPatient(false);
   };
 

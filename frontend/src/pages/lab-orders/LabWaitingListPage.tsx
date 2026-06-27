@@ -9,6 +9,8 @@ import {
 } from '../../api/labOrders';
 import type { LabOrder, LabOrderItem, LabOrderStatus } from '../../types/labOrders';
 import { ORDER_STATUS_COLORS, ITEM_STATUS_COLORS, DEPARTMENTS } from '../../types/labOrders';
+import { safeArray } from '../../utils/array';
+
 
 // ── Barcode print helper ──────────────────────────────────────────────────────
 function printBarcode(item: LabOrderItem, patientName: string, patientMrn: string) {
@@ -279,7 +281,7 @@ function OrderRow({
     if (!expanded && items.length === 0) {
       setLoadingItems(true);
       const detail: any = await getLabOrderById(order.labOrderId);
-      setItems(Array.isArray(detail?.items) ? detail.items : (Array.isArray(detail) ? detail : []));
+      setItems(safeArray(Array.isArray(detail?.items)) ? detail.items : (Array.isArray(detail) ? detail : []));
       setLoadingItems(false);
     }
     setExpanded(e => !e);

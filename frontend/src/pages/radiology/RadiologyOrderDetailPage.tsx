@@ -12,6 +12,8 @@ import type { RadiologyOrderDetail, RadiologyOrderItemResponse } from '../../typ
 import { ORDER_STATUS_COLORS, ITEM_STATUS_COLORS } from '../../types/radiology'
 import { useAuth } from '../../contexts/AuthContext'
 import { PacsViewerModal } from '../../components/PacsViewerModal'
+import { safeArray } from '../../utils/array';
+
 
 export function RadiologyOrderDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -158,7 +160,7 @@ export function RadiologyOrderDetailPage() {
             </tr>
           </thead>
           <tbody>
-            {order.items.map((item) => (
+            {safeArray(order.items).map((item) => (
               <tr key={item.radiologyOrderItemId} className="border-b border-gray-50">
                 <td className="px-5 py-3">
                   <p className="font-medium text-gray-800">{item.procedureName}</p>
