@@ -123,14 +123,28 @@ public class LabResultService : ILabResultService
 
     public async Task<bool> ProcessHl7MessageAsync(string rawMessage, CancellationToken ct)
     {
-        var tenant = await _db.Tenants.AsNoTracking().FirstOrDefaultAsync(t => t.IsActive, ct);
+        var parsed = Hl7Parser.ParseOruR01(rawMessage);
+        if (parsed == null) return false;
+
+        // Resolve tenant dynamically by MSH-4 (SendingFacility = TenantCode) first
+        Tenant? tenant = null;
+        if (!string.IsNullOrWhiteSpace(parsed.SendingFacility))
+        {
+            tenant = await _db.Tenants.AsNoTracking()
+                .FirstOrDefaultAsync(t => t.TenantCode == parsed.SendingFacility, ct);
+        }
+
+        // Fallback to first active tenant if no facility matched
+        if (tenant == null)
+        {
+            tenant = await _db.Tenants.AsNoTracking()
+                .FirstOrDefaultAsync(t => t.IsActive, ct);
+        }
+
         if (tenant == null) return false;
 
         _tenantContext.TenantId = tenant.TenantId;
         _tenantContext.TenantCode = tenant.TenantCode;
-
-        var parsed = Hl7Parser.ParseOruR01(rawMessage);
-        if (parsed == null) return false;
 
         using var transaction = await _db.Database.BeginTransactionAsync(ct);
         try
