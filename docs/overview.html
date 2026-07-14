@@ -1,0 +1,182 @@
+<h1>KayCare HMS — Enterprise Architecture &amp; Comprehensive Client Overview</h1>
+<p><strong>Document Reference:</strong> KC-HMS-OVR-2026<br><strong>Target Architecture:</strong> Multi-Tenant Healthcare Enterprise Suite<br><strong>Technical Standards:</strong> ASP.NET Core 8 | React 18 | PostgreSQL | EF Core 8 | HL7 MLLP  </p>
+<hr>
+<h2>1. Executive Summary &amp; Unified Synergy</h2>
+<p><strong>KayCare Hospital Management System (HMS)</strong> is an enterprise-grade, multi-tenant digital health platform engineered to unify complex clinical workflows, inpatient care, pharmacy operations, diagnostic laboratories, and financial revenue cycles into a single high-performance system.</p>
+<h3>The Unified Care Advantage</h3>
+<p>Traditional healthcare facilities struggle with fragmented, siloed software applications operating independently across departments. When Electronic Medical Records (EMR), Laboratory Information Systems (LIS), Pharmacy Management, and Billing operate in isolation, organizations experience severe operational friction:</p>
+<table>
+<thead>
+<tr>
+<th align="left">Problem Domain</th>
+<th align="left">Legacy Siloed Systems</th>
+<th align="left">The KayCare HMS Unified Solution</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>Data Synchronization</strong></td>
+<td align="left">Manual transcription of orders and lab results between isolated screens leads to clinical errors.</td>
+<td align="left"><strong>Instant Cross-Module Routing</strong>: Doctor orders flow dynamically to lab worklists and pharmacy dispensing queues.</td>
+</tr>
+<tr>
+<td align="left"><strong>Financial Integrity</strong></td>
+<td align="left">Diagnostic tests and dispensed medications frequently bypass billing due to disconnected ledgers.</td>
+<td align="left"><strong>Automated Charge Capture</strong>: Every clinical event instantly registers items onto a centralized patient invoice.</td>
+</tr>
+<tr>
+<td align="left"><strong>Stock &amp; Dispensing</strong></td>
+<td align="left">Pharmacy inventory levels operate independently from clinical prescription entries.</td>
+<td align="left"><strong>Real-Time Stock Deductions</strong>: Dispensing drugs instantly adjusts active inventory balances and flags reorder alerts.</td>
+</tr>
+<tr>
+<td align="left"><strong>Multi-Facility Isolation</strong></td>
+<td align="left">Cross-tenant data leaks and complex custom logic required for multi-clinic management.</td>
+<td align="left"><strong>Architectural Multi-Tenancy</strong>: EF Core Global Query Filters enforce absolute data isolation per clinic at the database level.</td>
+</tr>
+</tbody></table>
+<pre><code>┌──────────────────────────────────────────────────────────────────────────────────┐
+│                          KAYCARE HMS UNIFIED ENTERPRISE ENGINE                   │
+│                                                                                  │
+│   ┌────────────────┐      ┌──────────────────┐      ┌────────────────────────┐   │
+│   │  Patient EMR   │ ───► │  Clinical Orders │ ───► │  Lab (LIS) / Pharmacy  │   │
+│   │  &amp; Vitals Log  │      │  (SOAP / ICD-10) │      │  &amp; Automated Stock     │   │
+│   └───────┬────────┘      └────────┬─────────┘      └───────────┬────────────┘   │
+│           │                        │                            │                │
+│           ▼                        ▼                            ▼                │
+│   ┌──────────────────────────────────────────────────────────────────────────┐   │
+│   │              Centralized Charge Capture &amp; Real-Time Ledger               │   │
+│   ├──────────────────────────────────────────────────────────────────────────┤   │
+│   │   Unified Checkout ──► Insurance Claims Processing ──► AR Aging &amp; RCM   │   │
+│   └──────────────────────────────────────────────────────────────────────────┘   │
+└──────────────────────────────────────────────────────────────────────────────────┘
+</code></pre>
+<p><img src="file:///C:/Users/asnah/.gemini/antigravity-ide/brain/0f18b0a6-10b7-4030-a6de-66a7fb6a59cb/hms_dashboard_preview_1782732694516.png" alt="KayCare HMS Executive &amp; Clinical Dashboard">
+<em>Figure 1.1: KayCare HMS Executive Clinical Dashboard featuring real-time bed occupancy, vitals tracking, and multi-department navigation.</em></p>
+<hr>
+<h2>2. System Architecture &amp; Core Modules</h2>
+<p>KayCare HMS is built as a <strong>Modular Monolith</strong>. This architectural pattern combines the simplified deployment and strict transactional consistency of a monolithic application with the clean domain boundaries and decoupled design of microservices.</p>
+<pre><code>┌──────────────────────────────────────────────────────────────────────────────────┐
+│                             KAYCARE CORE ARCHITECTURE                            │
+│                                                                                  │
+│   [ Presentation Layer ]  ──► React 18 SPA + TypeScript + Tailwind CSS           │
+│                                      │                                           │
+│   [ API Gateway / REST ]  ──► ASP.NET Core 8 Web API Controllers &amp; Middleware    │
+│                                      │                                           │
+│   [ Application Services] ──► Domain Modules (EMR, LIS, IPD, Pharmacy, Billing) │
+│                                      │                                           │
+│   [ Infrastructure ]     ──► EF Core 8 ORM + PostgreSQL + Supabase Object Storage│
+└──────────────────────────────────────────────────────────────────────────────────┘
+</code></pre>
+<h3>2.1 Patient EMR &amp; Outpatient Consultations</h3>
+<p>The Electronic Medical Record (EMR) serves as the digital source of truth for patient history and clinical notes.</p>
+<ul>
+<li><strong>Centralized Patient Registry</strong>: Auto-generates unique, standardized Medical Record Numbers (MRNs). Tracks demographic profiles, emergency contacts, and insurance attachments.</li>
+<li><strong>Vitals &amp; Allergy Tracking</strong>: Logs longitudinal vital signs (Blood Pressure, Heart Rate, Respiratory Rate, O2 Saturation, Temperature, BMI) with visual progression graphs. Supports severe allergy flagging with automated clinical alerts during prescription writing.</li>
+<li><strong>Outpatient SOAP Documentation</strong>: Facilitates structured clinical notes structured by <strong>S</strong>ubjective history, <strong>O</strong>bjective findings, <strong>A</strong>ssessment diagnoses, and <strong>P</strong>lan interventions.</li>
+<li><strong>ICD-10 Codification Engine</strong>: Integrated clinical coding search allowing physicians to map primary and secondary diagnoses to standard ICD-10 codes.</li>
+</ul>
+<h3>2.2 Inpatient Department (IPD) &amp; Nursing Workspace</h3>
+<p>Designed to handle complete hospital admission cycles from bed booking to discharge summary generation.</p>
+<ul>
+<li><strong>Dynamic Ward &amp; Bed Management</strong>: Visually tracks ward categories (General Ward, Semi-Private, Private VIP, ICU, HDU) and bed occupancy states (Available, Occupied, Maintenance, Cleaning).</li>
+<li><strong>Admission &amp; Transfer Workflows</strong>: Streamlines inpatient admission, attending physician assignment, ward transfers, and automated daily room rate charge capture.</li>
+<li><strong>Medication Administration Record (MAR)</strong>: Interactive nursing log interface for verifying dosage timing, administrator ID, and administration status (Administered, Refused, Held).</li>
+<li><strong>Nursing Care Notes &amp; Flowsheets</strong>: Shift notes and vital sign monitoring sheets synchronized across nursing stations.</li>
+</ul>
+<h3>2.3 Laboratory Information System (LIS) &amp; Diagnostic Engine</h3>
+<p>The LIS module automates diagnostic workflows from initial physician order to final validated lab report.</p>
+<ul>
+<li><strong>Sample Accessioning &amp; Lifecycle</strong>: Tracks test specimens through explicit status transitions: <code>Ordered</code> ──► <code>Sample Received</code> ──► <code>Resulted</code> ──► <code>Signed Off</code>.</li>
+<li><strong>HL7 MLLP Machine Connectivity</strong>: Features out-of-the-box support for Health Level 7 (HL7) Minimum Lower Layer Protocol (MLLP) messaging. Ingests automated test results directly from laboratory analyzer equipment without manual data entry.</li>
+<li><strong>Critical Result Alerts</strong>: Highlights panic-level laboratory results in real-time, enforcing mandatory logged call entries to confirm direct verbal notification to the ordering physician.</li>
+</ul>
+<p><img src="file:///C:/Users/asnah/.gemini/antigravity-ide/brain/0f18b0a6-10b7-4030-a6de-66a7fb6a59cb/hms_lis_preview_1782732708497.png" alt="KayCare HMS Laboratory Information System (LIS)">
+<em>Figure 2.1: KayCare HMS Diagnostic Laboratory Information System featuring sample accessioning, HL7 analyzer links, and critical value flags.</em></p>
+<h3>2.4 Pharmacy, Drug Formulary &amp; Inventory Lifecycle</h3>
+<p>Provides end-to-end control over pharmaceutical stock, prescription fulfillment, and supplier purchasing.</p>
+<ul>
+<li><strong>Prescription Workspace</strong>: Direct electronic prescribing from clinical consultations. Enforces dosage validation, refill limits, and controlled drug safety checks.</li>
+<li><strong>Real-Time Inventory Deductions</strong>: Automatically calculates and subtracts exact unit quantities from drug stock balances upon counter dispensing.</li>
+<li><strong>Controlled Substances Register (CS Register)</strong>: Dedicated, audited logging register for schedule II-V medications to meet regulatory compliance standards.</li>
+<li><strong>Inventory &amp; Purchasing Lifecycle</strong>: Manages supplier catalogues, generates Purchase Orders (POs), logs Goods Received Notes (GRN), and triggers automated low-stock reorder alerts.</li>
+</ul>
+<p><img src="file:///C:/Users/asnah/.gemini/antigravity-ide/brain/0f18b0a6-10b7-4030-a6de-66a7fb6a59cb/hms_pharmacy_preview_1782732720846.png" alt="KayCare HMS Pharmacy &amp; Stock Management">
+<em>Figure 2.2: KayCare HMS Pharmacy &amp; Drug Inventory Workspace showing real-time stock balances, dispensing queues, and reorder alerts.</em></p>
+<h3>2.5 Radiology &amp; PACS Imaging</h3>
+<ul>
+<li><strong>Procedure Order Dispatch</strong>: Schedules radiology exams (X-Ray, Ultrasound, CT, MRI) and manages radiology technician worklists.</li>
+<li><strong>Integrated DICOM Viewer</strong>: Embedded zero-footprint WebGL DICOM viewport allowing medical staff to view high-resolution diagnostic images directly in the browser without installing external client software.</li>
+</ul>
+<h3>2.6 Unified Billing Ledger &amp; Revenue Cycle Management (RCM)</h3>
+<ul>
+<li><strong>Centralized Charge Capture Engine</strong>: Consolidates consultation fees, nursing services, daily ward bed rates, laboratory tests, and dispensed drugs onto a single master patient bill.</li>
+<li><strong>Financial Ledger Flexibility</strong>: Supports line-item adjustments, authorized discounts, partial payments, credit notes, and multi-method refund processing.</li>
+<li><strong>Insurance Claims Engine</strong>: Converts patient invoices into formatted claims for submission to private health insurance companies and national health insurance schemes (e.g., NHIS).</li>
+<li><strong>Accounts Receivable (AR) Aging</strong>: Provides real-time aging reports (0-30 days, 31-60 days, 61-90 days, 90+ days) and financial performance dashboards.</li>
+</ul>
+<p><img src="file:///C:/Users/asnah/.gemini/antigravity-ide/brain/0f18b0a6-10b7-4030-a6de-66a7fb6a59cb/hms_billing_preview_1782732733196.png" alt="KayCare HMS Billing &amp; Revenue Cycle Management">
+<em>Figure 2.3: KayCare HMS Unified Billing Ledger featuring itemized revenue breakdowns, insurance claim trackers, and AR aging analysis.</em></p>
+<hr>
+<h2>3. Technology Stack &amp; Deployment Architecture</h2>
+<p>KayCare HMS leverages modern open enterprise technology to ensure maximum performance, developer productivity, and hosting cost efficiency.</p>
+<pre><code>┌──────────────────────────────────────────────────────────────────────────────────┐
+│                                TECHNOLOGY STACK                                  │
+├─────────────────────┬───────────────────────────────┬────────────────────────────┤
+│ Layer               │ Technology / Framework        │ Strategic Purpose          │
+├─────────────────────┼───────────────────────────────┼────────────────────────────┤
+│ **Frontend App**    │ React 18, Vite, TypeScript    │ Rapid render SPA, strict   │
+│                     │ Tailwind CSS                  │ type safety &amp; modern UI.   │
+├─────────────────────┼───────────────────────────────┼────────────────────────────┤
+│ **Backend Web API** │ ASP.NET Core 8 Web API        │ High-throughput C# engine, │
+│                     │ Entity Framework Core 8       │ asynchronous I/O pipelines.│
+├─────────────────────┼───────────────────────────────┼────────────────────────────┤
+│ **Database Engine** │ PostgreSQL Relational DB      │ Enterprise ACID integrity, │
+│                     │ JSONB support &amp; indexes       │ robust concurrency controls│
+├─────────────────────┼───────────────────────────────┼────────────────────────────┤
+│ **Object Storage**  │ Supabase Storage / S3         │ Secure, scalable storage   │
+│                     │ Secure Signed URLs            │ for DICOM &amp; PDF documents. │
+└─────────────────────┴───────────────────────────────┴────────────────────────────┘
+</code></pre>
+<h3>Infrastructure &amp; Cloud Delivery</h3>
+<ul>
+<li><strong>Backend Containerization</strong>: The ASP.NET Core backend is compiled into lightweight Docker images. It can be hosted on modern container platforms such as <strong>Render</strong>, <strong>Railway</strong>, <strong>AWS ECS</strong>, or <strong>Azure App Service</strong>.</li>
+<li><strong>Global Edge Content Delivery</strong>: The React SPA frontend build is optimized for edge hosting on global Content Delivery Networks (CDNs) like <strong>Vercel</strong>, <strong>Netlify</strong>, or <strong>Cloudflare Pages</strong>, providing sub-50ms loading times globally.</li>
+</ul>
+<hr>
+<h2>4. Security, Compliance, &amp; Multi-Tenant Reliability</h2>
+<p>Healthcare data demands the highest standard of defensive application design and security architecture.</p>
+<h3>4.1 Multi-Tenant Data Isolation Strategy</h3>
+<p>KayCare HMS enforces strict, bulletproof tenant isolation at the database access layer.</p>
+<ul>
+<li><strong>EF Core Global Query Filters</strong>: Every database query automatically appends a <code>TenantId</code> predicate (<code>WHERE TenantId = @CurrentTenant</code>).</li>
+<li><strong>Tenant Resolution Middleware</strong>: Incoming HTTP requests are intercepted by <code>TenantResolutionMiddleware</code>, which validates the <code>X-Tenant-Code</code> header or user claim, establishing the security context before any business logic executes. This prevents cross-tenant data leaks.</li>
+</ul>
+<h3>4.2 HIPAA Audit Logging &amp; Non-Repudiation</h3>
+<p>To satisfy HIPAA and ISO 27001 regulatory compliance, KayCare HMS implements an immutable audit ledger service (<code>AuditLog</code>).</p>
+<ul>
+<li><strong>Granular Tracking</strong>: Captures Staff ID, Patient MRN, Action Type (Create, Update, Delete, View), Exact Endpoint, Client IP Address, and Timestamp.</li>
+<li><strong>State Delta Storage</strong>: Logs JSON representations of <code>OldValues</code> and <code>NewValues</code> for financial and medical record changes, ensuring historical auditability and non-repudiation.</li>
+</ul>
+<h3>4.3 Transaction Atomicity &amp; Concurrency Control</h3>
+<ul>
+<li><strong>ACID Financial Transactions</strong>: All billing checkouts, claim payouts, and inventory stock deductions run inside explicit database transactions. If any sub-step fails or loses connection, the entire transaction rolls back instantly to eliminate discrepancies.</li>
+<li><strong>Optimistic &amp; Pessimistic Locking</strong>: Prevents race conditions during simultaneous drug stock dispensing or bed bookings across multiple nursing stations.</li>
+</ul>
+<hr>
+<h2>5. Risk-Free Data Migration Protocol</h2>
+<p>Transitioning from legacy hospital management systems to KayCare HMS is achieved with zero operational downtime using a structured three-phase pipeline.</p>
+<pre><code>┌──────────────────────────────────────────────────────────────────────────────────┐
+│                             MIGRATION PIPELINE PHASES                            │
+│                                                                                  │
+│   [ Phase 1: Sandbox Extraction ] ──► Isolated, off-hours read-only export       │
+│                                              │                                   │
+│   [ Phase 2: Schema Mapping ]     ──► Data scrubbing, normalization &amp; validation │
+│                                              │                                   │
+│   [ Phase 3: Live Verification ]  ──► Dual-run verification &amp; production sign-off │
+└──────────────────────────────────────────────────────────────────────────────────┘
+</code></pre>
+<ol>
+<li><strong>Phase 1: Secure Extraction &amp; Auditing</strong><br>Legacy databases (Demographics, historical consultation records, item catalogs, outstanding financial balances) are extracted into an encrypted staging environment. Extraction scripts run off-peak to avoid affecting clinical operations.</li>
+<li><strong>Phase 2: Schema Mapping &amp; Normalization</strong><br>Legacy records are programmatically scrubbed, deduplicated, and transformed into KayCare HMS PostgreSQL relational models. Automated integrity constraints verify that all clinical notes reference valid patient MRNs before live loading.</li>
+<li><strong>Phase 3: Parallel Validation &amp; Cutover Sign-Off</strong><br>A validation layer compares historical totals and ledger balances between legacy tools and KayCare HMS. Once verified, production deployment is finalized, providing clinical staff with complete patient medical timelines from Day One.</li>
+</ol>
