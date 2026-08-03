@@ -35,13 +35,17 @@ public class AppointmentService : IAppointmentService
 
             await _db.AcquireAdvisoryLockAsync(_currentUser.TenantId, $"AppointmentDoctor_{req.DoctorUserId}", ct);
 
-            await CheckDoctorAvailabilityAsync(req.DoctorUserId, req.ScheduledAt, req.DurationMinutes, null, ct);
+            var scheduledAtUtc = req.ScheduledAt.Kind == DateTimeKind.Unspecified
+                ? DateTime.SpecifyKind(req.ScheduledAt, DateTimeKind.Utc)
+                : req.ScheduledAt.ToUniversalTime();
+
+            await CheckDoctorAvailabilityAsync(req.DoctorUserId, scheduledAtUtc, req.DurationMinutes, null, ct);
 
             var appointment = new Appointment
             {
                 PatientId       = req.PatientId,
                 DoctorUserId    = req.DoctorUserId,
-                ScheduledAt     = req.ScheduledAt,
+                ScheduledAt     = scheduledAtUtc,
                 DurationMinutes = req.DurationMinutes,
                 AppointmentType = req.AppointmentType,
                 Status          = AppointmentStatus.Scheduled,
@@ -85,7 +89,11 @@ public class AppointmentService : IAppointmentService
                 throw new AppException($"Cannot update a {appt.Status} appointment.", 400);
 
             var newDoctor    = req.DoctorUserId ?? appt.DoctorUserId;
-            var newTime      = req.ScheduledAt ?? appt.ScheduledAt;
+            var newTime      = req.ScheduledAt.HasValue
+                ? (req.ScheduledAt.Value.Kind == DateTimeKind.Unspecified
+                    ? DateTime.SpecifyKind(req.ScheduledAt.Value, DateTimeKind.Utc)
+                    : req.ScheduledAt.Value.ToUniversalTime())
+                : appt.ScheduledAt;
             var newDuration  = req.DurationMinutes ?? appt.DurationMinutes;
 
             // Only check availability if time, duration, or doctor changed
@@ -96,7 +104,7 @@ public class AppointmentService : IAppointmentService
             }
 
             if (req.DoctorUserId.HasValue)    appt.DoctorUserId    = req.DoctorUserId.Value;
-            if (req.ScheduledAt.HasValue)     appt.ScheduledAt     = req.ScheduledAt.Value;
+            if (req.ScheduledAt.HasValue)     appt.ScheduledAt     = newTime;
             if (req.DurationMinutes.HasValue) appt.DurationMinutes = req.DurationMinutes.Value;
             if (req.AppointmentType is not null) appt.AppointmentType = req.AppointmentType;
             if (req.ChiefComplaint is not null)  appt.ChiefComplaint  = req.ChiefComplaint;
@@ -188,8 +196,12 @@ public class AppointmentService : IAppointmentService
         Guid doctorUserId, DateTime scheduledAt, int durationMinutes,
         Guid? excludeId, CancellationToken ct)
     {
-        var dayStart = scheduledAt.Date;
-        var endTime  = scheduledAt.AddMinutes(durationMinutes);
+        var scheduledAtUtc = scheduledAt.Kind == DateTimeKind.Unspecified
+            ? DateTime.SpecifyKind(scheduledAt, DateTimeKind.Utc)
+            : scheduledAt.ToUniversalTime();
+
+        var dayStart = DateTime.SpecifyKind(scheduledAtUtc.Date, DateTimeKind.Utc);
+        var endTime  = DateTime.SpecifyKind(scheduledAtUtc.AddMinutes(durationMinutes), DateTimeKind.Utc);
 
         var sameDay = await _db.Appointments
             .Where(a => a.DoctorUserId == doctorUserId &&

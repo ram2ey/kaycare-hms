@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { createAppointment, listDoctors } from '../../api/appointments';
-import { searchPatients } from '../../api/patients';
+import { searchPatients, getPatient } from '../../api/patients';
 import type { CreateAppointmentRequest, UserSummary } from '../../types/appointments';
 import type { PatientResponse } from '../../types/patients';
 import { AppointmentTypes } from '../../types/appointments';
@@ -43,7 +43,14 @@ export default function CreateAppointmentPage() {
   // Pre-fill patient if passed via query param
   useEffect(() => {
     const pid = searchParams.get('patientId');
-    if (pid) setForm((f) => ({ ...f, patientId: pid }));
+    if (pid) {
+      setForm((f) => ({ ...f, patientId: pid }));
+      getPatient(pid)
+        .then((p) => {
+          setSelectedPatient(p);
+        })
+        .catch(() => {});
+    }
   }, [searchParams]);
 
   async function searchForPatient() {

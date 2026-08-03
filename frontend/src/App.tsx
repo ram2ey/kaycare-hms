@@ -99,154 +99,116 @@ export default function App() {
               <Route path="appointments" element={<AppointmentsPage />} />
               <Route path="appointments/new" element={<CreateAppointmentPage />} />
               <Route path="appointments/:id" element={<AppointmentDetailPage />} />
-              <Route path="consultations" element={<ConsultationsPage />} />
-              <Route path="consultations/new" element={<CreateConsultationPage />} />
-              <Route path="consultations/:id" element={<ConsultationDetailPage />} />
-              <Route path="prescriptions" element={<PrescriptionsPage />} />
-              <Route path="prescriptions/new" element={<CreatePrescriptionPage />} />
-              <Route path="prescriptions/templates" element={<TemplatesPage />} />
-              <Route path="prescriptions/templates/new" element={<CreateEditTemplatePage mode="create" />} />
-              <Route path="prescriptions/templates/:id/edit" element={<CreateEditTemplatePage mode="edit" />} />
-              <Route path="prescriptions/:id" element={<PrescriptionDetailPage />} />
-              <Route path="billing" element={<BillingPage />} />
-              <Route path="billing/new" element={<CreateBillPage />} />
-              <Route path="billing/catalog" element={<ProtectedRoute allowedRoles={[Roles.Admin, Roles.SuperAdmin]} />}>
-                <Route index element={<ServiceCatalogPage />} />
+
+              {/* Consultations */}
+              <Route element={<ProtectedRoute allowedRoles={[Roles.Doctor, Roles.Nurse]} />}>
+                <Route path="consultations" element={<ConsultationsPage />} />
+                <Route path="consultations/new" element={<CreateConsultationPage />} />
+                <Route path="consultations/:id" element={<ConsultationDetailPage />} />
               </Route>
-              <Route path="billing/templates" element={<ProtectedRoute allowedRoles={[Roles.Admin, Roles.SuperAdmin]} />}>
-                <Route index element={<BillTemplatesPage />} />
+
+              {/* Prescriptions */}
+              <Route element={<ProtectedRoute allowedRoles={[Roles.Doctor, Roles.Nurse, Roles.Pharmacist, Roles.Admin, Roles.SuperAdmin]} />}>
+                <Route path="prescriptions" element={<PrescriptionsPage />} />
+                <Route path="prescriptions/new" element={<CreatePrescriptionPage />} />
+                <Route path="prescriptions/:id" element={<PrescriptionDetailPage />} />
               </Route>
-              <Route path="billing/payers" element={<ProtectedRoute allowedRoles={[Roles.Admin, Roles.SuperAdmin]} />}>
-                <Route index element={<PayersPage />} />
+
+              {/* Rx Templates */}
+              <Route element={<ProtectedRoute allowedRoles={[Roles.Doctor, Roles.Admin, Roles.SuperAdmin]} />}>
+                <Route path="prescriptions/templates" element={<TemplatesPage />} />
+                <Route path="prescriptions/templates/new" element={<CreateEditTemplatePage mode="create" />} />
+                <Route path="prescriptions/templates/:id/edit" element={<CreateEditTemplatePage mode="edit" />} />
               </Route>
-              <Route path="billing/ar-aging" element={<ProtectedRoute allowedRoles={[Roles.Admin, Roles.SuperAdmin]} />}>
-                <Route index element={<ARAgingPage />} />
+
+              {/* Billing Main (Biller, Admin, SuperAdmin, Receptionist) */}
+              <Route element={<ProtectedRoute allowedRoles={[Roles.Admin, Roles.SuperAdmin, Roles.BillingOfficer, Roles.Receptionist]} />}>
+                <Route path="billing" element={<BillingPage />} />
+                <Route path="billing/new" element={<CreateBillPage />} />
+                <Route path="billing/:id" element={<BillDetailPage />} />
               </Route>
-              <Route path="billing/revenue-dashboard" element={<ProtectedRoute allowedRoles={[Roles.Admin, Roles.SuperAdmin]} />}>
-                <Route index element={<RevenueDashboardPage />} />
+
+              {/* Billing Sub-sections & Financial Logs (Biller, Admin, SuperAdmin only) */}
+              <Route element={<ProtectedRoute allowedRoles={[Roles.Admin, Roles.SuperAdmin, Roles.BillingOfficer]} />}>
+                <Route path="billing/catalog" element={<ServiceCatalogPage />} />
+                <Route path="billing/templates" element={<BillTemplatesPage />} />
+                <Route path="billing/payers" element={<PayersPage />} />
+                <Route path="billing/ar-aging" element={<ARAgingPage />} />
+                <Route path="billing/revenue-dashboard" element={<RevenueDashboardPage />} />
+                <Route path="billing/claims" element={<InsuranceClaimsPage />} />
+                <Route path="billing/claims/:id" element={<ClaimDetailPage />} />
+                <Route path="billing/credit-notes" element={<CreditNotesPage />} />
+                <Route path="billing/credit-notes/:id" element={<CreditNoteDetailPage />} />
+                <Route path="billing/refunds" element={<RefundsPage />} />
+                <Route path="billing/refunds/:id" element={<RefundDetailPage />} />
               </Route>
-              <Route path="billing/claims" element={<InsuranceClaimsPage />} />
-              <Route path="billing/claims/:id" element={<ClaimDetailPage />} />
-              <Route path="billing/credit-notes" element={<CreditNotesPage />} />
-              <Route path="billing/credit-notes/:id" element={<CreditNoteDetailPage />} />
-              <Route path="billing/refunds" element={<RefundsPage />} />
-              <Route path="billing/refunds/:id" element={<RefundDetailPage />} />
-              <Route path="billing/:id" element={<BillDetailPage />} />
-              <Route
-                path="pharmacy/drugs"
-                element={<ProtectedRoute allowedRoles={[Roles.Pharmacist, Roles.Admin, Roles.SuperAdmin]} />}
-              >
-                <Route index element={<PharmacyDrugsPage />} />
+
+              {/* Pharmacy & Stocks */}
+              <Route element={<ProtectedRoute allowedRoles={[Roles.Pharmacist, Roles.Admin, Roles.SuperAdmin]} />}>
+                <Route path="pharmacy/drugs" element={<PharmacyDrugsPage />} />
+                <Route path="pharmacy/reorder-alerts" element={<ReorderAlertsPage />} />
+                <Route path="pharmacy/suppliers" element={<SuppliersPage />} />
+                <Route path="pharmacy/purchase-orders" element={<PurchaseOrdersPage />} />
+                <Route path="pharmacy/purchase-orders/:id" element={<PurchaseOrderDetailPage />} />
+                <Route path="pharmacy/cs-register" element={<CSRegisterPage />} />
               </Route>
-              <Route
-                path="pharmacy/reorder-alerts"
-                element={<ProtectedRoute allowedRoles={[Roles.Pharmacist, Roles.Admin, Roles.SuperAdmin]} />}
-              >
-                <Route index element={<ReorderAlertsPage />} />
+
+              {/* Inpatient (Wards, Beds, Admissions), Nursing, Referrals & Documents (Doctor, Nurse, Receptionist, Admin, SuperAdmin) */}
+              <Route element={<ProtectedRoute allowedRoles={[Roles.Doctor, Roles.Nurse, Roles.Receptionist, Roles.Admin, Roles.SuperAdmin]} />}>
+                <Route path="inpatient/wards" element={<WardsPage />} />
+                <Route path="inpatient/wards/:id" element={<WardDetailPage />} />
+                <Route path="inpatient/admissions" element={<AdmissionsPage />} />
+                <Route path="inpatient/admissions/:id" element={<AdmissionDetailPage />} />
+                <Route path="inpatient/admissions/:id/billing" element={<InpatientBillingPage />} />
+                <Route path="inpatient/admissions/:id/discharge-summary" element={<DischargeSummaryPage />} />
+                <Route path="patients/:patientId/vitals" element={<VitalSignsPage />} />
+                <Route path="patients/:patientId/nursing-notes" element={<NursingNotesPage />} />
+                <Route path="inpatient/admissions/:admissionId/mar" element={<MARPage />} />
+                <Route path="referrals" element={<ReferralsPage />} />
+                <Route path="referrals/new" element={<CreateReferralPage />} />
+                <Route path="referrals/:id" element={<ReferralDetailPage />} />
+                <Route path="documents" element={<DocumentsPage />} />
               </Route>
-              <Route
-                path="pharmacy/suppliers"
-                element={<ProtectedRoute allowedRoles={[Roles.Pharmacist, Roles.Admin, Roles.SuperAdmin]} />}
-              >
-                <Route index element={<SuppliersPage />} />
+
+              {/* Lab Results (Visible to Doctors, Nurses, Lab Techs, and Admins) */}
+              <Route element={<ProtectedRoute allowedRoles={[Roles.Doctor, Roles.Nurse, Roles.LabTechnician, Roles.Admin, Roles.SuperAdmin]} />}>
+                <Route path="lab-results" element={<LabResultsPage />} />
+                <Route path="lab-results/:id" element={<LabResultDetailPage />} />
               </Route>
-              <Route
-                path="pharmacy/purchase-orders"
-                element={<ProtectedRoute allowedRoles={[Roles.Pharmacist, Roles.Admin, Roles.SuperAdmin]} />}
-              >
-                <Route index element={<PurchaseOrdersPage />} />
+
+              {/* Lab & Radiology Worklists (Doctors, Lab Techs, and Admins) */}
+              <Route element={<ProtectedRoute allowedRoles={[Roles.Doctor, Roles.LabTechnician, Roles.Admin, Roles.SuperAdmin]} />}>
+                <Route path="lab-orders" element={<LabWaitingListPage />} />
+                <Route path="lab-orders/new" element={<PlaceLabOrderPage />} />
+                <Route path="lab-orders/:id" element={<LabOrderDetailPage />} />
+                <Route path="radiology" element={<RadiologyOrdersPage />} />
+                <Route path="radiology/new" element={<NewRadiologyOrderPage />} />
+                <Route path="radiology/:id" element={<RadiologyOrderDetailPage />} />
               </Route>
-              <Route
-                path="pharmacy/purchase-orders/:id"
-                element={<ProtectedRoute allowedRoles={[Roles.Pharmacist, Roles.Admin, Roles.SuperAdmin]} />}
-              >
-                <Route index element={<PurchaseOrderDetailPage />} />
+
+              {/* HL7 Message Inbox (Lab Techs and Admins only) */}
+              <Route element={<ProtectedRoute allowedRoles={[Roles.LabTechnician, Roles.Admin, Roles.SuperAdmin]} />}>
+                <Route path="lab-orders/hl7-inbox" element={<Hl7InboxPage />} />
               </Route>
-              <Route
-                path="pharmacy/cs-register"
-                element={<ProtectedRoute allowedRoles={[Roles.Pharmacist, Roles.Admin, Roles.SuperAdmin]} />}
-              >
-                <Route index element={<CSRegisterPage />} />
+
+              {/* General Reports */}
+              <Route element={<ProtectedRoute allowedRoles={[Roles.Admin, Roles.SuperAdmin, Roles.Doctor]} />}>
+                <Route path="reports" element={<ReportsPage />} />
               </Route>
-              <Route path="inpatient/wards" element={<WardsPage />} />
-              <Route path="inpatient/wards/:id" element={<WardDetailPage />} />
-              <Route path="inpatient/admissions" element={<AdmissionsPage />} />
-              <Route path="inpatient/admissions/:id" element={<AdmissionDetailPage />} />
-              <Route path="inpatient/admissions/:id/billing" element={<InpatientBillingPage />} />
-              <Route path="inpatient/admissions/:id/discharge-summary" element={<DischargeSummaryPage />} />
-              <Route path="patients/:patientId/vitals" element={<VitalSignsPage />} />
-              <Route path="patients/:patientId/nursing-notes" element={<NursingNotesPage />} />
-              <Route path="inpatient/admissions/:admissionId/mar" element={<MARPage />} />
-              <Route path="referrals" element={<ReferralsPage />} />
-              <Route path="referrals/new" element={<CreateReferralPage />} />
-              <Route path="referrals/:id" element={<ReferralDetailPage />} />
-              <Route path="reports" element={<ProtectedRoute allowedRoles={[Roles.Admin, Roles.SuperAdmin, Roles.Doctor]} />}>
-                <Route index element={<ReportsPage />} />
+
+              {/* Admin Setup Panel */}
+              <Route element={<ProtectedRoute allowedRoles={[Roles.SuperAdmin, Roles.Admin]} />}>
+                <Route path="audit-logs" element={<AuditLogsPage />} />
+                <Route path="admin/users" element={<UsersPage />} />
+                <Route path="admin/departments" element={<DepartmentsPage />} />
+                <Route path="admin/settings" element={<FacilitySettingsPage />} />
+                <Route path="admin/lab-catalog" element={<LabCatalogPage />} />
+                <Route path="admin/imaging-catalog" element={<ImagingCatalogPage />} />
+                <Route path="admin/wards" element={<WardSetupPage />} />
+                <Route path="admin/drug-formulary" element={<DrugFormularyPage />} />
+                <Route path="admin/payer-tariffs" element={<PayerTariffsPage />} />
               </Route>
-              <Route path="documents" element={<DocumentsPage />} />
-              <Route path="lab-results" element={<LabResultsPage />} />
-              <Route path="lab-results/:id" element={<LabResultDetailPage />} />
-              <Route path="lab-orders" element={<LabWaitingListPage />} />
-              <Route path="lab-orders/new" element={<PlaceLabOrderPage />} />
-              <Route path="lab-orders/hl7-inbox" element={<Hl7InboxPage />} />
-              <Route path="lab-orders/:id" element={<LabOrderDetailPage />} />
-              <Route path="radiology" element={<RadiologyOrdersPage />} />
-              <Route path="radiology/new" element={<NewRadiologyOrderPage />} />
-              <Route path="radiology/:id" element={<RadiologyOrderDetailPage />} />
-              <Route
-                path="audit-logs"
-                element={<ProtectedRoute allowedRoles={[Roles.SuperAdmin, Roles.Admin]} />}
-              >
-                <Route index element={<AuditLogsPage />} />
-              </Route>
-              <Route
-                path="admin/users"
-                element={<ProtectedRoute allowedRoles={[Roles.SuperAdmin, Roles.Admin]} />}
-              >
-                <Route index element={<UsersPage />} />
-              </Route>
-              <Route
-                path="admin/departments"
-                element={<ProtectedRoute allowedRoles={[Roles.SuperAdmin, Roles.Admin]} />}
-              >
-                <Route index element={<DepartmentsPage />} />
-              </Route>
-              <Route
-                path="admin/settings"
-                element={<ProtectedRoute allowedRoles={[Roles.SuperAdmin, Roles.Admin]} />}
-              >
-                <Route index element={<FacilitySettingsPage />} />
-              </Route>
-              <Route
-                path="admin/lab-catalog"
-                element={<ProtectedRoute allowedRoles={[Roles.SuperAdmin, Roles.Admin]} />}
-              >
-                <Route index element={<LabCatalogPage />} />
-              </Route>
-              <Route
-                path="admin/imaging-catalog"
-                element={<ProtectedRoute allowedRoles={[Roles.SuperAdmin, Roles.Admin]} />}
-              >
-                <Route index element={<ImagingCatalogPage />} />
-              </Route>
-              <Route
-                path="admin/wards"
-                element={<ProtectedRoute allowedRoles={[Roles.SuperAdmin, Roles.Admin]} />}
-              >
-                <Route index element={<WardSetupPage />} />
-              </Route>
-              <Route
-                path="admin/drug-formulary"
-                element={<ProtectedRoute allowedRoles={[Roles.SuperAdmin, Roles.Admin]} />}
-              >
-                <Route index element={<DrugFormularyPage />} />
-              </Route>
-              <Route
-                path="admin/payer-tariffs"
-                element={<ProtectedRoute allowedRoles={[Roles.SuperAdmin, Roles.Admin]} />}
-              >
-                <Route index element={<PayerTariffsPage />} />
-              </Route>
+
               <Route path="change-password" element={<ChangePasswordPage />} />
             </Route>
           </Route>

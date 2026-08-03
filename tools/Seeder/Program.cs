@@ -14,18 +14,26 @@ conn.Open();
 
 var now = DateTime.UtcNow;
 
-var exists = false;
+// 1. Ensure Tenant exists
+Guid tenantId;
+var tenantExists = false;
 using (var cmd = conn.CreateCommand())
 {
-    cmd.CommandText = "SELECT COUNT(1) FROM \"Tenants\" WHERE \"TenantCode\" = 'demo'";
-    exists = Convert.ToInt32(cmd.ExecuteScalar()) > 0;
+    cmd.CommandText = "SELECT \"TenantId\" FROM \"Tenants\" WHERE \"TenantCode\" = 'demo'";
+    var result = cmd.ExecuteScalar();
+    if (result != null)
+    {
+        tenantId = (Guid)result;
+        tenantExists = true;
+    }
+    else
+    {
+        tenantId = Guid.NewGuid();
+    }
 }
 
-if (!exists)
+if (!tenantExists)
 {
-    var tenantId = Guid.NewGuid();
-    var userId   = Guid.NewGuid();
-
     using (var cmd = conn.CreateCommand())
     {
         cmd.CommandText = @"
@@ -35,31 +43,61 @@ if (!exists)
         cmd.Parameters.AddWithValue("now", now);
         cmd.ExecuteNonQuery();
     }
+    Console.WriteLine("Demo tenant created.");
+}
 
+// 2. Define users to seed
+var usersToSeed = new (string Email, int RoleId, string FirstName, string LastName)[]
+{
+    ("admin@demo.com", 2, "Admin", "User"),
+    ("doctor@demo.com", 3, "Doctor", "User"),
+    ("nurse@demo.com", 4, "Nurse", "User"),
+    ("receptionist@demo.com", 5, "Receptionist", "User"),
+    ("pharmacist@demo.com", 6, "Pharmacist", "User"),
+    ("labtech@demo.com", 7, "LabTech", "User"),
+    ("biller@demo.com", 8, "Biller", "User")
+};
+
+// 3. Seed users
+foreach (var u in usersToSeed)
+{
+    var userExists = false;
     using (var cmd = conn.CreateCommand())
     {
-        cmd.CommandText = @"
-            INSERT INTO ""Users"" (""UserId"", ""RoleId"", ""TenantId"", ""Email"", ""PasswordHash"", ""FirstName"", ""LastName"", ""IsActive"", ""MustChangePassword"", ""FailedLoginCount"", ""CreatedAt"", ""UpdatedAt"")
-            VALUES (@id, 2, @tenantId, 'admin@demo.com', @hash, 'Admin', 'User', true, false, 0, @now, @now)";
-        cmd.Parameters.AddWithValue("id",       userId);
-        cmd.Parameters.AddWithValue("tenantId", tenantId);
-        cmd.Parameters.AddWithValue("hash",     hash);
-        cmd.Parameters.AddWithValue("now",      now);
-        cmd.ExecuteNonQuery();
+        cmd.CommandText = "SELECT COUNT(1) FROM \"Users\" WHERE \"Email\" = @email";
+        cmd.Parameters.AddWithValue("email", u.Email);
+        userExists = Convert.ToInt32(cmd.ExecuteScalar()) > 0;
     }
 
-    Console.WriteLine();
-    Console.WriteLine("Demo tenant seeded!");
-    Console.WriteLine("─────────────────────────────");
-    Console.WriteLine("  Email:      admin@demo.com");
-    Console.WriteLine("  Password:   Admin@1234");
-    Console.WriteLine("  TenantCode: demo");
-    Console.WriteLine("─────────────────────────────");
-}
-else
-{
-    Console.WriteLine("Demo tenant already exists — skipped.");
+    if (!userExists)
+    {
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = @"
+                INSERT INTO ""Users"" (""UserId"", ""RoleId"", ""TenantId"", ""Email"", ""PasswordHash"", ""FirstName"", ""LastName"", ""IsActive"", ""MustChangePassword"", ""FailedLoginCount"", ""CreatedAt"", ""UpdatedAt"")
+                VALUES (@id, @roleId, @tenantId, @email, @hash, @firstName, @lastName, true, false, 0, @now, @now)";
+            cmd.Parameters.AddWithValue("id", Guid.NewGuid());
+            cmd.Parameters.AddWithValue("roleId", u.RoleId);
+            cmd.Parameters.AddWithValue("tenantId", tenantId);
+            cmd.Parameters.AddWithValue("email", u.Email);
+            cmd.Parameters.AddWithValue("hash", hash);
+            cmd.Parameters.AddWithValue("firstName", u.FirstName);
+            cmd.Parameters.AddWithValue("lastName", u.LastName);
+            cmd.Parameters.AddWithValue("now", now);
+            cmd.ExecuteNonQuery();
+        }
+        Console.WriteLine($"Seeded user: {u.Email} (Role: {u.RoleId})");
+    }
+    else
+    {
+        Console.WriteLine($"User already exists: {u.Email}");
+    }
 }
 
 Console.WriteLine();
+Console.WriteLine("Demo users seeded successfully!");
+Console.WriteLine("─────────────────────────────");
+Console.WriteLine("  Password:   Admin@1234");
+Console.WriteLine("  TenantCode: demo");
+Console.WriteLine("─────────────────────────────");
 Console.WriteLine("Done.");

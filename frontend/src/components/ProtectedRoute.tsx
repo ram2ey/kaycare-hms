@@ -6,7 +6,7 @@ interface Props {
   allowedRoles?: Role[];
 }
 
-export default function ProtectedRoute(_props?: Props) {
+export default function ProtectedRoute(props?: Props) {
   const { user } = useAuth();
   const location = useLocation();
 
@@ -15,6 +15,11 @@ export default function ProtectedRoute(_props?: Props) {
   // Force password change before accessing any other route
   if (user.mustChangePassword && location.pathname !== '/change-password') {
     return <Navigate to="/change-password" replace />;
+  }
+
+  // Enforce role-based access control
+  if (props?.allowedRoles && !props.allowedRoles.includes(user.role as never)) {
+    return <Navigate to="/unauthorized" replace />;
   }
 
   return <Outlet />;

@@ -125,7 +125,7 @@ public class LabOrdersController : ControllerBase
     /// Only valid for items where IsManualEntry = true.
     /// </summary>
     [HttpPost("items/{itemId:guid}/result")]
-    [Authorize(Roles = $"{Roles.LabTechnician},{Roles.Nurse},{Roles.Doctor},{Roles.Admin},{Roles.SuperAdmin}")]
+    [Authorize(Roles = $"{Roles.LabTechnician},{Roles.Admin},{Roles.SuperAdmin}")]
     [ProducesResponseType(typeof(LabOrderItemResponse), 200)]
     [ProducesResponseType(400)]
     [ProducesResponseType(404)]

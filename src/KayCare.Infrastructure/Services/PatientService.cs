@@ -80,13 +80,12 @@ public class PatientService : IPatientService
 
         if (!string.IsNullOrWhiteSpace(req.Query))
         {
-            var q = req.Query.Trim();
-            // SQL Server uses CI_AS collation by default — Contains is case-insensitive
+            var q = req.Query.Trim().ToLower();
             query = query.Where(p =>
-                p.FirstName.Contains(q) ||
-                p.LastName.Contains(q) ||
-                p.MedicalRecordNumber.Contains(q) ||
-                (p.PhoneNumber != null && p.PhoneNumber.Contains(q)));
+                p.FirstName.ToLower().Contains(q) ||
+                p.LastName.ToLower().Contains(q) ||
+                p.MedicalRecordNumber.ToLower().Contains(q) ||
+                (p.PhoneNumber != null && p.PhoneNumber.ToLower().Contains(q)));
         }
 
         if (req.DateOfBirth.HasValue)
