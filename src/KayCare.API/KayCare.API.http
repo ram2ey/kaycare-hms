@@ -1,0 +1,6 @@
+@KayCare.API_HostAddress = http://localhost:5242
+
+GET {{KayCare.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
