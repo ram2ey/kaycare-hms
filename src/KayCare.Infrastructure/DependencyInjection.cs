@@ -19,12 +19,17 @@ public static class DependencyInjection
         // Per-request tenant context (populated by TenantResolutionMiddleware)
         services.AddScoped<ITenantContext, TenantContext>();
 
-        services.AddDbContext<AppDbContext>(options =>
+        services.AddDbContext<AppDbContext>((serviceProvider, options) =>
+        {
+            var rawConn = config.GetConnectionString("DefaultConnection")
+                          ?? config["ConnectionStrings:DefaultConnection"]
+                          ?? config["DATABASE_URL"];
+            var connStr = ParseConnectionString(rawConn);
             options.UseNpgsql(
-                config.GetConnectionString("DefaultConnection"),
+                connStr,
                 b => b.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName)
-            )
-        );
+            );
+        });
 
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
@@ -89,5 +94,33 @@ public static class DependencyInjection
         services.AddHostedService<MllpListenerService>();
 
         return services;
+    }
+
+    private static string ParseConnectionString(string? rawConn)
+    {
+        if (string.IsNullOrWhiteSpace(rawConn)) return string.Empty;
+
+        if (rawConn.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase) ||
+            rawConn.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase))
+        {
+            try
+            {
+                var uri = new Uri(rawConn);
+                var userInfo = uri.UserInfo.Split(':');
+                var username = userInfo.Length > 0 ? Uri.UnescapeDataString(userInfo[0]) : "";
+                var password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : "";
+                var host = uri.Host;
+                var port = uri.Port > 0 ? uri.Port : 5432;
+                var database = uri.AbsolutePath.TrimStart('/');
+
+                return $"Host={host};Port={port};Database={database};Username={username};Password={password};SSL Mode=Prefer;Trust Server Certificate=true;";
+            }
+            catch
+            {
+                return rawConn;
+            }
+        }
+
+        return rawConn;
     }
 }
