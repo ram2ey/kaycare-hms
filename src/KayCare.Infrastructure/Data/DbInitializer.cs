@@ -18,11 +18,11 @@ public static class DbInitializer
         await db.Database.MigrateAsync();
         logger.LogInformation("EF Core migrations applied successfully.");
 
-        // Check if demo tenant exists (bypassing tenant filter)
+        // 1. Ensure demo tenant exists
         var demoTenant = await db.Tenants.IgnoreQueryFilters().FirstOrDefaultAsync(t => t.TenantCode == "demo");
         if (demoTenant is null)
         {
-            logger.LogInformation("Seeding demo tenant...");
+            logger.LogInformation("Creating demo tenant...");
             demoTenant = new Tenant
             {
                 TenantId = Guid.NewGuid(),
@@ -39,19 +39,25 @@ public static class DbInitializer
             db.Tenants.Add(demoTenant);
             await db.SaveChangesAsync();
         }
+        else
+        {
+            demoTenant.IsActive = true;
+            await db.SaveChangesAsync();
+        }
 
-        var adminUser = await db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Email == "admin@demo.com");
+        // 2. Ensure Admin User (admin@demo.com / Admin@1234)
+        var adminHash = BCrypt.Net.BCrypt.HashPassword("Admin@1234", workFactor: 10);
+        var adminUser = await db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.TenantId == demoTenant.TenantId && u.Email == "admin@demo.com");
         if (adminUser is null)
         {
-            logger.LogInformation("Seeding initial admin user (admin@demo.com / Admin@1234)...");
-            var passwordHash = BCrypt.Net.BCrypt.HashPassword("Admin@1234", workFactor: 10);
+            logger.LogInformation("Seeding Admin user (admin@demo.com)...");
             adminUser = new User
             {
                 UserId = Guid.NewGuid(),
                 TenantId = demoTenant.TenantId,
                 RoleId = 2, // Admin
                 Email = "admin@demo.com",
-                PasswordHash = passwordHash,
+                PasswordHash = adminHash,
                 FirstName = "Admin",
                 LastName = "User",
                 IsActive = true,
@@ -61,13 +67,86 @@ public static class DbInitializer
                 UpdatedAt = DateTime.UtcNow
             };
             db.Users.Add(adminUser);
+        }
+        else
+        {
+            logger.LogInformation("Resetting Admin user credentials (admin@demo.com)...");
+            adminUser.PasswordHash = adminHash;
+            adminUser.IsActive = true;
+            adminUser.FailedLoginCount = 0;
+            adminUser.LockedUntil = null;
+            adminUser.UpdatedAt = DateTime.UtcNow;
+        }
+        await db.SaveChangesAsync();
+
+        // 3. Ensure Doctor User (doctor@demo.com / Doctor@1234)
+        var doctorHash = BCrypt.Net.BCrypt.HashPassword("Doctor@1234", workFactor: 10);
+        var doctorUser = await db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.TenantId == demoTenant.TenantId && u.Email == "doctor@demo.com");
+        if (doctorUser is null)
+        {
+            logger.LogInformation("Seeding Doctor user (doctor@demo.com)...");
+            doctorUser = new User
+            {
+                UserId = Guid.NewGuid(),
+                TenantId = demoTenant.TenantId,
+                RoleId = 3, // Doctor
+                Email = "doctor@demo.com",
+                PasswordHash = doctorHash,
+                FirstName = "Kwaku",
+                LastName = "Appiah",
+                LicenseNumber = "MDC/REG/2026/892",
+                Department = "General Medicine",
+                IsActive = true,
+                MustChangePassword = false,
+                FailedLoginCount = 0,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            db.Users.Add(doctorUser);
+            await db.SaveChangesAsync();
+        }
+        else
+        {
+            doctorUser.PasswordHash = doctorHash;
+            doctorUser.IsActive = true;
+            doctorUser.FailedLoginCount = 0;
+            doctorUser.LockedUntil = null;
+            doctorUser.UpdatedAt = DateTime.UtcNow;
             await db.SaveChangesAsync();
         }
 
-        var patient = await db.Patients.IgnoreQueryFilters().FirstOrDefaultAsync(p => p.MedicalRecordNumber == "KC-2026-00001");
+        // 4. Ensure Nurse User (nurse@demo.com / Nurse@1234)
+        var nurseHash = BCrypt.Net.BCrypt.HashPassword("Nurse@1234", workFactor: 10);
+        var nurseUser = await db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.TenantId == demoTenant.TenantId && u.Email == "nurse@demo.com");
+        if (nurseUser is null)
+        {
+            logger.LogInformation("Seeding Nurse user (nurse@demo.com)...");
+            nurseUser = new User
+            {
+                UserId = Guid.NewGuid(),
+                TenantId = demoTenant.TenantId,
+                RoleId = 4, // Nurse
+                Email = "nurse@demo.com",
+                PasswordHash = nurseHash,
+                FirstName = "Ama",
+                LastName = "Osei",
+                LicenseNumber = "NMC/REG/2026/410",
+                Department = "Outpatient Nursing",
+                IsActive = true,
+                MustChangePassword = false,
+                FailedLoginCount = 0,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            db.Users.Add(nurseUser);
+            await db.SaveChangesAsync();
+        }
+
+        // 5. Ensure Sample Patient (KC-2026-00001)
+        var patient = await db.Patients.IgnoreQueryFilters().FirstOrDefaultAsync(p => p.TenantId == demoTenant.TenantId && p.MedicalRecordNumber == "KC-2026-00001");
         if (patient is null)
         {
-            logger.LogInformation("Seeding sample patient...");
+            logger.LogInformation("Seeding sample patient (Kwame Mensah)...");
             patient = new Patient
             {
                 PatientId = Guid.NewGuid(),
@@ -92,6 +171,6 @@ public static class DbInitializer
             await db.SaveChangesAsync();
         }
 
-        logger.LogInformation("Demo tenant, admin user (admin@demo.com), and sample patient verification complete.");
+        logger.LogInformation("Demo accounts (admin@demo.com, doctor@demo.com, nurse@demo.com) successfully verified and seeded.");
     }
 }
