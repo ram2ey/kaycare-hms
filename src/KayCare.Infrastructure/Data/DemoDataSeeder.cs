@@ -140,7 +140,26 @@ public static class DemoDataSeeder
             db.Users.Add(billingOfficer);
         }
 
-        // Manager Accounts
+        // Manager Accounts - Ensure roles exist in database first
+        var managerRoleSeedData = new (int Id, string Name, string Desc)[]
+        {
+            (9, "PharmacyManager", "Head of Pharmacy / Chief Pharmacist"),
+            (10, "BillingManager", "Head of Billing & Revenue Management"),
+            (11, "LabManager", "Head of Laboratory / Lab Director"),
+            (12, "RadiologyManager", "Head of Radiology & Imaging"),
+            (13, "NurseManager", "Chief Nursing Officer / Matron")
+        };
+
+        foreach (var r in managerRoleSeedData)
+        {
+            var roleExists = await db.Roles.IgnoreQueryFilters().AnyAsync(x => x.RoleId == r.Id || x.RoleName == r.Name);
+            if (!roleExists)
+            {
+                db.Roles.Add(new Role { RoleId = r.Id, RoleName = r.Name, Description = r.Desc });
+            }
+        }
+        await db.SaveChangesAsync();
+
         var pharmacyManager = await db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.TenantId == tenantId && u.Email == "pharmacy.manager@demo.com");
         if (pharmacyManager is null)
         {
