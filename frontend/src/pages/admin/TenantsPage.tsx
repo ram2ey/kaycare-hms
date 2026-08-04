@@ -4,7 +4,7 @@ import {
 } from '../../api/tenants';
 import { useAuth } from '../../contexts/AuthContext';
 import type { TenantResponse, CreateTenantRequest, UpdateTenantRequest } from '../../types/tenants';
-import { SUBSCRIPTION_PLANS, AI_TIERS } from '../../types/tenants';
+import { SUBSCRIPTION_PLANS } from '../../types/tenants';
 
 const DEFAULT_CREATE: CreateTenantRequest = {
   tenantCode: '', tenantName: '', subscriptionPlan: 'Standard',
