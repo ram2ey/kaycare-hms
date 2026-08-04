@@ -9,6 +9,18 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Disable FileSystemWatcher in container environments to prevent inotify limit exhaustion
+builder.Host.ConfigureAppConfiguration((_, configBuilder) =>
+{
+    foreach (var source in configBuilder.Sources)
+    {
+        if (source is Microsoft.Extensions.Configuration.FileConfigurationSource fileSource)
+        {
+            fileSource.ReloadOnChange = false;
+        }
+    }
+});
+
 // ── Infrastructure (DbContext, services, tenant context) ──────────────────────
 builder.Services.AddInfrastructure(builder.Configuration);
 
