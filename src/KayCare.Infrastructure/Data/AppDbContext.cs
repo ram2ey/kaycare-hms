@@ -236,7 +236,10 @@ public class AppDbContext : DbContext
             switch (entry.State)
             {
                 case EntityState.Added:
-                    entry.Entity.TenantId = _tenantContext.TenantId;
+                    if (entry.Entity.TenantId == Guid.Empty)
+                    {
+                        entry.Entity.TenantId = _tenantContext.TenantId;
+                    }
                     entry.Entity.CreatedAt = now;
                     entry.Entity.UpdatedAt = now;
                     break;

@@ -22,7 +22,7 @@ public static class DbInitializer
         var demoTenant = await db.Tenants.IgnoreQueryFilters().FirstOrDefaultAsync(t => t.TenantCode == "demo");
         if (demoTenant is null)
         {
-            logger.LogInformation("Seeding demo tenant, initial admin user, and sample patient...");
+            logger.LogInformation("Seeding demo tenant...");
             demoTenant = new Tenant
             {
                 TenantId = Guid.NewGuid(),
@@ -38,9 +38,14 @@ public static class DbInitializer
             };
             db.Tenants.Add(demoTenant);
             await db.SaveChangesAsync();
+        }
 
+        var adminUser = await db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Email == "admin@demo.com");
+        if (adminUser is null)
+        {
+            logger.LogInformation("Seeding initial admin user (admin@demo.com / Admin@1234)...");
             var passwordHash = BCrypt.Net.BCrypt.HashPassword("Admin@1234", workFactor: 10);
-            var adminUser = new User
+            adminUser = new User
             {
                 UserId = Guid.NewGuid(),
                 TenantId = demoTenant.TenantId,
@@ -56,9 +61,14 @@ public static class DbInitializer
                 UpdatedAt = DateTime.UtcNow
             };
             db.Users.Add(adminUser);
+            await db.SaveChangesAsync();
+        }
 
-            // Add sample patient so the patients table displays data immediately
-            var patient = new Patient
+        var patient = await db.Patients.IgnoreQueryFilters().FirstOrDefaultAsync(p => p.MedicalRecordNumber == "KC-2026-00001");
+        if (patient is null)
+        {
+            logger.LogInformation("Seeding sample patient...");
+            patient = new Patient
             {
                 PatientId = Guid.NewGuid(),
                 TenantId = demoTenant.TenantId,
@@ -79,9 +89,9 @@ public static class DbInitializer
                 UpdatedAt = DateTime.UtcNow
             };
             db.Patients.Add(patient);
-
             await db.SaveChangesAsync();
-            logger.LogInformation("Demo tenant, admin user (admin@demo.com / Admin@1234), and sample patient seeded successfully.");
         }
+
+        logger.LogInformation("Demo tenant, admin user (admin@demo.com), and sample patient verification complete.");
     }
 }
