@@ -53,9 +53,9 @@ public class PharmacyController : ControllerBase
         return result == null ? NotFound() : Ok(result);
     }
 
-    /// <summary>Create a new drug in inventory.</summary>
+    /// <summary>Create a new drug in inventory (PharmacyManager/BillingManager/Admin).</summary>
     [HttpPost("drugs")]
-    [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin},{Roles.Pharmacist}")]
+    [Authorize(Roles = $"{Roles.PharmacyManager},{Roles.BillingManager},{Roles.Admin},{Roles.SuperAdmin}")]
     [ProducesResponseType(typeof(DrugInventoryResponse), 201)]
     public async Task<IActionResult> CreateDrug([FromBody] SaveDrugRequest request, CancellationToken ct)
     {
@@ -63,9 +63,9 @@ public class PharmacyController : ControllerBase
         return CreatedAtAction(nameof(GetDrugById), new { id = result.DrugInventoryId }, result);
     }
 
-    /// <summary>Update drug details.</summary>
+    /// <summary>Update drug details & pricing (PharmacyManager/BillingManager/Admin).</summary>
     [HttpPut("drugs/{id:guid}")]
-    [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin},{Roles.Pharmacist}")]
+    [Authorize(Roles = $"{Roles.PharmacyManager},{Roles.BillingManager},{Roles.Admin},{Roles.SuperAdmin}")]
     [ProducesResponseType(typeof(DrugInventoryResponse), 200)]
     public async Task<IActionResult> UpdateDrug(Guid id, [FromBody] SaveDrugRequest request, CancellationToken ct)
     {

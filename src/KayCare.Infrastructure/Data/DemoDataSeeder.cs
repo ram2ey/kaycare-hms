@@ -140,6 +140,43 @@ public static class DemoDataSeeder
             db.Users.Add(billingOfficer);
         }
 
+        // Manager Accounts
+        var pharmacyManager = await db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.TenantId == tenantId && u.Email == "pharmacy.manager@demo.com");
+        if (pharmacyManager is null)
+        {
+            pharmacyManager = new User
+            {
+                UserId = Guid.NewGuid(), TenantId = tenantId, RoleId = 9, Email = "pharmacy.manager@demo.com",
+                PasswordHash = defaultHash, FirstName = "Kwame", LastName = "Sarfo", LicenseNumber = "PSGH/HEAD/2026/001",
+                Department = "Pharmacy Management", IsActive = true, MustChangePassword = false, CreatedAt = now, UpdatedAt = now
+            };
+            db.Users.Add(pharmacyManager);
+        }
+
+        var billingManager = await db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.TenantId == tenantId && u.Email == "billing.manager@demo.com");
+        if (billingManager is null)
+        {
+            billingManager = new User
+            {
+                UserId = Guid.NewGuid(), TenantId = tenantId, RoleId = 10, Email = "billing.manager@demo.com",
+                PasswordHash = defaultHash, FirstName = "Kofi", LastName = "Mensah", LicenseNumber = "FIN/HEAD/2026/002",
+                Department = "Revenue Cycle Management", IsActive = true, MustChangePassword = false, CreatedAt = now, UpdatedAt = now
+            };
+            db.Users.Add(billingManager);
+        }
+
+        var labManager = await db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.TenantId == tenantId && u.Email == "lab.manager@demo.com");
+        if (labManager is null)
+        {
+            labManager = new User
+            {
+                UserId = Guid.NewGuid(), TenantId = tenantId, RoleId = 11, Email = "lab.manager@demo.com",
+                PasswordHash = defaultHash, FirstName = "Araba", LastName = "Taylor", LicenseNumber = "AHS/HEAD/2026/003",
+                Department = "Pathology & Diagnostics", IsActive = true, MustChangePassword = false, CreatedAt = now, UpdatedAt = now
+            };
+            db.Users.Add(labManager);
+        }
+
         await db.SaveChangesAsync();
 
         // ─────────────────────────────────────────────────────────────────

@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import { getCatalog, createCatalogItem, updateCatalogItem, deleteCatalogItem } from '../../api/serviceCatalog';
 import type { ServiceCatalogItem, SaveServiceCatalogItemRequest } from '../../types/serviceCatalog';
 import { BILL_CATEGORIES } from '../../types/billing';
+import { Roles } from '../../types';
 
 const inp = 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
 
@@ -13,6 +15,16 @@ const emptyForm = (): SaveServiceCatalogItemRequest => ({
 function fmt(n: number) { return `GHS ${n.toFixed(2)}`; }
 
 export default function ServiceCatalogPage() {
+  const { user } = useAuth();
+  const isPharmacyManager = user?.role === Roles.PharmacyManager;
+  const canEditAll = [Roles.BillingManager, Roles.Admin, Roles.SuperAdmin].includes(user?.role as never);
+
+  function canEditItem(cat: string) {
+    if (canEditAll) return true;
+    if (isPharmacyManager && cat === 'Pharmacy') return true;
+    return false;
+  }
+
   const [items, setItems]           = useState<ServiceCatalogItem[]>([]);
   const [loading, setLoading]       = useState(true);
   const [showInactive, setShowInactive] = useState(false);
@@ -182,8 +194,12 @@ export default function ServiceCatalogPage() {
                           >
                             Tariffs →
                           </Link>
-                          <button onClick={() => openEdit(item)} className="text-xs text-blue-650 hover:text-blue-800 font-semibold hover:underline">Edit</button>
-                          <button onClick={() => handleDelete(item)} className="text-xs text-red-600 hover:text-red-800 font-semibold hover:underline">Delete</button>
+                          {canEditItem(item.category) && (
+                            <>
+                              <button onClick={() => openEdit(item)} className="text-xs text-blue-650 hover:text-blue-800 font-semibold hover:underline">Edit</button>
+                              <button onClick={() => handleDelete(item)} className="text-xs text-red-600 hover:text-red-800 font-semibold hover:underline">Delete</button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>

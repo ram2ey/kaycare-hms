@@ -40,6 +40,11 @@ export const Roles = {
   Pharmacist:     'Pharmacist',
   LabTechnician:  'LabTechnician',
   BillingOfficer: 'BillingOfficer',
+  PharmacyManager: 'PharmacyManager',
+  BillingManager:  'BillingManager',
+  LabManager:      'LabManager',
+  RadiologyManager: 'RadiologyManager',
+  NurseManager:    'NurseManager',
 } as const;
 
 export type Role = (typeof Roles)[keyof typeof Roles];

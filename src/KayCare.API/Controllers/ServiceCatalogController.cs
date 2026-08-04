@@ -40,28 +40,40 @@ public class ServiceCatalogController : ControllerBase
 
     /// <summary>Create a new catalog item.</summary>
     [HttpPost]
-    [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
+    [Authorize(Roles = $"{Roles.PharmacyManager},{Roles.BillingManager},{Roles.Admin},{Roles.SuperAdmin}")]
     [ProducesResponseType(typeof(ServiceCatalogItemResponse), 201)]
     public async Task<IActionResult> Create([FromBody] SaveServiceCatalogItemRequest request, CancellationToken ct)
     {
+        if (User.IsInRole(Roles.PharmacyManager) && !User.IsInRole(Roles.BillingManager) && !User.IsInRole(Roles.Admin) && !User.IsInRole(Roles.SuperAdmin))
+        {
+            if (!string.Equals(request.Category, "Pharmacy", StringComparison.OrdinalIgnoreCase))
+                return Forbid();
+        }
+
         var result = await _catalog.CreateAsync(request, ct);
         return CreatedAtAction(nameof(GetById), new { id = result.ServiceCatalogItemId }, result);
     }
 
     /// <summary>Update an existing catalog item.</summary>
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
+    [Authorize(Roles = $"{Roles.PharmacyManager},{Roles.BillingManager},{Roles.Admin},{Roles.SuperAdmin}")]
     [ProducesResponseType(typeof(ServiceCatalogItemResponse), 200)]
     [ProducesResponseType(404)]
     public async Task<IActionResult> Update(Guid id, [FromBody] SaveServiceCatalogItemRequest request, CancellationToken ct)
     {
+        if (User.IsInRole(Roles.PharmacyManager) && !User.IsInRole(Roles.BillingManager) && !User.IsInRole(Roles.Admin) && !User.IsInRole(Roles.SuperAdmin))
+        {
+            if (!string.Equals(request.Category, "Pharmacy", StringComparison.OrdinalIgnoreCase))
+                return Forbid();
+        }
+
         var result = await _catalog.UpdateAsync(id, request, ct);
         return Ok(result);
     }
 
     /// <summary>Delete a catalog item.</summary>
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
+    [Authorize(Roles = $"{Roles.PharmacyManager},{Roles.BillingManager},{Roles.Admin},{Roles.SuperAdmin}")]
     [ProducesResponseType(204)]
     [ProducesResponseType(404)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
@@ -70,3 +82,4 @@ public class ServiceCatalogController : ControllerBase
         return NoContent();
     }
 }
+

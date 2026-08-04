@@ -23,7 +23,13 @@ public class RoleConfiguration : IEntityTypeConfiguration<Role>
             new Role { RoleId = 5, RoleName = "Receptionist", Description = "Front desk / patient registration" },
             new Role { RoleId = 6, RoleName = "Pharmacist",    Description = "Pharmacy staff" },
             new Role { RoleId = 7, RoleName = "LabTechnician",  Description = "Laboratory technician / phlebotomist" },
-            new Role { RoleId = 8, RoleName = "BillingOfficer", Description = "Billing and revenue cycle staff" }
+            new Role { RoleId = 8, RoleName = "BillingOfficer", Description = "Billing and revenue cycle staff" },
+            new Role { RoleId = 9, RoleName = "PharmacyManager", Description = "Head of Pharmacy / Chief Pharmacist" },
+            new Role { RoleId = 10, RoleName = "BillingManager",  Description = "Head of Billing & Revenue Management" },
+            new Role { RoleId = 11, RoleName = "LabManager",      Description = "Head of Laboratory / Lab Director" },
+            new Role { RoleId = 12, RoleName = "RadiologyManager", Description = "Head of Radiology & Imaging" },
+            new Role { RoleId = 13, RoleName = "NurseManager",     Description = "Chief Nursing Officer / Matron" }
         );
     }
 }
+

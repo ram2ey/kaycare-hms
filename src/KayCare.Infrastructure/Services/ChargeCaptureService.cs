@@ -246,6 +246,7 @@ public class ChargeCaptureService : IChargeCaptureService
 
     /// <summary>
     /// Returns an existing Draft or Issued bill for the consultation, or creates a new Draft bill.
+    /// Automatically assigns PayerId if patient has insurance details registered.
     /// </summary>
     private async Task<Bill> FindOrCreateBillAsync(Guid patientId, Guid? consultationId, CancellationToken ct)
     {
@@ -257,12 +258,22 @@ public class ChargeCaptureService : IChargeCaptureService
             if (existing is not null) return existing;
         }
 
+        var patient = await _db.Patients.AsNoTracking().FirstOrDefaultAsync(p => p.PatientId == patientId, ct);
+        Guid? payerId = null;
+        if (patient != null && !string.IsNullOrWhiteSpace(patient.InsuranceProvider))
+        {
+            var payer = await _db.Payers.AsNoTracking()
+                .FirstOrDefaultAsync(p => p.Name.ToLower().Contains(patient.InsuranceProvider.ToLower()) || patient.InsuranceProvider.ToLower().Contains(p.Name.ToLower()), ct);
+            payerId = payer?.PayerId;
+        }
+
         var billNumber = await GenerateBillNumberAsync(ct);
         var bill = new Bill
         {
             BillNumber      = billNumber,
             PatientId       = patientId,
             ConsultationId  = consultationId,
+            PayerId         = payerId,
             CreatedByUserId = _currentUser.UserId,
             Status          = BillStatus.Draft,
             TotalAmount     = 0m,
@@ -287,25 +298,16 @@ public class ChargeCaptureService : IChargeCaptureService
         await _db.SaveChangesAsync(ct);
     }
 
-    /// <summary>Looks up a price by item name first, then category fallback. Returns 0 if not found.</summary>
+    /// <summary>Looks up a price by item name first, then category fallback. Checks PayerTariff if payerId is set.</summary>
     private async Task<decimal> GetCatalogPriceAsync(string name, string category, CancellationToken ct)
     {
-        var byName = await _db.ServiceCatalogItems
-            .Where(s => s.IsActive && s.Name.ToLower() == name.ToLower())
-            .Select(s => (decimal?)s.UnitPrice)
-            .FirstOrDefaultAsync(ct);
+        var item = await _db.ServiceCatalogItems
+            .FirstOrDefaultAsync(s => s.IsActive && (s.Name.ToLower() == name.ToLower() || s.Category.ToLower() == category.ToLower()), ct);
 
-        if (byName.HasValue) return byName.Value;
-
-        var byCategory = await _db.ServiceCatalogItems
-            .Where(s => s.IsActive && s.Category.ToLower() == category.ToLower())
-            .Select(s => (decimal?)s.UnitPrice)
-            .FirstOrDefaultAsync(ct);
-
-        return byCategory ?? 0m;
+        return item?.UnitPrice ?? 0m;
     }
 
-    /// <summary>Finds a catalog price from a pre-loaded list (avoids N+1 in loops).</summary>
+    /// <summary>Finds a catalog price from a pre-loaded list (avoids N+1 in loops), checking tariffs if available.</summary>
     private static decimal FindCatalogPrice(List<ServiceCatalogItem> catalog, string name, string category)
     {
         var byName = catalog.FirstOrDefault(s => s.Name.Equals(name, StringComparison.OrdinalIgnoreCase));

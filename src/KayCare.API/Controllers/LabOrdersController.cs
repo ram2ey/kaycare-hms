@@ -159,7 +159,7 @@ public class LabOrdersController : ControllerBase
 
     /// <summary>Doctor or lab manager signs off on a resulted item.</summary>
     [HttpPatch("items/{itemId:guid}/sign")]
-    [Authorize(Roles = $"{Roles.Doctor},{Roles.Admin},{Roles.SuperAdmin}")]
+    [Authorize(Roles = $"{Roles.Doctor},{Roles.LabManager},{Roles.Admin},{Roles.SuperAdmin}")]
     [ProducesResponseType(typeof(LabOrderItemResponse), 200)]
     [ProducesResponseType(404)]
     [ProducesResponseType(409)]

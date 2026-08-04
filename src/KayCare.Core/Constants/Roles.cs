@@ -10,4 +10,10 @@ public static class Roles
     public const string Pharmacist    = "Pharmacist";
     public const string LabTechnician  = "LabTechnician";
     public const string BillingOfficer = "BillingOfficer";
+    public const string PharmacyManager  = "PharmacyManager";
+    public const string BillingManager   = "BillingManager";
+    public const string LabManager       = "LabManager";
+    public const string RadiologyManager = "RadiologyManager";
+    public const string NurseManager     = "NurseManager";
 }
+

@@ -121,15 +121,15 @@ export default function App() {
                 <Route path="prescriptions/templates/:id/edit" element={<CreateEditTemplatePage mode="edit" />} />
               </Route>
 
-              {/* Billing Main (Biller, Admin, SuperAdmin, Receptionist) */}
-              <Route element={<ProtectedRoute allowedRoles={[Roles.Admin, Roles.SuperAdmin, Roles.BillingOfficer, Roles.Receptionist]} />}>
+              {/* Billing Main (Biller, BillingManager, Admin, SuperAdmin, Receptionist) */}
+              <Route element={<ProtectedRoute allowedRoles={[Roles.Admin, Roles.SuperAdmin, Roles.BillingOfficer, Roles.BillingManager, Roles.Receptionist]} />}>
                 <Route path="billing" element={<BillingPage />} />
                 <Route path="billing/new" element={<CreateBillPage />} />
                 <Route path="billing/:id" element={<BillDetailPage />} />
               </Route>
 
-              {/* Billing Sub-sections & Financial Logs (Biller, Admin, SuperAdmin only) */}
-              <Route element={<ProtectedRoute allowedRoles={[Roles.Admin, Roles.SuperAdmin, Roles.BillingOfficer]} />}>
+              {/* Billing Sub-sections & Financial Logs */}
+              <Route element={<ProtectedRoute allowedRoles={[Roles.Admin, Roles.SuperAdmin, Roles.BillingOfficer, Roles.BillingManager, Roles.PharmacyManager]} />}>
                 <Route path="billing/catalog" element={<ServiceCatalogPage />} />
                 <Route path="billing/templates" element={<BillTemplatesPage />} />
                 <Route path="billing/payers" element={<PayersPage />} />
@@ -144,7 +144,7 @@ export default function App() {
               </Route>
 
               {/* Pharmacy & Stocks */}
-              <Route element={<ProtectedRoute allowedRoles={[Roles.Pharmacist, Roles.Admin, Roles.SuperAdmin]} />}>
+              <Route element={<ProtectedRoute allowedRoles={[Roles.Pharmacist, Roles.PharmacyManager, Roles.Admin, Roles.SuperAdmin]} />}>
                 <Route path="pharmacy/drugs" element={<PharmacyDrugsPage />} />
                 <Route path="pharmacy/reorder-alerts" element={<ReorderAlertsPage />} />
                 <Route path="pharmacy/suppliers" element={<SuppliersPage />} />
