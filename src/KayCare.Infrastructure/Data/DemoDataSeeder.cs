@@ -22,14 +22,6 @@ public static class DemoDataSeeder
 
         var tenantId = demoTenant.TenantId;
 
-        // Idempotency check: if patients >= 5, demo data is already seeded
-        var existingPatientCount = await db.Patients.IgnoreQueryFilters().CountAsync(p => p.TenantId == tenantId);
-        if (existingPatientCount >= 5)
-        {
-            logger.LogInformation("Demo data is already populated ({Count} patients found). Skipping.", existingPatientCount);
-            return;
-        }
-
         logger.LogInformation("Seeding comprehensive demo data for 'Demo Hospital' (Tenant ID: {TenantId})...", tenantId);
 
         var now = DateTime.UtcNow;
@@ -203,13 +195,57 @@ public static class DemoDataSeeder
             new() { ServiceCatalogItemId = Guid.NewGuid(), TenantId = tenantId, Name = "Daily Inpatient Accommodation (Surgical Ward)", Category = "Inpatient", UnitPrice = 150.00m, Description = "Surgical Inpatient Ward Bed rate per day", IsActive = true, CreatedAt = now, UpdatedAt = now },
             new() { ServiceCatalogItemId = Guid.NewGuid(), TenantId = tenantId, Name = "Nursing Care Daily Fee", Category = "Nursing", UnitPrice = 50.00m, Description = "24-Hour Nursing Monitoring and Care", IsActive = true, CreatedAt = now, UpdatedAt = now },
             new() { ServiceCatalogItemId = Guid.NewGuid(), TenantId = tenantId, Name = "Chest X-Ray PA View", Category = "Radiology", UnitPrice = 180.00m, Description = "Posterior-Anterior Digital Chest X-Ray", IsActive = true, CreatedAt = now, UpdatedAt = now },
-            new() { ServiceCatalogItemId = Guid.NewGuid(), TenantId = tenantId, Name = "Abdominopelvic Ultrasound", Category = "Radiology", UnitPrice = 250.00m, Description = "Complete Abdomen and Pelvis Sonogram", IsActive = true, CreatedAt = now, UpdatedAt = now }
+            new() { ServiceCatalogItemId = Guid.NewGuid(), TenantId = tenantId, Name = "Abdominopelvic Ultrasound", Category = "Radiology", UnitPrice = 250.00m, Description = "Complete Abdomen and Pelvis Sonogram", IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { ServiceCatalogItemId = Guid.NewGuid(), TenantId = tenantId, Name = "Full Blood Count (FBC)", Category = "Laboratory", UnitPrice = 60.00m, Description = "Haematology Full Blood Count Panel", IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { ServiceCatalogItemId = Guid.NewGuid(), TenantId = tenantId, Name = "Blood Urea, Electrolytes & Creatinine (BUE)", Category = "Laboratory", UnitPrice = 90.00m, Description = "Renal function chemistry panel", IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { ServiceCatalogItemId = Guid.NewGuid(), TenantId = tenantId, Name = "Liver Function Tests (LFT)", Category = "Laboratory", UnitPrice = 110.00m, Description = "Hepatic panel (ALT, AST, ALP, Bilirubin, Albumin)", IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { ServiceCatalogItemId = Guid.NewGuid(), TenantId = tenantId, Name = "Blood Film for Malaria Parasite (MPS)", Category = "Laboratory", UnitPrice = 30.00m, Description = "Microscopic malaria parasite screen", IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { ServiceCatalogItemId = Guid.NewGuid(), TenantId = tenantId, Name = "Fasting Blood Glucose (FBG)", Category = "Laboratory", UnitPrice = 25.00m, Description = "Fasting blood sugar test", IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { ServiceCatalogItemId = Guid.NewGuid(), TenantId = tenantId, Name = "Lipid Profile", Category = "Laboratory", UnitPrice = 120.00m, Description = "Total Cholesterol, Triglycerides, HDL, LDL", IsActive = true, CreatedAt = now, UpdatedAt = now },
+            new() { ServiceCatalogItemId = Guid.NewGuid(), TenantId = tenantId, Name = "Urine Routine Examination (Urine R/E)", Category = "Laboratory", UnitPrice = 35.00m, Description = "Urinalysis dipstick & microscopy", IsActive = true, CreatedAt = now, UpdatedAt = now }
         };
 
         foreach (var ci in catalogItems)
         {
             var exists = await db.ServiceCatalogItems.IgnoreQueryFilters().AnyAsync(s => s.TenantId == tenantId && s.Name == ci.Name);
             if (!exists) db.ServiceCatalogItems.Add(ci);
+        }
+        await db.SaveChangesAsync();
+
+        // 4b. Seed Payer Tariffs for NHIS and Glico Healthcare
+        var allServices = await db.ServiceCatalogItems.IgnoreQueryFilters().Where(s => s.TenantId == tenantId).ToListAsync();
+        if (nhisPayer != null)
+        {
+            foreach (var svc in allServices)
+            {
+                var tariffExists = await db.PayerTariffs.IgnoreQueryFilters().AnyAsync(t => t.TenantId == tenantId && t.PayerId == nhisPayer.PayerId && t.ServiceCatalogItemId == svc.ServiceCatalogItemId);
+                if (!tariffExists)
+                {
+                    db.PayerTariffs.Add(new PayerTariff
+                    {
+                        PayerTariffId = Guid.NewGuid(), TenantId = tenantId, PayerId = nhisPayer.PayerId, ServiceCatalogItemId = svc.ServiceCatalogItemId,
+                        TariffCode = $"NHIS-{svc.Category[..Math.Min(4, svc.Category.Length)].ToUpper()}-{svc.ServiceCatalogItemId.ToString()[..4].ToUpper()}",
+                        TariffPrice = Math.Round(svc.UnitPrice * 0.70m, 2), EffectiveDate = DateOnly.FromDateTime(now.AddMonths(-6)), IsActive = true, CreatedAt = now, UpdatedAt = now
+                    });
+                }
+            }
+        }
+
+        if (glicoPayer != null)
+        {
+            foreach (var svc in allServices)
+            {
+                var tariffExists = await db.PayerTariffs.IgnoreQueryFilters().AnyAsync(t => t.TenantId == tenantId && t.PayerId == glicoPayer.PayerId && t.ServiceCatalogItemId == svc.ServiceCatalogItemId);
+                if (!tariffExists)
+                {
+                    db.PayerTariffs.Add(new PayerTariff
+                    {
+                        PayerTariffId = Guid.NewGuid(), TenantId = tenantId, PayerId = glicoPayer.PayerId, ServiceCatalogItemId = svc.ServiceCatalogItemId,
+                        TariffCode = $"GLC-{svc.Category[..Math.Min(4, svc.Category.Length)].ToUpper()}-{svc.ServiceCatalogItemId.ToString()[..4].ToUpper()}",
+                        TariffPrice = Math.Round(svc.UnitPrice * 0.90m, 2), EffectiveDate = DateOnly.FromDateTime(now.AddMonths(-6)), IsActive = true, CreatedAt = now, UpdatedAt = now
+                    });
+                }
+            }
         }
         await db.SaveChangesAsync();
 
