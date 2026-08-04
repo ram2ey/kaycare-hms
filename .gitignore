@@ -3,6 +3,9 @@ bin/
 obj/
 
 # Secrets — never commit these
+.env
+*.env
+*.env.local
 **/appsettings.Development.json
 **/appsettings.*.json
 !**/appsettings.json
