@@ -13,15 +13,38 @@ public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
 {
     public AppDbContext CreateDbContext(string[] args)
     {
+        var basePath = Directory.GetCurrentDirectory();
+        if (!File.Exists(Path.Combine(basePath, "appsettings.json")))
+        {
+            var apiPath = Path.Combine(basePath, "src", "KayCare.API");
+            if (Directory.Exists(apiPath))
+            {
+                basePath = apiPath;
+            }
+            else
+            {
+                var relativeApiPath = Path.GetFullPath(Path.Combine(basePath, "../KayCare.API"));
+                if (Directory.Exists(relativeApiPath))
+                {
+                    basePath = relativeApiPath;
+                }
+            }
+        }
+
         var config = new ConfigurationBuilder()
-            .SetBasePath(Path.Combine(Directory.GetCurrentDirectory(), "../KayCare.API"))
-            .AddJsonFile("appsettings.json", optional: false)
+            .SetBasePath(basePath)
+            .AddJsonFile("appsettings.json", optional: true)
             .AddJsonFile("appsettings.Development.json", optional: true)
             .AddEnvironmentVariables()
             .Build();
 
+        var connStr = config.GetConnectionString("DefaultConnection") 
+                      ?? config["ConnectionStrings:DefaultConnection"] 
+                      ?? config["DATABASE_URL"] 
+                      ?? "Host=localhost;Database=kaycare_hms;Username=postgres;Password=postgres";
+
         var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseNpgsql(config.GetConnectionString("DefaultConnection"),
+            .UseNpgsql(connStr,
                 b => b.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName))
             .Options;
 
