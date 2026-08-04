@@ -43,7 +43,14 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins(allowedOrigins)
+        if (allowedOrigins.Length > 0)
+        {
+            policy.WithOrigins(allowedOrigins);
+        }
+        policy.SetIsOriginAllowed(origin =>
+            allowedOrigins.Contains(origin) ||
+            origin.EndsWith(".onrender.com") ||
+            origin.StartsWith("http://localhost:"))
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
@@ -112,6 +119,9 @@ app.UseMiddleware<TenantResolutionMiddleware>();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Apply EF Core migrations & seed demo tenant + admin user on startup
+await KayCare.Infrastructure.Data.DbInitializer.InitializeAsync(app.Services, app.Logger);
 
 app.Run();
 
