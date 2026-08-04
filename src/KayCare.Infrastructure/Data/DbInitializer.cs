@@ -172,5 +172,9 @@ public static class DbInitializer
         }
 
         logger.LogInformation("Demo accounts (admin@demo.com, doctor@demo.com, nurse@demo.com) successfully verified and seeded.");
+
+        // 6. Seed extended demo dataset (Patients, Consultations, Wards, Labs, Inventory, Billing, Claims)
+        await DemoDataSeeder.SeedAllAsync(db, logger);
     }
 }
+

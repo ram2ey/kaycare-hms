@@ -16,10 +16,21 @@ namespace KayCare.API.Controllers;
 public class DevController : ControllerBase
 {
     private readonly ILabResultService _labResultService;
+    private readonly Infrastructure.Data.AppDbContext _db;
+    private readonly ILogger<DevController> _logger;
 
-    public DevController(ILabResultService labResultService)
+    public DevController(ILabResultService labResultService, Infrastructure.Data.AppDbContext db, ILogger<DevController> logger)
     {
         _labResultService = labResultService;
+        _db = db;
+        _logger = logger;
+    }
+
+    [HttpPost("seed-demo-data")]
+    public async Task<IActionResult> SeedDemoData()
+    {
+        await Infrastructure.Data.DemoDataSeeder.SeedAllAsync(_db, _logger);
+        return Ok(new { message = "Demo data seeding triggered successfully." });
     }
 
     [HttpPost("send")]
