@@ -60,7 +60,7 @@ export default function LabTab({ patientId }: { patientId: string }) {
               {orders.map(o => (
                 <tr key={o.labOrderId} className="hover:bg-gray-50">
                   <td className="px-4 py-3 text-gray-600">{new Date(o.orderedAt).toLocaleDateString()}</td>
-                  <td className="px-4 py-3 font-mono text-xs text-gray-700">—</td>
+                  <td className="px-4 py-3 font-mono text-xs text-gray-700">{o.accessionNumber || '—'}</td>
                   <td className="px-4 py-3 text-gray-800">{o.testNames.join(', ')}</td>
                   <td className="px-4 py-3 text-gray-500">{o.organisation}</td>
                   <td className="px-4 py-3">

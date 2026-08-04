@@ -319,7 +319,7 @@ public sealed class MllpListenerService : BackgroundService
     {
         var ts = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
         // HL7 ACK; \r is the segment terminator
-        return $"MSH|^~\\&|MediCloud|EMR|Lab|System|{ts}||ACK|ACK{ts}|P|2.5\r" +
+        return $"MSH|^~\\&|KayCare|EMR|Lab|System|{ts}||ACK|ACK{ts}|P|2.5\r" +
                $"MSA|{ackCode}|{messageControlId}|{text}\r";
     }
 }

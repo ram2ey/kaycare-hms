@@ -67,6 +67,7 @@ export interface LabOrder {
   completedCount: number;
   signedCount: number;
   testNames: string[];
+  accessionNumber?: string | null;
 }
 
 export interface LabOrderDetail extends LabOrder {

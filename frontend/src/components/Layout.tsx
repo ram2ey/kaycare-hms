@@ -3,7 +3,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { Roles } from '../types';
 import { ErrorBoundary } from './ErrorBoundary';
 
-const CLINICAL = [Roles.Doctor, Roles.Nurse, Roles.Pharmacist, Roles.LabTechnician, Roles.Admin, Roles.SuperAdmin];
 const BILLING  = [Roles.Admin, Roles.SuperAdmin, Roles.BillingOfficer];
 const PATIENT_CARE = [Roles.Doctor, Roles.Nurse, Roles.Receptionist, Roles.Admin, Roles.SuperAdmin];
 

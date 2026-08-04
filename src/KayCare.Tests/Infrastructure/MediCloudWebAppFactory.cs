@@ -11,14 +11,14 @@ namespace KayCare.Tests.Infrastructure;
 
 /// <summary>
 /// Shared test server for all integration tests.
-/// Overrides the connection string → MediCloudTestDb on local SQL Server Express.
+/// Overrides the connection string → KayCareTestDb on PostgreSQL.
 /// Disables the MLLP TCP listener (port 2575 not needed in tests).
 /// Applies EF migrations and seeds two isolated test tenants on first start.
 /// </summary>
 public class MediCloudWebAppFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
     /// <summary>Known JWT signing key used by all tests.</summary>
-    public const string TestJwtKey = "test-signing-key-medicloud-integration-!!";
+    public const string TestJwtKey = "test-signing-key-kaycare-integration-!!";
 
     /// <summary>Password used for every seeded test user.</summary>
     public const string TestPassword = "TestPass123!";
