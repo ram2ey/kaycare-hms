@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { createPrescription } from '../../api/prescriptions';
 import { getPatientConsultations } from '../../api/consultations';
 import { getAllergies } from '../../api/patients';
+import { parsePrescriptionOcr } from '../../api/ai';
 import type { CreatePrescriptionRequest, PrescriptionItemRequest } from '../../types/prescriptions';
 import type { ConsultationSummaryResponse } from '../../types/consultations';
 import type { AllergyResponse } from '../../types/patients';
@@ -41,6 +42,45 @@ export default function CreatePrescriptionPage() {
   const [saving, setSaving]                   = useState(false);
   const [error, setError]                     = useState('');
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
+  const [scanningOcr, setScanningOcr]         = useState(false);
+
+  async function handleOcrUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setScanningOcr(true);
+    setError('');
+    try {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64 = reader.result as string;
+        const base64Data = base64.split(',')[1] || base64;
+        const result = await parsePrescriptionOcr(base64Data, file.type);
+        if (result && result.length > 0) {
+          const newItems: PrescriptionItemRequest[] = result.map((r) => ({
+            medicationName: r.drugName || 'Medication',
+            genericName: r.drugName || '',
+            strength: r.dosage || '500mg',
+            dosageForm: 'Tablet',
+            frequency: r.frequency || 'Once daily',
+            durationDays: parseInt(r.duration) || 7,
+            quantity: r.quantity || 1,
+            refills: 0,
+            instructions: r.instructions || '',
+            isControlledSubstance: false,
+          }));
+          setItems(newItems);
+          setSelectedMeds(newItems.map(() => null));
+        } else {
+          setError('AI Assistant could not extract medications from this prescription photo.');
+        }
+        setScanningOcr(false);
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      setError('AI Assistant is temporarily unavailable.');
+      setScanningOcr(false);
+    }
+  }
 
   useEffect(() => {
     if (!patientId) return;
@@ -204,6 +244,16 @@ export default function CreatePrescriptionPage() {
               Medications ({items.length})
             </h3>
             <div className="flex gap-2">
+              <label className="text-xs bg-purple-50 hover:bg-purple-100 text-purple-700 font-medium px-3 py-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1">
+                <span>{scanningOcr ? '🪄 AI Scanning...' : '📷 Scan Prescription (AI OCR)'}</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleOcrUpload}
+                  disabled={scanningOcr}
+                  className="hidden"
+                />
+              </label>
               <button
                 type="button"
                 onClick={() => setShowTemplatePicker(true)}

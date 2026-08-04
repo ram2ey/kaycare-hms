@@ -2,6 +2,10 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using KayCare.Core.Entities;
+using KayCare.Core.Interfaces;
+using KayCare.Infrastructure.Data;
 
 namespace KayCare.API.Controllers;
 
@@ -11,20 +15,61 @@ namespace KayCare.API.Controllers;
 public class AiController : ControllerBase
 {
     private readonly IConfiguration _config;
+    private readonly AppDbContext _db;
+    private readonly ITenantContext _tenantContext;
     private static readonly HttpClient _httpClient = new();
 
-    public AiController(IConfiguration config)
+    private static readonly string[] FreeModelsFallback = new[]
+    {
+        "meta-llama/llama-3.3-70b-instruct:free",
+        "google/gemini-2.0-flash-lite-preview:free",
+        "deepseek/deepseek-r1:free",
+        "qwen/qwen-2.5-coder-32b-instruct:free"
+    };
+
+    private static readonly string[] ProModelsFallback = new[]
+    {
+        "openai/gpt-4o-mini",
+        "google/gemini-2.0-flash",
+        "meta-llama/llama-3.3-70b-instruct:free"
+    };
+
+    private static readonly string[] EnterpriseModelsFallback = new[]
+    {
+        "anthropic/claude-3.5-sonnet",
+        "openai/gpt-4o",
+        "deepseek/deepseek-r1"
+    };
+
+    private static readonly string[] FreeVisionModelsFallback = new[]
+    {
+        "google/gemini-2.0-flash-lite-preview:free",
+        "meta-llama/llama-3.2-11b-vision-instruct:free"
+    };
+
+    private static readonly string[] ProVisionModelsFallback = new[]
+    {
+        "openai/gpt-4o-mini",
+        "google/gemini-2.0-flash"
+    };
+
+    public AiController(IConfiguration config, AppDbContext db, ITenantContext tenantContext)
     {
         _config = config;
+        _db = db;
+        _tenantContext = tenantContext;
     }
 
     [HttpPost("soap-copilot")]
-    public async Task<IActionResult> SoapCopilot([FromBody] SoapRequest request)
+    public async Task<IActionResult> SoapCopilot([FromBody] SoapRequest request, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(request.Text))
         {
             return BadRequest(new { error = "Text is required." });
         }
+
+        var (allowed, errorResult, tenant) = await ValidateAiAccessAsync(ct);
+        if (!allowed) return errorResult!;
 
         string prompt = $@"You are an AI Clinical Assistant. You are given a doctor's raw, unstructured consultation notes:
 ""{request.Text}""
@@ -40,79 +85,38 @@ Organize them into a structured JSON object with the following keys:
 
 Provide ONLY a raw JSON response matching this schema without any markdown formatting. Do not wrap it in ```json.";
 
-        string? result = await CallGeminiAsync(prompt, jsonMode: true);
+        string? result = await CallOpenRouterAsync(prompt, tenant, jsonMode: true);
 
         if (result != null)
         {
             try
             {
-                using var doc = JsonDocument.Parse(result);
-                return Content(result, "application/json");
+                var cleaned = result.Trim();
+                if (cleaned.StartsWith("```"))
+                {
+                    cleaned = cleaned.Substring(cleaned.IndexOf('\n')).Trim();
+                    if (cleaned.EndsWith("```"))
+                        cleaned = cleaned.Substring(0, cleaned.Length - 3).Trim();
+                }
+                using var doc = JsonDocument.Parse(cleaned);
+                await TrackAiUsageAsync(tenant, ct);
+                return Content(cleaned, "application/json");
             }
             catch
             {
-                // Fallback to mock if JSON parsing of the live response failed
+                // Fall through to 503
             }
         }
 
-        // --- Mock Engine Fallback ---
-        var textLower = request.Text.ToLower();
-        object mockResponse;
-
-        if (textLower.Contains("throat") || textLower.Contains("cough") || textLower.Contains("fever") || textLower.Contains("pharyngitis"))
-        {
-            mockResponse = new
-            {
-                subjective = "Patient presents with a scratchy, painful throat for the past 3 days, accompanied by dry cough and subjective fever. Reports pain on swallowing.",
-                objective = "Temp 38.1°C (100.6°F). Heart Rate 88 bpm. Oropharyngeal examination shows bilateral tonsillar erythema and swelling (2+) with mild exudates. Mild anterior cervical lymphadenopathy present.",
-                assessment = "Acute pharyngitis, suspected streptococcal infection.",
-                plan = "1. Amoxicillin 500mg tid for 10 days.\n2. Warm saline gargles q4h.\n3. Increased oral fluid intake and vocal rest.\n4. Acetaminophen 500mg q6h prn for pain/fever.",
-                primaryCode = "J02.9",
-                primaryDesc = "Acute pharyngitis, unspecified",
-                secondary = new[]
-                {
-                    new { code = "R50.9", description = "Fever, unspecified" },
-                    new { code = "R05.9", description = "Cough, unspecified" }
-                }
-            };
-        }
-        else if (textLower.Contains("chest") || textLower.Contains("breath") || textLower.Contains("bronchitis"))
-        {
-            mockResponse = new
-            {
-                subjective = "Patient reports sudden onset of chest tightness and a productive cough yielding thick yellow sputum for 5 days. Noted mild shortness of breath on exertion.",
-                objective = "Temp 37.8°C. Blood pressure 125/80 mmHg. Resp Rate 20/min. SpO2 96% on room air. Auscultation reveals bilateral coarse crackles in lower lobes. No wheezing.",
-                assessment = "Acute bronchitis, suspected secondary bacterial infection.",
-                plan = "1. Azithromycin 500mg daily for 3 days.\n2. Albuterol inhaler 2 puffs q6h prn for chest tightness.\n3. Guaifenesin 600mg bid for cough expectorant.\n4. Rest, warm fluids, and follow up in 48-72h if symptoms worsen.",
-                primaryCode = "J20.9",
-                primaryDesc = "Acute bronchitis, unspecified",
-                secondary = new[]
-                {
-                    new { code = "R06.02", description = "Shortness of breath" },
-                    new { code = "R07.9", description = "Chest pain, unspecified" }
-                }
-            };
-        }
-        else
-        {
-            mockResponse = new
-            {
-                subjective = $"Patient reported symptoms: {request.Text}",
-                objective = "Vitals stable. Physical exam normal.",
-                assessment = "General consultation, pending investigations.",
-                plan = "Review symptoms. Advise patient to follow up as needed.",
-                primaryCode = "Z00.00",
-                primaryDesc = "Encounter for general adult medical examination without abnormal findings",
-                secondary = Array.Empty<object>()
-            };
-        }
-
-        return Ok(mockResponse);
+        return StatusCode(503, new { error = "AI Assistant is temporarily unavailable." });
     }
 
     [HttpPost("patient-summary")]
-    public async Task<IActionResult> PatientSummary([FromBody] SummaryRequest request)
+    public async Task<IActionResult> PatientSummary([FromBody] SummaryRequest request, CancellationToken ct)
     {
+        var (allowed, errorResult, tenant) = await ValidateAiAccessAsync(ct);
+        if (!allowed) return errorResult!;
+
         string prompt = $@"You are a supportive clinical assistant. Translate the following medical SOAP notes and plan into a warm, patient-friendly, clear set of take-home instructions in plain English:
 SOAP Notes:
 - Subjective: {request.Subjective}
@@ -127,37 +131,22 @@ Include:
 
 Format the output clearly as a patient leaflet.";
 
-        string? result = await CallGeminiAsync(prompt, jsonMode: false);
+        string? result = await CallOpenRouterAsync(prompt, tenant, jsonMode: false);
         if (result != null)
         {
+            await TrackAiUsageAsync(tenant, ct);
             return Ok(new { summary = result });
         }
 
-        // Mock Summary
-        string mockSummary = $@"### 📋 Patient Take-Home Summary
-**What we found:**
-You have been diagnosed with **Acute Pharyngitis (Throat Infection)**. Your throat is quite red and swollen, and you have a mild fever (38.1°C), which explains the pain when swallowing.
-
-**Your Treatment Plan:**
-1. **Medication (Amoxicillin):** Take 1 capsule three times a day for all 10 days. Even if you feel better, **please complete the entire course** to fully clear the infection.
-2. **Fever/Pain Relief (Acetaminophen):** Take 1 tablet every 6 hours only as needed for throat pain or fever.
-3. **Home Care:** 
-   - Gargle with warm salt water 3-4 times a day to reduce throat irritation.
-   - Drink plenty of warm liquids (teas, broth) or cold water to stay hydrated.
-   - Rest your voice and body.
-
-**⚠️ Warning Signs to Watch For:**
-Go to the emergency clinic or contact us immediately if you experience:
-- Difficulty breathing or a feeling of your throat closing.
-- Inability to swallow liquids or manage your saliva (drooling).
-- A fever that stays above 39.5°C (103°F) even after taking medicine.";
-
-        return Ok(new { summary = mockSummary });
+        return StatusCode(503, new { error = "AI Assistant is temporarily unavailable." });
     }
 
     [HttpPost("lab-interpreter")]
-    public async Task<IActionResult> LabInterpreter([FromBody] LabInterpreterRequest request)
+    public async Task<IActionResult> LabInterpreter([FromBody] LabInterpreterRequest request, CancellationToken ct)
     {
+        var (allowed, errorResult, tenant) = await ValidateAiAccessAsync(ct);
+        if (!allowed) return errorResult!;
+
         string resultsJson = JsonSerializer.Serialize(request.Results);
         string prompt = $@"You are an expert Clinical Pathologist. Review the following laboratory results for this patient and provide a concise, structured interpretation for the requesting doctor.
 Patient Name: {request.PatientName}
@@ -175,49 +164,22 @@ Format your response in Markdown with these sections:
 
 Be concise, technical, and professional.";
 
-        string? result = await CallGeminiAsync(prompt, jsonMode: false);
+        string? result = await CallOpenRouterAsync(prompt, tenant, jsonMode: false);
         if (result != null)
         {
+            await TrackAiUsageAsync(tenant, ct);
             return Ok(new { interpretation = result });
         }
 
-        // Mock Lab Interpretation
-        StringBuilder mockBuilder = new();
-        mockBuilder.AppendLine("### 🧪 AI Clinical Interpretation Report");
-        mockBuilder.AppendLine($"**Patient:** {request.PatientName} | **Panel:** {request.TestName}\n");
-        mockBuilder.AppendLine("#### 1. Clinical Assessment Summary");
-        mockBuilder.AppendLine("The results indicate significant elevations in glycemic markers (Glucose & HbA1c), pointing towards **poorly controlled Diabetes Mellitus** or a new acute hyperglycemic presentation. Remaining hematology and metabolic markers are within normal limits.");
-        mockBuilder.AppendLine("\n#### 2. Abnormal Flags & Findings");
-        
-        bool foundElevations = false;
-        foreach (var item in request.Results)
-        {
-            if (item.Flag == "H" || item.Flag == "L" || item.Flag == "HH" || item.Flag == "LL" || item.Flag == "Critical")
-            {
-                foundElevations = true;
-                mockBuilder.AppendLine($"- **{item.TestName} ({item.TestCode})**: {item.Value} {item.Unit} (Ref: {item.RefRange}). **Flag: {item.Flag}**. Indicates acute physiological elevation.");
-            }
-        }
-        if (!foundElevations)
-        {
-            mockBuilder.AppendLine("- *No critical flags found.* Mild elevation in Glucose (6.8 mmol/L) is noted, suggesting borderline pre-diabetes.");
-        }
-
-        mockBuilder.AppendLine("\n#### 3. Pathophysiological Correlations");
-        mockBuilder.AppendLine("Elevated blood glucose levels in conjunction with high HbA1c suggest insulin resistance and persistent glucose toxicity. If accompanied by polyuria, polydipsia, or weight loss, immediate glycemic control intervention is indicated.");
-        mockBuilder.AppendLine("\n#### 4. Recommended Next Steps");
-        mockBuilder.AppendLine("1. Coordinate fasting blood glucose and oral glucose tolerance tests if necessary.");
-        mockBuilder.AppendLine("2. Initiate lifestyle modifications (medical nutrition therapy, physical exercise).");
-        mockBuilder.AppendLine("3. Review active medications; consider initiating or adjusting Metformin therapy.");
-        mockBuilder.AppendLine("4. Schedule repeat HbA1c in 3 months.");
-        mockBuilder.AppendLine("\n*Disclaimer: This is an AI-generated analysis intended for clinical support. Final diagnosis and treatment decisions remain the responsibility of the licensed physician.*");
-
-        return Ok(new { interpretation = mockBuilder.ToString() });
+        return StatusCode(503, new { error = "AI Assistant is temporarily unavailable." });
     }
 
     [HttpPost("drug-safety")]
-    public async Task<IActionResult> DrugSafety([FromBody] DrugSafetyRequest request)
+    public async Task<IActionResult> DrugSafety([FromBody] DrugSafetyRequest request, CancellationToken ct)
     {
+        var (allowed, errorResult, tenant) = await ValidateAiAccessAsync(ct);
+        if (!allowed) return errorResult!;
+
         string drugsJson = JsonSerializer.Serialize(request.Items);
         string prompt = $@"You are a Clinical Pharmacist. Review the following medication cart for potential safety risks, drug-drug interactions, and controlled substance flags.
 Medications:
@@ -230,112 +192,374 @@ Provide a structured response in Markdown containing:
 
 Be professional, concise, and focused on patient safety.";
 
-        string? result = await CallGeminiAsync(prompt, jsonMode: false);
+        string? result = await CallOpenRouterAsync(prompt, tenant, jsonMode: false);
         if (result != null)
         {
+            await TrackAiUsageAsync(tenant, ct);
             return Ok(new { interactions = result });
         }
 
-        // Mock Drug Safety
-        string mockInteractions = "#### ⚠️ Drug Interaction Risk Assessment\n";
-        bool hasAspirin = false;
-        bool hasWarfarin = false;
-
-        foreach (var d in request.Items)
-        {
-            var name = d.DrugName.ToLower();
-            if (name.Contains("aspirin")) hasAspirin = true;
-            if (name.Contains("warfarin") || name.Contains("clopidogrel") || name.Contains("heparin")) hasWarfarin = true;
-        }
-
-        if (hasAspirin && hasWarfarin)
-        {
-            mockInteractions += "**[CRITICAL RISK] Aspirin + Blood Thinner (Warfarin/Clopidogrel):** Simultaneous use significantly increases the risk of serious GI bleed and hemorrhage. Monitor patient closely for bruising, dark stools, or epistaxis. Consider prescribing a proton pump inhibitor (PPI) for gastric protection.\n";
-        }
-        else if (hasAspirin)
-        {
-            mockInteractions += "**[MODERATE RISK] Aspirin + NSAIDs:** Concomitant use increases risk of gastrointestinal mucosal irritation. Recommend spaced dosing.\n";
-        }
-        else
-        {
-            mockInteractions += "✅ **No major drug-drug interactions detected** between the selected medications in this cart.\n";
-        }
-
-        mockInteractions += "\n#### 📝 Patient Counseling Guidelines\n";
-        foreach (var d in request.Items)
-        {
-            var name = d.DrugName.ToLower();
-            if (name.Contains("amoxicillin") || name.Contains("antibiotic"))
-            {
-                mockInteractions += $"- ***{d.DrugName}***: Instruct patient to complete the entire course, even if symptoms resolve. Can be taken with or without food. Inform pharmacist of severe rash.\n";
-            }
-            else if (name.Contains("metformin"))
-            {
-                mockInteractions += $"- ***{d.DrugName}***: Take with meals to reduce gastrointestinal upset. Avoid excessive alcohol consumption to prevent potential lactic acidosis risk.\n";
-            }
-            else if (name.Contains("aspirin") || name.Contains("ibuprofen"))
-            {
-                mockInteractions += $"- ***{d.DrugName}***: Take with food or milk to protect stomach lining. Report any stomach pain or dark tarry stools immediately.\n";
-            }
-            else
-            {
-                mockInteractions += $"- ***{d.DrugName}***: Administer according to label. Spaced dosing is recommended.\n";
-            }
-        }
-
-        return Ok(new { interactions = mockInteractions });
+        return StatusCode(503, new { error = "AI Assistant is temporarily unavailable." });
     }
 
-    private async Task<string?> CallGeminiAsync(string prompt, bool jsonMode = false)
+    [HttpPost("prescription-ocr")]
+    public async Task<IActionResult> PrescriptionOcr([FromBody] PrescriptionOcrRequest request, CancellationToken ct)
     {
-        var apiKey = _config["Gemini:ApiKey"] ?? Environment.GetEnvironmentVariable("GEMINI_API_KEY");
-        if (string.IsNullOrEmpty(apiKey))
+        if (string.IsNullOrWhiteSpace(request.Base64Image))
         {
-            return null;
+            return BadRequest(new { error = "Image is required." });
         }
 
-        var url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={apiKey}";
-        
-        var requestBody = new
+        var (allowed, errorResult, tenant) = await ValidateAiAccessAsync(ct);
+        if (!allowed) return errorResult!;
+
+        string prompt = @"You are a Clinical Pharmacist and Medical Document Parser. Analyze this prescription image or handwritten doctor note.
+Extract all prescribed medications into a JSON array of objects with the following schema:
+- drugName: Name of the medication (brand or generic)
+- dosage: Strength/dosage (e.g. 500mg, 10ml)
+- frequency: How often to take (e.g. Once daily, Twice daily, Every 8 hours)
+- duration: Duration of treatment (e.g. 7 days, 1 month)
+- quantity: Estimated numeric quantity to dispense (integer)
+- instructions: Special instructions (e.g. Take after meals)
+
+Return ONLY a raw JSON array matching this schema without any markdown backticks or explanation text.";
+
+        string? result = await CallOpenRouterMultimodalAsync(prompt, request.Base64Image, request.MimeType ?? "image/jpeg", tenant);
+
+        if (result != null)
         {
-            contents = new[]
+            try
             {
-                new
+                var cleaned = result.Trim();
+                if (cleaned.StartsWith("```"))
                 {
-                    parts = new[]
-                    {
-                        new { text = prompt }
-                    }
+                    cleaned = cleaned.Substring(cleaned.IndexOf('\n')).Trim();
+                    if (cleaned.EndsWith("```"))
+                        cleaned = cleaned.Substring(0, cleaned.Length - 3).Trim();
                 }
-            },
-            generationConfig = jsonMode ? new { responseMimeType = "application/json" } : null
+                using var doc = JsonDocument.Parse(cleaned);
+                await TrackAiUsageAsync(tenant, ct);
+                return Content(cleaned, "application/json");
+            }
+            catch
+            {
+                // Fall through
+            }
+        }
+
+        return StatusCode(503, new { error = "AI Assistant is temporarily unavailable." });
+    }
+
+    [HttpPost("discharge-summary")]
+    public async Task<IActionResult> DischargeSummary([FromBody] DischargeSummaryRequest request, CancellationToken ct)
+    {
+        var (allowed, errorResult, tenant) = await ValidateAiAccessAsync(ct);
+        if (!allowed) return errorResult!;
+
+        string prompt = $@"You are a Chief Medical Officer drafting a formal Hospital Discharge Summary & Transfer Note.
+Patient Name: {request.PatientName} | Age/Gender: {request.AgeGender} | MRN: {request.Mrn}
+Admission Date: {request.AdmissionDate} | Discharge Date: {request.DischargeDate}
+
+Hospitalization Context:
+- Admission Reason & History: {request.AdmissionReason}
+- Consultation & Clinical Notes: {request.ConsultationNotes}
+- Lab & Investigation Results: {request.LabResults}
+- Inpatient Procedures / Treatment: {request.TreatmentGiven}
+- Discharge Medications: {request.DischargeMedications}
+
+Generate a comprehensive Markdown report structured with these exact headers:
+# Hospital Discharge Summary
+### 1. Patient & Admission Overview
+### 2. Clinical History & Reason for Admission
+### 3. Summary of Inpatient Course & Investigations
+### 4. Final Diagnoses
+### 5. Discharge Medications & Dosage Schedule
+### 6. Post-Discharge Care & Red Flag Warning Signs
+### 7. Follow-Up Appointments & Referrals
+
+Be professional, thorough, and precise.";
+
+        string? result = await CallOpenRouterAsync(prompt, tenant, jsonMode: false);
+        if (result != null)
+        {
+            await TrackAiUsageAsync(tenant, ct);
+            return Ok(new { summary = result });
+        }
+
+        return StatusCode(503, new { error = "AI Assistant is temporarily unavailable." });
+    }
+
+    [HttpPost("insurance-appeal")]
+    public async Task<IActionResult> InsuranceAppeal([FromBody] InsuranceAppealRequest request, CancellationToken ct)
+    {
+        var (allowed, errorResult, tenant) = await ValidateAiAccessAsync(ct);
+        if (!allowed) return errorResult!;
+
+        string prompt = $@"You are a Medical Billing Specialist & Physician Appeals Officer. Write a formal, convincing Insurance Clinical Pre-Authorization & Claim Appeal Letter for this patient.
+Patient Name: {request.PatientName} | Claim / Pre-Auth Number: {request.ClaimNumber}
+Insurer: {request.PayerName} | Total Amount: {request.TotalAmount}
+Primary Diagnosis: {request.PrimaryDiagnosis} (ICD-10: {request.IcdCode})
+Service / Procedure Billed: {request.ProcedureName}
+Reason Billed / Medical Necessity Notes: {request.MedicalNecessityNotes}
+Rejection Reason (if appeal): {request.RejectionReason}
+
+Write a complete, formal appeal letter in Markdown addressed to the Medical Director of the insurance company.
+Include clinical justifications, medical necessity guidelines, ICD-10 correlation, and formal request for approval/reimbursement.";
+
+        string? result = await CallOpenRouterAsync(prompt, tenant, jsonMode: false);
+        if (result != null)
+        {
+            await TrackAiUsageAsync(tenant, ct);
+            return Ok(new { letter = result });
+        }
+
+        return StatusCode(503, new { error = "AI Assistant is temporarily unavailable." });
+    }
+
+    [HttpPost("triage-score")]
+    public async Task<IActionResult> TriageScore([FromBody] TriageScoreRequest request, CancellationToken ct)
+    {
+        var (allowed, errorResult, tenant) = await ValidateAiAccessAsync(ct);
+        if (!allowed) return errorResult!;
+
+        string prompt = $@"You are an Emergency Triage Nurse & Acute Care Specialist. Evaluate the following emergency patient intake:
+Patient: {request.PatientName} | Age: {request.Age}
+Chief Complaint: ""{request.ChiefComplaint}""
+Vitals:
+- Heart Rate: {request.HeartRate} bpm
+- Blood Pressure: {request.BloodPressure}
+- Temperature: {request.Temperature} °C
+- SpO2: {request.SpO2} %
+- Resp Rate: {request.RespiratoryRate} /min
+
+Evaluate the patient and return a JSON object with:
+- esiScore: Integer (1 for Resuscitation/Immediate, 2 for Emergent, 3 for Urgent, 4 for Less Urgent, 5 for Non-Urgent)
+- category: ESI Category name (e.g. ""ESI Level 2 - Emergent"")
+- priorityLevel: High, Medium, or Low
+- rationale: Explanation of the score based on vitals and symptoms
+- immediateActions: List of string nursing/medical actions to take immediately
+- redFlags: List of warning signs to monitor continuously
+
+Return ONLY a raw JSON object matching this schema without markdown backticks.";
+
+        string? result = await CallOpenRouterAsync(prompt, tenant, jsonMode: true);
+        if (result != null)
+        {
+            try
+            {
+                var cleaned = result.Trim();
+                if (cleaned.StartsWith("```"))
+                {
+                    cleaned = cleaned.Substring(cleaned.IndexOf('\n')).Trim();
+                    if (cleaned.EndsWith("```"))
+                        cleaned = cleaned.Substring(0, cleaned.Length - 3).Trim();
+                }
+                using var doc = JsonDocument.Parse(cleaned);
+                await TrackAiUsageAsync(tenant, ct);
+                return Content(cleaned, "application/json");
+            }
+            catch
+            {
+                // Fall through
+            }
+        }
+
+        return StatusCode(503, new { error = "AI Assistant is temporarily unavailable." });
+    }
+
+    private async Task<(bool Allowed, IActionResult? ErrorResult, Tenant? Tenant)> ValidateAiAccessAsync(CancellationToken ct)
+    {
+        var tenantId = _tenantContext.TenantId;
+        if (tenantId == Guid.Empty) return (true, null, null);
+
+        var tenant = await _db.Tenants.FirstOrDefaultAsync(t => t.TenantId == tenantId, ct);
+        if (tenant == null) return (true, null, null);
+
+        // 1. Lock Check (Tier 0: No AI / Opt-Out)
+        if (!tenant.IsAiEnabled)
+        {
+            return (false, StatusCode(403, new { error = "AI Assistant features are disabled / opted-out for this facility. Contact your administrator to enable AI." }), tenant);
+        }
+
+        // 2. Monthly Quota Check
+        if (tenant.AiRequestsThisMonth >= tenant.AiMonthlyQuota)
+        {
+            return (false, StatusCode(429, new { error = $"Monthly AI Assistant quota ({tenant.AiMonthlyQuota} requests) reached for this facility. Please contact your administrator to upgrade your plan." }), tenant);
+        }
+
+        return (true, null, tenant);
+    }
+
+    private async Task TrackAiUsageAsync(Tenant? tenant, CancellationToken ct)
+    {
+        if (tenant == null) return;
+        try
+        {
+            tenant.AiRequestsThisMonth += 1;
+            await _db.SaveChangesAsync(ct);
+        }
+        catch
+        {
+            // Non-blocking usage counter update
+        }
+    }
+
+    private async Task<string?> CallOpenRouterAsync(string prompt, Tenant? tenant, bool jsonMode = false)
+    {
+        // Check custom BYOK key first, then system key
+        var apiKey = !string.IsNullOrWhiteSpace(tenant?.CustomOpenRouterKey)
+            ? tenant.CustomOpenRouterKey
+            : (_config["OpenRouter:ApiKey"]
+                  ?? _config["OPENROUTER_API_KEY"]
+                  ?? Environment.GetEnvironmentVariable("OPENROUTER_API_KEY")
+                  ?? _config["Gemini:ApiKey"]
+                  ?? Environment.GetEnvironmentVariable("GEMINI_API_KEY"));
+
+        if (string.IsNullOrEmpty(apiKey)) return null;
+
+        string[] modelsToUse;
+        var tier = tenant?.AllowedAiTiers ?? tenant?.SubscriptionPlan ?? "Standard";
+        
+        if (tier.Equals("Enterprise", StringComparison.OrdinalIgnoreCase))
+            modelsToUse = EnterpriseModelsFallback;
+        else if (tier.Equals("Pro", StringComparison.OrdinalIgnoreCase))
+            modelsToUse = ProModelsFallback;
+        else
+            modelsToUse = FreeModelsFallback;
+
+        var customModel = _config["OpenRouter:Model"]
+                       ?? _config["OPENROUTER_MODEL"]
+                       ?? Environment.GetEnvironmentVariable("OPENROUTER_MODEL");
+
+        if (!string.IsNullOrWhiteSpace(customModel) && customModel != "openrouter/auto")
+        {
+            modelsToUse = new[] { customModel };
+        }
+
+        object requestBody = jsonMode ? new
+        {
+            models = modelsToUse,
+            messages = new[] { new { role = "user", content = prompt } },
+            response_format = new { type = "json_object" }
+        } : new
+        {
+            models = modelsToUse,
+            messages = new[] { new { role = "user", content = prompt } }
         };
 
         var jsonContent = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
+
         try
         {
-            var response = await _httpClient.PostAsync(url, jsonContent);
-            if (!response.IsSuccessStatusCode)
-            {
-                return null;
-            }
+            using var req = new HttpRequestMessage(HttpMethod.Post, "https://openrouter.ai/api/v1/chat/completions");
+            req.Headers.Add("Authorization", $"Bearer {apiKey}");
+            req.Headers.Add("HTTP-Referer", "https://kaycare.com");
+            req.Headers.Add("X-Title", "KayCare HMS");
+            req.Content = jsonContent;
+
+            var response = await _httpClient.SendAsync(req);
+            if (!response.IsSuccessStatusCode) return null;
 
             var responseBody = await response.Content.ReadAsStringAsync();
             using var doc = JsonDocument.Parse(responseBody);
             var root = doc.RootElement;
-            if (root.TryGetProperty("candidates", out var candidates) &&
-                candidates.GetArrayLength() > 0 &&
-                candidates[0].TryGetProperty("content", out var content) &&
-                content.TryGetProperty("parts", out var parts) &&
-                parts.GetArrayLength() > 0 &&
-                parts[0].TryGetProperty("text", out var text))
+
+            if (root.TryGetProperty("choices", out var choices) &&
+                choices.GetArrayLength() > 0 &&
+                choices[0].TryGetProperty("message", out var message) &&
+                message.TryGetProperty("content", out var content))
             {
-                return text.GetString();
+                return content.GetString();
             }
         }
         catch
         {
-            // Fail silent, fallback to Mock
+            // Fail silent
+        }
+
+        return null;
+    }
+
+    private async Task<string?> CallOpenRouterMultimodalAsync(string prompt, string base64Data, string mimeType, Tenant? tenant)
+    {
+        var apiKey = !string.IsNullOrWhiteSpace(tenant?.CustomOpenRouterKey)
+            ? tenant.CustomOpenRouterKey
+            : (_config["OpenRouter:ApiKey"]
+                  ?? _config["OPENROUTER_API_KEY"]
+                  ?? Environment.GetEnvironmentVariable("OPENROUTER_API_KEY")
+                  ?? _config["Gemini:ApiKey"]
+                  ?? Environment.GetEnvironmentVariable("GEMINI_API_KEY"));
+
+        if (string.IsNullOrEmpty(apiKey)) return null;
+
+        var imageUrl = base64Data.StartsWith("data:") ? base64Data : $"data:{mimeType};base64,{base64Data}";
+
+        string[] modelsToUse;
+        var tier = tenant?.AllowedAiTiers ?? tenant?.SubscriptionPlan ?? "Standard";
+
+        if (tier.Equals("Enterprise", StringComparison.OrdinalIgnoreCase) || tier.Equals("Pro", StringComparison.OrdinalIgnoreCase))
+            modelsToUse = ProVisionModelsFallback;
+        else
+            modelsToUse = FreeVisionModelsFallback;
+
+        var customModel = _config["OpenRouter:Model"]
+                       ?? _config["OPENROUTER_MODEL"]
+                       ?? Environment.GetEnvironmentVariable("OPENROUTER_MODEL");
+
+        if (!string.IsNullOrWhiteSpace(customModel) && customModel != "openrouter/auto")
+        {
+            modelsToUse = new[] { customModel };
+        }
+
+        var requestBody = new
+        {
+            models = modelsToUse,
+            messages = new[]
+            {
+                new
+                {
+                    role = "user",
+                    content = new object[]
+                    {
+                        new { type = "text", text = prompt },
+                        new
+                        {
+                            type = "image_url",
+                            image_url = new { url = imageUrl }
+                        }
+                    }
+                }
+            }
+        };
+
+        var jsonContent = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
+
+        try
+        {
+            using var req = new HttpRequestMessage(HttpMethod.Post, "https://openrouter.ai/api/v1/chat/completions");
+            req.Headers.Add("Authorization", $"Bearer {apiKey}");
+            req.Headers.Add("HTTP-Referer", "https://kaycare.com");
+            req.Headers.Add("X-Title", "KayCare HMS");
+            req.Content = jsonContent;
+
+            var response = await _httpClient.SendAsync(req);
+            if (!response.IsSuccessStatusCode) return null;
+
+            var responseBody = await response.Content.ReadAsStringAsync();
+            using var doc = JsonDocument.Parse(responseBody);
+            var root = doc.RootElement;
+
+            if (root.TryGetProperty("choices", out var choices) &&
+                choices.GetArrayLength() > 0 &&
+                choices[0].TryGetProperty("message", out var message) &&
+                message.TryGetProperty("content", out var content))
+            {
+                return content.GetString();
+            }
+        }
+        catch
+        {
+            // Fail silent
         }
 
         return null;
@@ -383,4 +607,49 @@ public class DrugSafetyItem
     public string GenericName { get; set; } = string.Empty;
     public string Dosage { get; set; } = string.Empty;
     public int Quantity { get; set; }
+}
+
+public class PrescriptionOcrRequest
+{
+    public string Base64Image { get; set; } = string.Empty;
+    public string? MimeType { get; set; }
+}
+
+public class DischargeSummaryRequest
+{
+    public string PatientName { get; set; } = string.Empty;
+    public string AgeGender { get; set; } = string.Empty;
+    public string Mrn { get; set; } = string.Empty;
+    public string AdmissionDate { get; set; } = string.Empty;
+    public string DischargeDate { get; set; } = string.Empty;
+    public string AdmissionReason { get; set; } = string.Empty;
+    public string ConsultationNotes { get; set; } = string.Empty;
+    public string LabResults { get; set; } = string.Empty;
+    public string TreatmentGiven { get; set; } = string.Empty;
+    public string DischargeMedications { get; set; } = string.Empty;
+}
+
+public class InsuranceAppealRequest
+{
+    public string PatientName { get; set; } = string.Empty;
+    public string ClaimNumber { get; set; } = string.Empty;
+    public string PayerName { get; set; } = string.Empty;
+    public string TotalAmount { get; set; } = string.Empty;
+    public string PrimaryDiagnosis { get; set; } = string.Empty;
+    public string IcdCode { get; set; } = string.Empty;
+    public string ProcedureName { get; set; } = string.Empty;
+    public string MedicalNecessityNotes { get; set; } = string.Empty;
+    public string RejectionReason { get; set; } = string.Empty;
+}
+
+public class TriageScoreRequest
+{
+    public string PatientName { get; set; } = string.Empty;
+    public string Age { get; set; } = string.Empty;
+    public string ChiefComplaint { get; set; } = string.Empty;
+    public int HeartRate { get; set; }
+    public string BloodPressure { get; set; } = string.Empty;
+    public double Temperature { get; set; }
+    public double SpO2 { get; set; }
+    public int RespiratoryRate { get; set; }
 }

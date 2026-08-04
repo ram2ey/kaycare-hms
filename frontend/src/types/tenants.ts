@@ -8,6 +8,11 @@ export interface TenantResponse {
   maxUsers: number;
   storageQuotaGB: number;
   userCount: number;
+  isAiEnabled: boolean;
+  aiMonthlyQuota: number;
+  aiRequestsThisMonth: number;
+  allowedAiTiers: string;
+  customOpenRouterKey?: string;
   createdAt: string;
 }
 
@@ -17,6 +22,10 @@ export interface CreateTenantRequest {
   subscriptionPlan: string;
   maxUsers: number;
   storageQuotaGB: number;
+  isAiEnabled: boolean;
+  aiMonthlyQuota: number;
+  allowedAiTiers: string;
+  customOpenRouterKey?: string;
   adminEmail: string;
   adminFirstName: string;
   adminLastName: string;
@@ -27,6 +36,11 @@ export interface UpdateTenantRequest {
   subscriptionPlan: string;
   maxUsers: number;
   storageQuotaGB: number;
+  isAiEnabled: boolean;
+  aiMonthlyQuota: number;
+  allowedAiTiers: string;
+  customOpenRouterKey?: string;
 }
 
 export const SUBSCRIPTION_PLANS = ['Standard', 'Professional', 'Enterprise'];
+export const AI_TIERS = ['Standard', 'Pro', 'Enterprise'];
