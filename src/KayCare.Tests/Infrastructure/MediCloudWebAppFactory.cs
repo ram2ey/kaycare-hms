@@ -48,6 +48,8 @@ public class MediCloudWebAppFactory : WebApplicationFactory<Program>, IAsyncLife
                 ["Jwt:Issuer"]      = "KayCare",
                 ["Jwt:Audience"]    = "KayCare",
                 ["Jwt:ExpiryHours"] = "8",
+                ["Hl7:WebhookApiKey"]    = "test-hl7-webhook-key-kaycare-integration",
+                ["Hl7:MllpSharedSecret"] = "test-hl7-mllp-secret-kaycare-integration",
                 // Azurite dev connection string — blob operations not tested here
                 ["BlobStorage:ConnectionString"] =
                     "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;" +
@@ -98,7 +100,7 @@ public class MediCloudWebAppFactory : WebApplicationFactory<Program>, IAsyncLife
     /// </remarks>
     public async Task<HttpClient> CreateAuthenticatedClientAsync(TestTenant tenant, string email)
     {
-        var client = CreateClient();
+        var client = CreateHttpsClient();
         client.DefaultRequestHeaders.Add("X-Tenant-Code", tenant.TenantCode);
 
         var resp = await client.PostAsJsonAsync("/api/auth/login",
@@ -141,10 +143,21 @@ public class MediCloudWebAppFactory : WebApplicationFactory<Program>, IAsyncLife
     /// <summary>Returns a client with the tenant header set but no auth token.</summary>
     public HttpClient CreateAnonymousClientForTenant(TestTenant tenant)
     {
-        var client = CreateClient();
+        var client = CreateHttpsClient();
         client.DefaultRequestHeaders.Add("X-Tenant-Code", tenant.TenantCode);
         return client;
     }
+
+    /// <summary>
+    /// Base <see cref="WebApplicationFactory{TEntryPoint}.CreateClient()"/> talks over
+    /// plain http://localhost, but production always serves over HTTPS (Render). The antiforgery
+    /// system enforces this at runtime (AntiforgeryOptions.Cookie.SecurePolicy = Always outside
+    /// Development) and throws rather than degrading if a request isn't HTTPS — so tests need the
+    /// in-memory TestServer to see requests as HTTPS too, or every antiforgery-touching endpoint
+    /// (including login) fails with a 500 that has nothing to do with the code under test.
+    /// </summary>
+    private HttpClient CreateHttpsClient() =>
+        CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost") });
 
     /// <summary>
     /// Inserts a fresh throwaway user directly into the DB for tests that need
