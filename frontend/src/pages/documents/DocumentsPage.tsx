@@ -175,23 +175,23 @@ export default function DocumentsPage() {
           <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4">Upload Document</h3>
           <div className="grid grid-cols-3 gap-4 mb-4">
             <div>
-              <label className="block text-xs text-gray-600 mb-1">Category *</label>
-              <select value={uploadCategory} onChange={(e) => setUploadCategory(e.target.value)}
+              <label htmlFor="upload-category" className="block text-xs text-gray-600 mb-1">Category *</label>
+              <select id="upload-category" value={uploadCategory} onChange={(e) => setUploadCategory(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 {DOCUMENT_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
               </select>
             </div>
             <div className="col-span-2">
-              <label className="block text-xs text-gray-600 mb-1">Description</label>
-              <input value={uploadDescription} onChange={(e) => setUploadDescription(e.target.value)}
+              <label htmlFor="upload-description" className="block text-xs text-gray-600 mb-1">Description</label>
+              <input id="upload-description" value={uploadDescription} onChange={(e) => setUploadDescription(e.target.value)}
                 placeholder="e.g. CBC results from 2026-03-25"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
           <div className="mb-4">
-            <label className="block text-xs text-gray-600 mb-1">File *</label>
-            <input ref={fileRef} type="file" required
+            <label htmlFor="upload-file" className="block text-xs text-gray-600 mb-1">File *</label>
+            <input id="upload-file" ref={fileRef} type="file" required
               accept={ALLOWED_DOCUMENT_TYPES.join(',')}
               onChange={(e) => {
                 const file = e.target.files?.[0] ?? null;

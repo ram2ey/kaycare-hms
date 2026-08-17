@@ -551,7 +551,7 @@ export default function WardSetupPage() {
               <h3 className="text-lg font-bold text-gray-900">
                 {editingWard ? 'Edit Ward' : 'Add Ward'}
               </h3>
-              <button onClick={() => setShowWardModal(false)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => setShowWardModal(false)} aria-label="Close" className="text-gray-400 hover:text-gray-600">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -559,8 +559,9 @@ export default function WardSetupPage() {
             </div>
             <form onSubmit={handleWardSubmit} className="p-6 space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Ward Name *</label>
+                <label htmlFor="ward-setup-name" className="block text-xs font-semibold text-gray-600 mb-1">Ward Name *</label>
                 <input
+                  id="ward-setup-name"
                   required
                   maxLength={100}
                   value={wardName}
@@ -572,8 +573,9 @@ export default function WardSetupPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Ward Type *</label>
+                  <label htmlFor="ward-setup-type" className="block text-xs font-semibold text-gray-600 mb-1">Ward Type *</label>
                   <select
+                    id="ward-setup-type"
                     value={wardType}
                     onChange={e => setWardType(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
@@ -584,8 +586,9 @@ export default function WardSetupPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Daily Accommodation Rate (GHS) *</label>
+                  <label htmlFor="ward-setup-daily-rate" className="block text-xs font-semibold text-gray-600 mb-1">Daily Accommodation Rate (GHS) *</label>
                   <input
+                    id="ward-setup-daily-rate"
                     type="number"
                     min={0}
                     step="0.01"
@@ -599,8 +602,9 @@ export default function WardSetupPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Description / Location</label>
+                <label htmlFor="ward-setup-description" className="block text-xs font-semibold text-gray-600 mb-1">Description / Location</label>
                 <textarea
+                  id="ward-setup-description"
                   maxLength={500}
                   rows={3}
                   value={wardDescription}
@@ -660,7 +664,7 @@ export default function WardSetupPage() {
               <h3 className="text-lg font-bold text-gray-900">
                 {editingBed ? `Edit Bed ${editingBed.bedNumber}` : 'Add New Bed'}
               </h3>
-              <button onClick={() => setShowBedModal(false)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => setShowBedModal(false)} aria-label="Close" className="text-gray-400 hover:text-gray-600">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -668,8 +672,9 @@ export default function WardSetupPage() {
             </div>
             <form onSubmit={handleBedSubmit} className="p-6 space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Bed Number *</label>
+                <label htmlFor="ward-setup-bed-number" className="block text-xs font-semibold text-gray-600 mb-1">Bed Number *</label>
                 <input
+                  id="ward-setup-bed-number"
                   required
                   maxLength={20}
                   value={bedNumber}
@@ -680,8 +685,9 @@ export default function WardSetupPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Notes / Equipment</label>
+                <label htmlFor="ward-setup-bed-notes" className="block text-xs font-semibold text-gray-600 mb-1">Notes / Equipment</label>
                 <textarea
+                  id="ward-setup-bed-notes"
                   maxLength={200}
                   rows={2}
                   value={bedNotes}
@@ -728,7 +734,7 @@ export default function WardSetupPage() {
               <h3 className="text-lg font-bold text-gray-900">
                 Update Bed Status — {statusBed.bedNumber}
               </h3>
-              <button onClick={() => setShowStatusModal(false)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => setShowStatusModal(false)} aria-label="Close" className="text-gray-400 hover:text-gray-600">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -736,8 +742,9 @@ export default function WardSetupPage() {
             </div>
             <form onSubmit={handleStatusSubmit} className="p-6 space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Status *</label>
+                <label htmlFor="ward-setup-bed-status" className="block text-xs font-semibold text-gray-600 mb-1">Status *</label>
                 <select
+                  id="ward-setup-bed-status"
                   value={bedStatus}
                   onChange={e => setBedStatus(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
@@ -760,8 +767,9 @@ export default function WardSetupPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Notes / Reason for Status Change</label>
+                <label htmlFor="ward-setup-status-notes" className="block text-xs font-semibold text-gray-600 mb-1">Notes / Reason for Status Change</label>
                 <textarea
+                  id="ward-setup-status-notes"
                   maxLength={200}
                   rows={2}
                   value={bedNotes}

@@ -179,8 +179,9 @@ export default function FacilitySettingsPage() {
         <h3 className="text-sm font-semibold text-gray-700 mb-4">Facility Details</h3>
         <form onSubmit={handleSave} className="space-y-4">
           <div>
-            <label className="block text-xs text-gray-600 mb-1">Facility Name *</label>
+            <label htmlFor="facility-settings-name" className="block text-xs text-gray-600 mb-1">Facility Name *</label>
             <input
+              id="facility-settings-name"
               required
               value={form.facilityName}
               onChange={e => setForm(f => ({ ...f, facilityName: e.target.value }))}
@@ -191,8 +192,9 @@ export default function FacilitySettingsPage() {
           </div>
 
           <div>
-            <label className="block text-xs text-gray-600 mb-1">Address</label>
+            <label htmlFor="facility-settings-address" className="block text-xs text-gray-600 mb-1">Address</label>
             <textarea
+              id="facility-settings-address"
               rows={2}
               value={form.address ?? ''}
               onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
@@ -203,8 +205,9 @@ export default function FacilitySettingsPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs text-gray-600 mb-1">Phone</label>
+              <label htmlFor="facility-settings-phone" className="block text-xs text-gray-600 mb-1">Phone</label>
               <input
+                id="facility-settings-phone"
                 value={form.phone ?? ''}
                 onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
                 placeholder="e.g. +233 30 123 4567"
@@ -212,8 +215,9 @@ export default function FacilitySettingsPage() {
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-600 mb-1">Email</label>
+              <label htmlFor="facility-settings-email" className="block text-xs text-gray-600 mb-1">Email</label>
               <input
+                id="facility-settings-email"
                 type="email"
                 value={form.email ?? ''}
                 onChange={e => setForm(f => ({ ...f, email: e.target.value }))}

@@ -329,21 +329,21 @@ export default function PurchaseOrderDetailPage() {
             <form onSubmit={handleEdit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs text-gray-600 mb-1">Supplier</label>
-                  <select value={editSupplierId} onChange={e => setEditSupplierId(e.target.value)} className={inp}>
+                  <label htmlFor="po-edit-supplier" className="block text-xs text-gray-600 mb-1">Supplier</label>
+                  <select id="po-edit-supplier" value={editSupplierId} onChange={e => setEditSupplierId(e.target.value)} className={inp}>
                     <option value="">— No supplier —</option>
                     {suppliers.map(s => <option key={s.supplierId} value={s.supplierId}>{s.name}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-600 mb-1">Expected Delivery Date</label>
-                  <input type="date" value={editExpectedDate}
+                  <label htmlFor="po-edit-expected-date" className="block text-xs text-gray-600 mb-1">Expected Delivery Date</label>
+                  <input id="po-edit-expected-date" type="date" value={editExpectedDate}
                     onChange={e => setEditExpectedDate(e.target.value)} className={inp} />
                 </div>
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Notes</label>
-                <input value={editNotes} onChange={e => setEditNotes(e.target.value)}
+                <label htmlFor="po-edit-notes" className="block text-xs text-gray-600 mb-1">Notes</label>
+                <input id="po-edit-notes" value={editNotes} onChange={e => setEditNotes(e.target.value)}
                   placeholder="Optional notes…" className={inp} />
               </div>
               {/* Line items */}
@@ -391,6 +391,7 @@ export default function PurchaseOrderDetailPage() {
                         {editItems.length > 1 && (
                           <button type="button"
                             onClick={() => setEditItems(prev => prev.filter(i => i._key !== item._key))}
+                            aria-label="Remove line item"
                             className="text-red-400 hover:text-red-600 text-lg leading-none">×</button>
                         )}
                       </div>

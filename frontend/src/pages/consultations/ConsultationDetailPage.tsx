@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useId } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { getConsultation, updateConsultation, signConsultation } from '../../api/consultations';
 import type { ConsultationDetailResponse, UpdateConsultationRequest, DiagnosisDto } from '../../types/consultations';
@@ -307,7 +307,7 @@ export default function ConsultationDetailPage() {
               return (
                 <div key={key}>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="block text-xs font-semibold text-gray-500 uppercase">{labels[key]}</label>
+                    <label htmlFor={`soap-${key}`} className="block text-xs font-semibold text-gray-500 uppercase">{labels[key]}</label>
                     {!isSigned && canEdit && (
                       <button
                         type="button"
@@ -323,6 +323,7 @@ export default function ConsultationDetailPage() {
                     )}
                   </div>
                   <textarea
+                    id={`soap-${key}`}
                     rows={3}
                     disabled={isSigned || !canEdit}
                     value={soap[key]}
@@ -424,6 +425,7 @@ export default function ConsultationDetailPage() {
                   <button
                     type="button"
                     onClick={() => removeSecondaryDx(i)}
+                    aria-label="Remove secondary diagnosis"
                     className="text-red-400 hover:text-red-600 text-sm px-2"
                   >
                     ×
@@ -459,7 +461,7 @@ export default function ConsultationDetailPage() {
               <h3 className="font-bold text-gray-800 text-lg flex items-center gap-2">
                 <span>✨</span> AI Clinical SOAP Copilot
               </h3>
-              <button onClick={() => setCopilotOpen(false)} className="text-gray-400 hover:text-gray-600 text-2xl font-bold cursor-pointer">×</button>
+              <button onClick={() => setCopilotOpen(false)} aria-label="Close" className="text-gray-400 hover:text-gray-600 text-2xl font-bold cursor-pointer">×</button>
             </div>
             <div className="flex-1 flex flex-col space-y-4 overflow-y-auto">
               <p className="text-xs text-gray-500">
@@ -506,7 +508,7 @@ export default function ConsultationDetailPage() {
                 </h3>
                 <p className="text-amber-50 text-xs mt-0.5">Simplified, patient-friendly guidance based on clinical notes.</p>
               </div>
-              <button onClick={() => setSummaryOpen(false)} className="text-white hover:text-amber-105 text-2xl font-bold cursor-pointer">×</button>
+              <button onClick={() => setSummaryOpen(false)} aria-label="Close" className="text-white hover:text-amber-105 text-2xl font-bold cursor-pointer">×</button>
             </div>
             <div className="flex-1 p-6 overflow-y-auto prose max-w-none text-sm text-gray-700">
               {summaryLoading ? (
@@ -555,10 +557,12 @@ function VitalField({
 }: {
   label: string; value: string; onChange: (v: string) => void; disabled: boolean; step?: string;
 }) {
+  const id = useId();
   return (
     <div>
-      <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">{label}</label>
+      <label htmlFor={id} className="block text-xs font-semibold text-gray-500 uppercase mb-1">{label}</label>
       <input
+        id={id}
         type="number"
         step={step}
         value={value}

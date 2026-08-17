@@ -76,8 +76,9 @@ export default function CSRegisterPage() {
       {/* Filters */}
       <div className="bg-white border border-gray-200 rounded-xl p-4 mb-6 flex flex-wrap items-end gap-4">
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">From date</label>
+          <label htmlFor="cs-register-from" className="block text-xs font-medium text-gray-600 mb-1">From date</label>
           <input
+            id="cs-register-from"
             type="date"
             value={from}
             onChange={e => setFrom(e.target.value)}
@@ -85,8 +86,9 @@ export default function CSRegisterPage() {
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">To date</label>
+          <label htmlFor="cs-register-to" className="block text-xs font-medium text-gray-600 mb-1">To date</label>
           <input
+            id="cs-register-to"
             type="date"
             value={to}
             onChange={e => setTo(e.target.value)}

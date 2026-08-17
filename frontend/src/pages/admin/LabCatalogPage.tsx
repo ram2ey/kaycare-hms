@@ -276,7 +276,7 @@ export default function LabCatalogPage() {
               <h3 className="text-lg font-bold text-gray-900">
                 {editingItem ? 'Edit Lab Test' : 'Add Lab Test'}
               </h3>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => setShowModal(false)} aria-label="Close" className="text-gray-400 hover:text-gray-600">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -285,8 +285,9 @@ export default function LabCatalogPage() {
             <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Test Code *</label>
+                  <label htmlFor="lab-test-code" className="block text-xs font-semibold text-gray-600 mb-1">Test Code *</label>
                   <input
+                    id="lab-test-code"
                     required
                     maxLength={20}
                     value={testCode}
@@ -296,8 +297,9 @@ export default function LabCatalogPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Test Name *</label>
+                  <label htmlFor="lab-test-name" className="block text-xs font-semibold text-gray-600 mb-1">Test Name *</label>
                   <input
+                    id="lab-test-name"
                     required
                     maxLength={200}
                     value={testName}
@@ -310,8 +312,9 @@ export default function LabCatalogPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Department *</label>
+                  <label htmlFor="lab-department" className="block text-xs font-semibold text-gray-600 mb-1">Department *</label>
                   <select
+                    id="lab-department"
                     value={department}
                     onChange={e => setDepartment(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
@@ -324,8 +327,9 @@ export default function LabCatalogPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Turn-around Time (hours)</label>
+                  <label htmlFor="lab-tat-hours" className="block text-xs font-semibold text-gray-600 mb-1">Turn-around Time (hours)</label>
                   <input
+                    id="lab-tat-hours"
                     type="number"
                     min={1}
                     max={168}
@@ -339,8 +343,9 @@ export default function LabCatalogPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Analyzer/Instrument Name</label>
+                  <label htmlFor="lab-instrument-type" className="block text-xs font-semibold text-gray-600 mb-1">Analyzer/Instrument Name</label>
                   <input
+                    id="lab-instrument-type"
                     value={instrumentType}
                     onChange={e => setInstrumentType(e.target.value)}
                     placeholder="e.g. DxH560, Sysmex (Optional)"
@@ -362,8 +367,9 @@ export default function LabCatalogPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Default Unit</label>
+                  <label htmlFor="lab-default-unit" className="block text-xs font-semibold text-gray-600 mb-1">Default Unit</label>
                   <input
+                    id="lab-default-unit"
                     value={defaultUnit}
                     onChange={e => setDefaultUnit(e.target.value)}
                     placeholder="e.g. g/dL, mmol/L"
@@ -371,8 +377,9 @@ export default function LabCatalogPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Reference Range</label>
+                  <label htmlFor="lab-reference-range" className="block text-xs font-semibold text-gray-600 mb-1">Reference Range</label>
                   <input
+                    id="lab-reference-range"
                     value={defaultReferenceRange}
                     onChange={e => setDefaultReferenceRange(e.target.value)}
                     placeholder="e.g. 11.5-16.0"
@@ -380,8 +387,9 @@ export default function LabCatalogPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Critical Panic Range</label>
+                  <label htmlFor="lab-critical-range" className="block text-xs font-semibold text-gray-600 mb-1">Critical Panic Range</label>
                   <input
+                    id="lab-critical-range"
                     value={criticalReferenceRange}
                     onChange={e => setCriticalReferenceRange(e.target.value)}
                     placeholder="e.g. 7.0-20.0"

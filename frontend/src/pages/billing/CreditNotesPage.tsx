@@ -42,8 +42,8 @@ export default function CreditNotesPage() {
 
       <div className="bg-white border border-gray-200 rounded-lg p-4 mb-6 flex gap-4">
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Status</label>
-          <select value={status} onChange={(e) => setStatus(e.target.value)}
+          <label htmlFor="creditnotes-status" className="block text-xs text-gray-500 mb-1">Status</label>
+          <select id="creditnotes-status" value={status} onChange={(e) => setStatus(e.target.value)}
             className="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
             <option value="">All</option>
             {Object.entries(CREDIT_NOTE_STATUS_LABELS).map(([v, l]) => (

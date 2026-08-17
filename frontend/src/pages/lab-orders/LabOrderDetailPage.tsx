@@ -364,8 +364,9 @@ export default function LabOrderDetailPage() {
 
             <div className="flex gap-2 mb-3">
               <div className="flex-1">
-                <label className="text-xs text-gray-500 mb-1 block">Unit (optional)</label>
+                <label htmlFor="manual-result-unit" className="text-xs text-gray-500 mb-1 block">Unit (optional)</label>
                 <input
+                  id="manual-result-unit"
                   type="text"
                   className="w-full border rounded px-3 py-2 text-sm"
                   placeholder="e.g. mmol/L"
@@ -374,8 +375,9 @@ export default function LabOrderDetailPage() {
                 />
               </div>
               <div className="flex-1">
-                <label className="text-xs text-gray-500 mb-1 block">Reference Range (optional)</label>
+                <label htmlFor="manual-result-ref-range" className="text-xs text-gray-500 mb-1 block">Reference Range (optional)</label>
                 <input
+                  id="manual-result-ref-range"
                   type="text"
                   className="w-full border rounded px-3 py-2 text-sm"
                   placeholder="e.g. 3.9-5.6"

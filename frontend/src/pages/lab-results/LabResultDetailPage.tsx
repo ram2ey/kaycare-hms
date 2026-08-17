@@ -183,7 +183,7 @@ export default function LabResultDetailPage() {
                 </h3>
                 <p className="text-indigo-100 text-xs mt-0.5">Automated clinical review of laboratory test observations.</p>
               </div>
-              <button onClick={() => setInterpreterOpen(false)} className="text-white hover:text-indigo-105 text-2xl font-bold cursor-pointer">×</button>
+              <button onClick={() => setInterpreterOpen(false)} aria-label="Close" className="text-white hover:text-indigo-105 text-2xl font-bold cursor-pointer">×</button>
             </div>
             <div className="flex-1 p-6 overflow-y-auto prose max-w-none text-sm text-gray-700">
               {interpretationLoading ? (

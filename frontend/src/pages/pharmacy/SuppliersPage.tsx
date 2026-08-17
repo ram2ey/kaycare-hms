@@ -176,27 +176,27 @@ export default function SuppliersPage() {
             </h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Supplier Name *</label>
-                <input required value={form.name}
+                <label htmlFor="supplier-name" className="block text-xs text-gray-600 mb-1">Supplier Name *</label>
+                <input id="supplier-name" required value={form.name}
                   onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                   placeholder="e.g. MedSupply Ghana Ltd" className={inp} />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs text-gray-600 mb-1">Contact Person</label>
-                  <input value={form.contactName ?? ''}
+                  <label htmlFor="supplier-contact" className="block text-xs text-gray-600 mb-1">Contact Person</label>
+                  <input id="supplier-contact" value={form.contactName ?? ''}
                     onChange={e => setForm(f => ({ ...f, contactName: e.target.value }))}
                     placeholder="Full name" className={inp} />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-600 mb-1">Phone</label>
-                  <input value={form.phone ?? ''}
+                  <label htmlFor="supplier-phone" className="block text-xs text-gray-600 mb-1">Phone</label>
+                  <input id="supplier-phone" value={form.phone ?? ''}
                     onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
                     placeholder="+233 XX XXX XXXX" className={inp} />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-600 mb-1">Email</label>
-                  <input type="email" value={form.email ?? ''}
+                  <label htmlFor="supplier-email" className="block text-xs text-gray-600 mb-1">Email</label>
+                  <input id="supplier-email" type="email" value={form.email ?? ''}
                     onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
                     placeholder="supplier@example.com" className={inp} />
                 </div>
@@ -211,14 +211,14 @@ export default function SuppliersPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Address</label>
-                <input value={form.address ?? ''}
+                <label htmlFor="supplier-address" className="block text-xs text-gray-600 mb-1">Address</label>
+                <input id="supplier-address" value={form.address ?? ''}
                   onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
                   placeholder="Street, city, region" className={inp} />
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Notes</label>
-                <textarea rows={2} value={form.notes ?? ''}
+                <label htmlFor="supplier-notes" className="block text-xs text-gray-600 mb-1">Notes</label>
+                <textarea id="supplier-notes" rows={2} value={form.notes ?? ''}
                   onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
                   placeholder="Optional notes…"
                   className={inp + ' resize-none'} />

@@ -203,31 +203,31 @@ export default function PayersPage() {
             </h3>
             <form onSubmit={handleSave} className="space-y-3">
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Name *</label>
-                <input required value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                <label htmlFor="payer-name" className="block text-xs text-gray-600 mb-1">Name *</label>
+                <input id="payer-name" required value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                   placeholder="e.g. NHIA Ghana" className={inp} />
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Type *</label>
-                <select value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))} className={inp}>
+                <label htmlFor="payer-type" className="block text-xs text-gray-600 mb-1">Type *</label>
+                <select id="payer-type" value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))} className={inp}>
                   {PAYER_TYPES.map((t) => (
                     <option key={t} value={t}>{PAYER_TYPE_LABELS[t]}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Contact Phone</label>
-                <input value={form.contactPhone ?? ''} onChange={(e) => setForm((f) => ({ ...f, contactPhone: e.target.value }))}
+                <label htmlFor="payer-contact-phone" className="block text-xs text-gray-600 mb-1">Contact Phone</label>
+                <input id="payer-contact-phone" value={form.contactPhone ?? ''} onChange={(e) => setForm((f) => ({ ...f, contactPhone: e.target.value }))}
                   placeholder="+233 …" className={inp} />
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Contact Email</label>
-                <input type="email" value={form.contactEmail ?? ''} onChange={(e) => setForm((f) => ({ ...f, contactEmail: e.target.value }))}
+                <label htmlFor="payer-contact-email" className="block text-xs text-gray-600 mb-1">Contact Email</label>
+                <input id="payer-contact-email" type="email" value={form.contactEmail ?? ''} onChange={(e) => setForm((f) => ({ ...f, contactEmail: e.target.value }))}
                   placeholder="claims@payer.com" className={inp} />
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Notes</label>
-                <textarea rows={2} value={form.notes ?? ''} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+                <label htmlFor="payer-notes" className="block text-xs text-gray-600 mb-1">Notes</label>
+                <textarea id="payer-notes" rows={2} value={form.notes ?? ''} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
                   className={`${inp} resize-none`} />
               </div>
               <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">

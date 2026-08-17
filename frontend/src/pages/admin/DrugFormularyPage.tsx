@@ -324,7 +324,7 @@ export default function DrugFormularyPage() {
               <h3 className="text-lg font-bold text-gray-900">
                 {editingDrug ? 'Edit Drug details' : 'Add New Drug to Formulary'}
               </h3>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => setShowModal(false)} aria-label="Close" className="text-gray-400 hover:text-gray-600">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -333,8 +333,9 @@ export default function DrugFormularyPage() {
             <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Brand/Trade Name *</label>
+                  <label htmlFor="drug-name" className="block text-xs font-semibold text-gray-600 mb-1">Brand/Trade Name *</label>
                   <input
+                    id="drug-name"
                     required
                     maxLength={100}
                     value={name}
@@ -344,8 +345,9 @@ export default function DrugFormularyPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Generic Name (Active Ingredient)</label>
+                  <label htmlFor="drug-generic-name" className="block text-xs font-semibold text-gray-600 mb-1">Generic Name (Active Ingredient)</label>
                   <input
+                    id="drug-generic-name"
                     maxLength={100}
                     value={genericName}
                     onChange={e => setGenericName(e.target.value)}
@@ -357,8 +359,9 @@ export default function DrugFormularyPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Dosage Form *</label>
+                  <label htmlFor="drug-dosage-form" className="block text-xs font-semibold text-gray-600 mb-1">Dosage Form *</label>
                   <select
+                    id="drug-dosage-form"
                     value={dosageForm}
                     onChange={e => setDosageForm(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
@@ -369,8 +372,9 @@ export default function DrugFormularyPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Strength (e.g. 500mg, 10ml)</label>
+                  <label htmlFor="drug-strength" className="block text-xs font-semibold text-gray-600 mb-1">Strength (e.g. 500mg, 10ml)</label>
                   <input
+                    id="drug-strength"
                     maxLength={50}
                     value={strength}
                     onChange={e => setStrength(e.target.value)}
@@ -379,8 +383,9 @@ export default function DrugFormularyPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Dispensing Unit *</label>
+                  <label htmlFor="drug-unit" className="block text-xs font-semibold text-gray-600 mb-1">Dispensing Unit *</label>
                   <select
+                    id="drug-unit"
                     value={unit}
                     onChange={e => setUnit(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
@@ -394,8 +399,9 @@ export default function DrugFormularyPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Therapeutic Category *</label>
+                  <label htmlFor="drug-category" className="block text-xs font-semibold text-gray-600 mb-1">Therapeutic Category *</label>
                   <select
+                    id="drug-category"
                     value={category}
                     onChange={e => setCategory(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
@@ -406,8 +412,9 @@ export default function DrugFormularyPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Reorder Stock Threshold *</label>
+                  <label htmlFor="drug-reorder-threshold" className="block text-xs font-semibold text-gray-600 mb-1">Reorder Stock Threshold *</label>
                   <input
+                    id="drug-reorder-threshold"
                     type="number"
                     min={0}
                     required
@@ -420,8 +427,9 @@ export default function DrugFormularyPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Unit Cost (GHS) *</label>
+                  <label htmlFor="drug-unit-cost" className="block text-xs font-semibold text-gray-600 mb-1">Unit Cost (GHS) *</label>
                   <input
+                    id="drug-unit-cost"
                     type="number"
                     min={0}
                     step="0.01"
@@ -433,8 +441,9 @@ export default function DrugFormularyPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Standard Selling Price (GHS) *</label>
+                  <label htmlFor="drug-selling-price" className="block text-xs font-semibold text-gray-600 mb-1">Standard Selling Price (GHS) *</label>
                   <input
+                    id="drug-selling-price"
                     type="number"
                     min={0}
                     step="0.01"

@@ -60,8 +60,9 @@ export default function InsuranceClaimsPage() {
       {/* Filters */}
       <div className="bg-white border border-gray-200 rounded-lg p-4 mb-6 flex flex-wrap gap-4">
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Status</label>
+          <label htmlFor="claims-status" className="block text-xs text-gray-500 mb-1">Status</label>
           <select
+            id="claims-status"
             value={status}
             onChange={(e) => setStatus(e.target.value)}
             className="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -73,8 +74,9 @@ export default function InsuranceClaimsPage() {
           </select>
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Payer</label>
+          <label htmlFor="claims-payer" className="block text-xs text-gray-500 mb-1">Payer</label>
           <select
+            id="claims-payer"
             value={payerId}
             onChange={(e) => setPayerId(e.target.value)}
             className="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"

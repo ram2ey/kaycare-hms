@@ -210,20 +210,20 @@ export default function ReferralDetailPage() {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
               <h2 className="font-semibold text-gray-900">Edit Referral</h2>
-              <button onClick={() => setShowEdit(false)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
+              <button onClick={() => setShowEdit(false)} aria-label="Close" className="text-gray-400 hover:text-gray-600 text-xl">×</button>
             </div>
             <div className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Type</label>
-                  <select className={inp} value={editForm.referralType} onChange={e => setEditForm(f => f && ({ ...f, referralType: e.target.value }))}>
+                  <label htmlFor="edit-referral-type" className="block text-xs font-medium text-gray-600 mb-1">Type</label>
+                  <select id="edit-referral-type" className={inp} value={editForm.referralType} onChange={e => setEditForm(f => f && ({ ...f, referralType: e.target.value }))}>
                     <option value="Internal">Internal</option>
                     <option value="External">External</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Urgency</label>
-                  <select className={inp} value={editForm.urgency} onChange={e => setEditForm(f => f && ({ ...f, urgency: e.target.value }))}>
+                  <label htmlFor="edit-referral-urgency" className="block text-xs font-medium text-gray-600 mb-1">Urgency</label>
+                  <select id="edit-referral-urgency" className={inp} value={editForm.urgency} onChange={e => setEditForm(f => f && ({ ...f, urgency: e.target.value }))}>
                     <option value="Routine">Routine</option>
                     <option value="Urgent">Urgent</option>
                     <option value="Emergency">Emergency</option>
@@ -233,30 +233,30 @@ export default function ReferralDetailPage() {
               {editForm.referralType === 'Internal' ? (
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Referred-to Doctor</label>
-                    <select className={inp} value={editForm.referredToDoctorUserId ?? ''} onChange={e => setEditForm(f => f && ({ ...f, referredToDoctorUserId: e.target.value || undefined }))}>
+                    <label htmlFor="edit-referral-doctor" className="block text-xs font-medium text-gray-600 mb-1">Referred-to Doctor</label>
+                    <select id="edit-referral-doctor" className={inp} value={editForm.referredToDoctorUserId ?? ''} onChange={e => setEditForm(f => f && ({ ...f, referredToDoctorUserId: e.target.value || undefined }))}>
                       <option value="">Select…</option>
                       {doctors.map(d => <option key={d.userId} value={d.userId}>{d.fullName}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Department</label>
-                    <input className={inp} value={editForm.referredToDepartment ?? ''} onChange={e => setEditForm(f => f && ({ ...f, referredToDepartment: e.target.value || undefined }))} />
+                    <label htmlFor="edit-referral-department" className="block text-xs font-medium text-gray-600 mb-1">Department</label>
+                    <input id="edit-referral-department" className={inp} value={editForm.referredToDepartment ?? ''} onChange={e => setEditForm(f => f && ({ ...f, referredToDepartment: e.target.value || undefined }))} />
                   </div>
                 </div>
               ) : (
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">External Facility</label>
-                  <input className={inp} value={editForm.externalFacility ?? ''} onChange={e => setEditForm(f => f && ({ ...f, externalFacility: e.target.value || undefined }))} />
+                  <label htmlFor="edit-referral-external-facility" className="block text-xs font-medium text-gray-600 mb-1">External Facility</label>
+                  <input id="edit-referral-external-facility" className={inp} value={editForm.externalFacility ?? ''} onChange={e => setEditForm(f => f && ({ ...f, externalFacility: e.target.value || undefined }))} />
                 </div>
               )}
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Reason *</label>
-                <textarea className={`${inp} resize-none`} rows={3} value={editForm.reason} onChange={e => setEditForm(f => f && ({ ...f, reason: e.target.value }))} />
+                <label htmlFor="edit-referral-reason" className="block text-xs font-medium text-gray-600 mb-1">Reason *</label>
+                <textarea id="edit-referral-reason" className={`${inp} resize-none`} rows={3} value={editForm.reason} onChange={e => setEditForm(f => f && ({ ...f, reason: e.target.value }))} />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Clinical Notes</label>
-                <textarea className={`${inp} resize-none`} rows={3} value={editForm.clinicalNotes ?? ''} onChange={e => setEditForm(f => f && ({ ...f, clinicalNotes: e.target.value || undefined }))} />
+                <label htmlFor="edit-referral-clinical-notes" className="block text-xs font-medium text-gray-600 mb-1">Clinical Notes</label>
+                <textarea id="edit-referral-clinical-notes" className={`${inp} resize-none`} rows={3} value={editForm.clinicalNotes ?? ''} onChange={e => setEditForm(f => f && ({ ...f, clinicalNotes: e.target.value || undefined }))} />
               </div>
             </div>
             <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3">
@@ -275,7 +275,7 @@ export default function ReferralDetailPage() {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
               <h2 className="font-semibold text-gray-900">Respond to Referral</h2>
-              <button onClick={() => setShowRespond(false)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
+              <button onClick={() => setShowRespond(false)} aria-label="Close" className="text-gray-400 hover:text-gray-600 text-xl">×</button>
             </div>
             <div className="p-6 space-y-4">
               <div>
@@ -295,8 +295,8 @@ export default function ReferralDetailPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
-                <textarea className={`${inp} resize-none`} rows={3} value={respondNotes} onChange={e => setRespondNotes(e.target.value)} placeholder="Clinical response, outcome, follow-up plan…" />
+                <label htmlFor="respond-notes" className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
+                <textarea id="respond-notes" className={`${inp} resize-none`} rows={3} value={respondNotes} onChange={e => setRespondNotes(e.target.value)} placeholder="Clinical response, outcome, follow-up plan…" />
               </div>
             </div>
             <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3">

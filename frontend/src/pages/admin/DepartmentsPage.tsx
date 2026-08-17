@@ -118,8 +118,9 @@ export default function DepartmentsPage() {
             </p>
             <form onSubmit={handleRename} className="space-y-3">
               <div>
-                <label className="block text-xs text-gray-600 mb-1">New Name *</label>
+                <label htmlFor="dept-new-name" className="block text-xs text-gray-600 mb-1">New Name *</label>
                 <input
+                  id="dept-new-name"
                   required
                   value={newName}
                   onChange={e => setNewName(e.target.value)}

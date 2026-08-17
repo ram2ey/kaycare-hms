@@ -242,8 +242,9 @@ export function Hl7InboxPage() {
             {/* Input helpers */}
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div>
-                <label className="block text-gray-600 font-semibold mb-1">Accession Number</label>
+                <label htmlFor="hl7-sim-accession" className="block text-gray-600 font-semibold mb-1">Accession Number</label>
                 <input
+                  id="hl7-sim-accession"
                   type="text"
                   value={simAccession}
                   onChange={(e) => setSimAccession(e.target.value)}
@@ -252,8 +253,9 @@ export function Hl7InboxPage() {
                 />
               </div>
               <div>
-                <label className="block text-gray-600 font-semibold mb-1">Patient MRN</label>
+                <label htmlFor="hl7-sim-mrn" className="block text-gray-600 font-semibold mb-1">Patient MRN</label>
                 <input
+                  id="hl7-sim-mrn"
                   type="text"
                   value={simMrn}
                   onChange={(e) => setSimMrn(e.target.value)}
@@ -262,8 +264,9 @@ export function Hl7InboxPage() {
                 />
               </div>
               <div>
-                <label className="block text-gray-600 font-semibold mb-1">Patient Name</label>
+                <label htmlFor="hl7-sim-name" className="block text-gray-600 font-semibold mb-1">Patient Name</label>
                 <input
+                  id="hl7-sim-name"
                   type="text"
                   value={simName}
                   onChange={(e) => setSimName(e.target.value)}
@@ -272,8 +275,9 @@ export function Hl7InboxPage() {
                 />
               </div>
               <div>
-                <label className="block text-gray-600 font-semibold mb-1">Doctor ID</label>
+                <label htmlFor="hl7-sim-doctor" className="block text-gray-600 font-semibold mb-1">Doctor ID</label>
                 <input
+                  id="hl7-sim-doctor"
                   type="text"
                   value={simDoctor}
                   onChange={(e) => setSimDoctor(e.target.value)}
@@ -311,8 +315,9 @@ export function Hl7InboxPage() {
             {/* Raw Message Textarea */}
             <form onSubmit={handleSimulateSubmit} className="space-y-3 pt-2">
               <div>
-                <label className="block text-gray-600 font-semibold text-xs mb-1">Raw HL7 ORU^R01 Payload</label>
+                <label htmlFor="hl7-sim-raw" className="block text-gray-600 font-semibold text-xs mb-1">Raw HL7 ORU^R01 Payload</label>
                 <textarea
+                  id="hl7-sim-raw"
                   rows={8}
                   value={rawHl7}
                   onChange={(e) => setRawHl7(e.target.value)}

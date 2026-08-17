@@ -30,11 +30,11 @@ export default function ReportsPage() {
           <p className="text-gray-500 text-sm mt-0.5">Operational and clinical performance overview</p>
         </div>
         <div className="flex items-center gap-2 text-sm">
-          <label className="text-gray-500">From</label>
-          <input type="date" value={from} max={to} onChange={e => setFrom(e.target.value)}
+          <label htmlFor="reports-from" className="text-gray-500">From</label>
+          <input id="reports-from" type="date" value={from} max={to} onChange={e => setFrom(e.target.value)}
             className="px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          <label className="text-gray-500">To</label>
-          <input type="date" value={to} min={from} max={todayStr()} onChange={e => setTo(e.target.value)}
+          <label htmlFor="reports-to" className="text-gray-500">To</label>
+          <input id="reports-to" type="date" value={to} min={from} max={todayStr()} onChange={e => setTo(e.target.value)}
             className="px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
         </div>
       </div>

@@ -338,7 +338,7 @@ export default function PrescriptionDetailPage() {
                 </h3>
                 <p className="text-rose-105 text-xs mt-0.5">Automated screening for drug interactions and counseling rules.</p>
               </div>
-              <button onClick={() => setSafetyOpen(false)} className="text-white hover:text-rose-105 text-2xl font-bold cursor-pointer">×</button>
+              <button onClick={() => setSafetyOpen(false)} aria-label="Close" className="text-white hover:text-rose-105 text-2xl font-bold cursor-pointer">×</button>
             </div>
             <div className="flex-1 p-6 overflow-y-auto prose max-w-none text-sm text-gray-700">
               {safetyLoading ? (
@@ -429,8 +429,9 @@ function PartialDispenseModal({
                     </p>
                   </div>
                   <div className="shrink-0">
-                    <label className="block text-xs text-gray-500 mb-1 text-right">Qty now</label>
+                    <label htmlFor={`dispense-qty-${item.itemId}`} className="block text-xs text-gray-500 mb-1 text-right">Qty now</label>
                     <input
+                      id={`dispense-qty-${item.itemId}`}
                       type="number"
                       min={0}
                       max={remaining}
@@ -450,8 +451,9 @@ function PartialDispenseModal({
         </div>
 
         <div className="mb-4">
-          <label className="block text-sm text-gray-600 mb-1">Pharmacist Notes (optional)</label>
+          <label htmlFor="dispense-notes" className="block text-sm text-gray-600 mb-1">Pharmacist Notes (optional)</label>
           <textarea
+            id="dispense-notes"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={2}

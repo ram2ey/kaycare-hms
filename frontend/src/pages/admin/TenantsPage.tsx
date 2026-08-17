@@ -232,22 +232,22 @@ export default function TenantsPage() {
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Account & Facility Details</p>
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2">
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Tenant Name *</label>
-                  <input type="text" value={createForm.tenantName}
+                  <label htmlFor="tenant-create-name" className="block text-xs font-medium text-gray-600 mb-1">Tenant Name *</label>
+                  <input id="tenant-create-name" type="text" value={createForm.tenantName}
                     onChange={e => setCreateForm(f => ({ ...f, tenantName: e.target.value }))}
                     placeholder="e.g. City General Hospital"
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Tenant Code *</label>
-                  <input type="text" value={createForm.tenantCode}
+                  <label htmlFor="tenant-create-code" className="block text-xs font-medium text-gray-600 mb-1">Tenant Code *</label>
+                  <input id="tenant-create-code" type="text" value={createForm.tenantCode}
                     onChange={e => setCreateForm(f => ({ ...f, tenantCode: e.target.value.toLowerCase().replace(/\s/g, '') }))}
                     placeholder="e.g. citygeneral"
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">SaaS Plan</label>
-                  <select value={createForm.subscriptionPlan}
+                  <label htmlFor="tenant-create-plan" className="block text-xs font-medium text-gray-600 mb-1">SaaS Plan</label>
+                  <select id="tenant-create-plan" value={createForm.subscriptionPlan}
                     onChange={e => setCreateForm(f => ({ ...f, subscriptionPlan: e.target.value }))}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                     {SUBSCRIPTION_PLANS.map(p => <option key={p}>{p}</option>)}
@@ -274,8 +274,8 @@ export default function TenantsPage() {
               {createForm.isAiEnabled && (
                 <div className="grid grid-cols-2 gap-3 bg-purple-50/50 p-3 rounded-xl border border-purple-100">
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">AI Tier</label>
-                    <select value={createForm.allowedAiTiers}
+                    <label htmlFor="tenant-create-ai-tier" className="block text-xs font-medium text-gray-700 mb-1">AI Tier</label>
+                    <select id="tenant-create-ai-tier" value={createForm.allowedAiTiers}
                       onChange={e => setCreateForm(f => ({ ...f, allowedAiTiers: e.target.value }))}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
                       <option value="Standard">Standard (Free Models)</option>
@@ -284,15 +284,15 @@ export default function TenantsPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Monthly AI Quota</label>
-                    <input type="number" min={1} value={createForm.aiMonthlyQuota}
+                    <label htmlFor="tenant-create-ai-quota" className="block text-xs font-medium text-gray-700 mb-1">Monthly AI Quota</label>
+                    <input id="tenant-create-ai-quota" type="number" min={1} value={createForm.aiMonthlyQuota}
                       onChange={e => setCreateForm(f => ({ ...f, aiMonthlyQuota: parseInt(e.target.value) || 500 }))}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
                   </div>
                   {createForm.allowedAiTiers === 'Enterprise' && (
                     <div className="col-span-2">
-                      <label className="block text-xs font-medium text-purple-900 mb-1">Custom OpenRouter API Key (BYOK)</label>
-                      <input type="password" value={createForm.customOpenRouterKey}
+                      <label htmlFor="tenant-create-openrouter-key" className="block text-xs font-medium text-purple-900 mb-1">Custom OpenRouter API Key (BYOK)</label>
+                      <input id="tenant-create-openrouter-key" type="password" value={createForm.customOpenRouterKey}
                         onChange={e => setCreateForm(f => ({ ...f, customOpenRouterKey: e.target.value }))}
                         placeholder="sk-or-v1-..."
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-purple-500" />
@@ -306,21 +306,21 @@ export default function TenantsPage() {
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">First Admin User</p>
               <div className="grid grid-cols-2 gap-3 mt-2">
                 <div className="col-span-2">
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Admin Email *</label>
-                  <input type="email" value={createForm.adminEmail}
+                  <label htmlFor="tenant-create-admin-email" className="block text-xs font-medium text-gray-600 mb-1">Admin Email *</label>
+                  <input id="tenant-create-admin-email" type="email" value={createForm.adminEmail}
                     onChange={e => setCreateForm(f => ({ ...f, adminEmail: e.target.value }))}
                     placeholder="admin@hospital.com"
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">First Name</label>
-                  <input type="text" value={createForm.adminFirstName}
+                  <label htmlFor="tenant-create-admin-firstname" className="block text-xs font-medium text-gray-600 mb-1">First Name</label>
+                  <input id="tenant-create-admin-firstname" type="text" value={createForm.adminFirstName}
                     onChange={e => setCreateForm(f => ({ ...f, adminFirstName: e.target.value }))}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Last Name</label>
-                  <input type="text" value={createForm.adminLastName}
+                  <label htmlFor="tenant-create-admin-lastname" className="block text-xs font-medium text-gray-600 mb-1">Last Name</label>
+                  <input id="tenant-create-admin-lastname" type="text" value={createForm.adminLastName}
                     onChange={e => setCreateForm(f => ({ ...f, adminLastName: e.target.value }))}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
@@ -346,22 +346,22 @@ export default function TenantsPage() {
             <h2 className="text-lg font-semibold text-gray-900">Edit Tenant & AI — {(modal as TenantResponse).tenantName}</h2>
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2">
-                <label className="block text-xs font-medium text-gray-600 mb-1">Tenant Name *</label>
-                <input type="text" value={editForm.tenantName}
+                <label htmlFor="tenant-edit-name" className="block text-xs font-medium text-gray-600 mb-1">Tenant Name *</label>
+                <input id="tenant-edit-name" type="text" value={editForm.tenantName}
                   onChange={e => setEditForm(f => ({ ...f, tenantName: e.target.value }))}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Plan</label>
-                <select value={editForm.subscriptionPlan}
+                <label htmlFor="tenant-edit-plan" className="block text-xs font-medium text-gray-600 mb-1">Plan</label>
+                <select id="tenant-edit-plan" value={editForm.subscriptionPlan}
                   onChange={e => setEditForm(f => ({ ...f, subscriptionPlan: e.target.value }))}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                   {SUBSCRIPTION_PLANS.map(p => <option key={p}>{p}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Max Users</label>
-                <input type="number" min={1} value={editForm.maxUsers}
+                <label htmlFor="tenant-edit-maxusers" className="block text-xs font-medium text-gray-600 mb-1">Max Users</label>
+                <input id="tenant-edit-maxusers" type="number" min={1} value={editForm.maxUsers}
                   onChange={e => setEditForm(f => ({ ...f, maxUsers: parseInt(e.target.value) || 50 }))}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
@@ -385,8 +385,8 @@ export default function TenantsPage() {
               {editForm.isAiEnabled && (
                 <div className="grid grid-cols-2 gap-3 bg-purple-50/50 p-3 rounded-xl border border-purple-100">
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">AI Tier</label>
-                    <select value={editForm.allowedAiTiers}
+                    <label htmlFor="tenant-edit-ai-tier" className="block text-xs font-medium text-gray-700 mb-1">AI Tier</label>
+                    <select id="tenant-edit-ai-tier" value={editForm.allowedAiTiers}
                       onChange={e => setEditForm(f => ({ ...f, allowedAiTiers: e.target.value }))}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
                       <option value="Standard">Standard (Free Models)</option>
@@ -395,15 +395,15 @@ export default function TenantsPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Monthly AI Quota</label>
-                    <input type="number" min={1} value={editForm.aiMonthlyQuota}
+                    <label htmlFor="tenant-edit-ai-quota" className="block text-xs font-medium text-gray-700 mb-1">Monthly AI Quota</label>
+                    <input id="tenant-edit-ai-quota" type="number" min={1} value={editForm.aiMonthlyQuota}
                       onChange={e => setEditForm(f => ({ ...f, aiMonthlyQuota: parseInt(e.target.value) || 500 }))}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
                   </div>
                   {editForm.allowedAiTiers === 'Enterprise' && (
                     <div className="col-span-2">
-                      <label className="block text-xs font-medium text-purple-900 mb-1">Custom OpenRouter Key (BYOK)</label>
-                      <input type="password" value={editForm.customOpenRouterKey}
+                      <label htmlFor="tenant-edit-openrouter-key" className="block text-xs font-medium text-purple-900 mb-1">Custom OpenRouter Key (BYOK)</label>
+                      <input id="tenant-edit-openrouter-key" type="password" value={editForm.customOpenRouterKey}
                         onChange={e => setEditForm(f => ({ ...f, customOpenRouterKey: e.target.value }))}
                         placeholder={(modal as TenantResponse).hasCustomOpenRouterKey ? 'Leave blank to keep existing key' : 'sk-or-v1-...'}
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-purple-500" />

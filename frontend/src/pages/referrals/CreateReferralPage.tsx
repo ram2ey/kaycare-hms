@@ -72,11 +72,11 @@ export default function CreateReferralPage() {
       <form className="space-y-5 bg-white border border-gray-200 rounded-xl p-6">
         {/* Patient */}
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Patient *</label>
+          <label htmlFor="referral-patient" className="block text-xs font-medium text-gray-600 mb-1">Patient *</label>
           {prefillPatient ? (
-            <input className={inp} value={form.patientId} readOnly />
+            <input id="referral-patient" className={inp} value={form.patientId} readOnly />
           ) : (
-            <select className={inp} value={form.patientId} onChange={e => set('patientId', e.target.value)} required>
+            <select id="referral-patient" className={inp} value={form.patientId} onChange={e => set('patientId', e.target.value)} required>
               <option value="">Select patient…</option>
               {patients.map(p => (
                 <option key={p.patientId} value={p.patientId}>{p.fullName} — {p.medicalRecordNumber}</option>
@@ -88,15 +88,15 @@ export default function CreateReferralPage() {
         {/* Referral type */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Referral Type *</label>
-            <select className={inp} value={form.referralType} onChange={e => setForm(f => ({ ...f, referralType: e.target.value }))}>
+            <label htmlFor="referral-type" className="block text-xs font-medium text-gray-600 mb-1">Referral Type *</label>
+            <select id="referral-type" className={inp} value={form.referralType} onChange={e => setForm(f => ({ ...f, referralType: e.target.value }))}>
               <option value="Internal">Internal</option>
               <option value="External">External</option>
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Urgency *</label>
-            <select className={inp} value={form.urgency} onChange={e => setForm(f => ({ ...f, urgency: e.target.value }))}>
+            <label htmlFor="referral-urgency" className="block text-xs font-medium text-gray-600 mb-1">Urgency *</label>
+            <select id="referral-urgency" className={inp} value={form.urgency} onChange={e => setForm(f => ({ ...f, urgency: e.target.value }))}>
               <option value="Routine">Routine</option>
               <option value="Urgent">Urgent</option>
               <option value="Emergency">Emergency</option>
@@ -108,8 +108,8 @@ export default function CreateReferralPage() {
         {form.referralType === 'Internal' ? (
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Referred-to Doctor</label>
-              <select className={inp} value={form.referredToDoctorUserId ?? ''} onChange={e => set('referredToDoctorUserId', e.target.value)}>
+              <label htmlFor="referral-doctor" className="block text-xs font-medium text-gray-600 mb-1">Referred-to Doctor</label>
+              <select id="referral-doctor" className={inp} value={form.referredToDoctorUserId ?? ''} onChange={e => set('referredToDoctorUserId', e.target.value)}>
                 <option value="">Select doctor…</option>
                 {doctors.map(d => (
                   <option key={d.userId} value={d.userId}>{d.fullName}</option>
@@ -117,27 +117,27 @@ export default function CreateReferralPage() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Department</label>
-              <input className={inp} placeholder="e.g. Cardiology" value={form.referredToDepartment ?? ''} onChange={e => set('referredToDepartment', e.target.value)} />
+              <label htmlFor="referral-department" className="block text-xs font-medium text-gray-600 mb-1">Department</label>
+              <input id="referral-department" className={inp} placeholder="e.g. Cardiology" value={form.referredToDepartment ?? ''} onChange={e => set('referredToDepartment', e.target.value)} />
             </div>
           </div>
         ) : (
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">External Facility</label>
-            <input className={inp} placeholder="e.g. Korle-Bu Teaching Hospital" value={form.externalFacility ?? ''} onChange={e => set('externalFacility', e.target.value)} />
+            <label htmlFor="referral-external-facility" className="block text-xs font-medium text-gray-600 mb-1">External Facility</label>
+            <input id="referral-external-facility" className={inp} placeholder="e.g. Korle-Bu Teaching Hospital" value={form.externalFacility ?? ''} onChange={e => set('externalFacility', e.target.value)} />
           </div>
         )}
 
         {/* Reason */}
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Reason for Referral *</label>
-          <textarea className={`${inp} resize-none`} rows={3} required value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))} placeholder="Clinical indication for referral…" />
+          <label htmlFor="referral-reason" className="block text-xs font-medium text-gray-600 mb-1">Reason for Referral *</label>
+          <textarea id="referral-reason" className={`${inp} resize-none`} rows={3} required value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))} placeholder="Clinical indication for referral…" />
         </div>
 
         {/* Clinical notes */}
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Clinical Notes / History</label>
-          <textarea className={`${inp} resize-none`} rows={4} value={form.clinicalNotes ?? ''} onChange={e => set('clinicalNotes', e.target.value)} placeholder="Relevant history, findings, current medications…" />
+          <label htmlFor="referral-clinical-notes" className="block text-xs font-medium text-gray-600 mb-1">Clinical Notes / History</label>
+          <textarea id="referral-clinical-notes" className={`${inp} resize-none`} rows={4} value={form.clinicalNotes ?? ''} onChange={e => set('clinicalNotes', e.target.value)} placeholder="Relevant history, findings, current medications…" />
         </div>
 
         <div className="flex justify-end gap-3 pt-2">

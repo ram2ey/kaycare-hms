@@ -176,30 +176,30 @@ export default function OverviewTab({ patient, allergies, onAllergyChange }: Pro
           {showAllergyForm && (
             <form onSubmit={handleAddAllergy} className="grid grid-cols-4 gap-3 mb-4 p-4 bg-gray-50 rounded-lg">
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Type</label>
-                <select value={allergyForm.allergyType}
+                <label htmlFor="allergy-type" className="block text-xs text-gray-600 mb-1">Type</label>
+                <select id="allergy-type" value={allergyForm.allergyType}
                   onChange={e => setAllergyForm(f => ({ ...f, allergyType: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                   {['Drug','Food','Environmental','Other'].map(t => <option key={t}>{t}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Allergen *</label>
-                <input required value={allergyForm.allergenName}
+                <label htmlFor="allergy-name" className="block text-xs text-gray-600 mb-1">Allergen *</label>
+                <input id="allergy-name" required value={allergyForm.allergenName}
                   onChange={e => setAllergyForm(f => ({ ...f, allergenName: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" placeholder="e.g. Penicillin" />
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Severity</label>
-                <select value={allergyForm.severity}
+                <label htmlFor="allergy-severity" className="block text-xs text-gray-600 mb-1">Severity</label>
+                <select id="allergy-severity" value={allergyForm.severity}
                   onChange={e => setAllergyForm(f => ({ ...f, severity: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                   {['Mild','Moderate','Severe','Life-threatening'].map(s => <option key={s}>{s}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Reaction</label>
-                <input value={allergyForm.reaction}
+                <label htmlFor="allergy-reaction" className="block text-xs text-gray-600 mb-1">Reaction</label>
+                <input id="allergy-reaction" value={allergyForm.reaction}
                   onChange={e => setAllergyForm(f => ({ ...f, reaction: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" placeholder="e.g. Rash" />
               </div>

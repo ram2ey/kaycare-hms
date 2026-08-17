@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, cloneElement, isValidElement, useId } from 'react';
+import type { ReactElement } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { getDischargeSummary, updateDischargeSummary, downloadDischargeSummaryReport } from '../../api/inpatient';
 import type { DischargeSummaryResponse, UpdateDischargeSummaryRequest } from '../../types/inpatient';
@@ -169,7 +170,7 @@ export default function DischargeSummaryPage() {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl my-8">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
               <h2 className="font-semibold text-gray-900">Edit Discharge Summary</h2>
-              <button onClick={() => setEditing(false)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
+              <button onClick={() => setEditing(false)} aria-label="Close" className="text-gray-400 hover:text-gray-600 text-xl">×</button>
             </div>
             <div className="px-6 py-4 space-y-4 max-h-[70vh] overflow-y-auto">
               {saveError && (
@@ -196,7 +197,7 @@ export default function DischargeSummaryPage() {
                   onChange={e => setForm(f => ({ ...f, dischargeMedications: e.target.value }))} />
               </FormField>
 
-              <FormField label="Condition at Discharge">
+              <FormField label="Condition at Discharge" group>
                 <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => setForm(f => ({ ...f, dischargeCondition: '' }))}
@@ -258,11 +259,26 @@ function Section({ title, text }: { title: string; text: string | null | undefin
   );
 }
 
-function FormField({ label, children }: { label: string; children: React.ReactNode }) {
+function FormField({ label, children, group = false }: { label: string; children: React.ReactNode; group?: boolean }) {
+  const id = useId();
+  if (group) {
+    const groupField = isValidElement(children)
+      ? cloneElement(children as ReactElement<{ role?: string; 'aria-labelledby'?: string }>, { role: 'group', 'aria-labelledby': id })
+      : children;
+    return (
+      <div>
+        <span id={id} className="block text-xs font-medium text-gray-600 mb-1">{label}</span>
+        {groupField}
+      </div>
+    );
+  }
+  const field = isValidElement(children)
+    ? cloneElement(children as ReactElement<{ id?: string }>, { id })
+    : children;
   return (
     <div>
-      <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
-      {children}
+      <label htmlFor={id} className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+      {field}
     </div>
   );
 }

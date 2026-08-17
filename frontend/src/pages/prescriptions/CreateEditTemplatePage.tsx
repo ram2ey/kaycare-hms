@@ -144,8 +144,9 @@ export default function CreateEditTemplatePage({ mode }: Props) {
         <section className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
           <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Template Details</h3>
           <div>
-            <label className="block text-xs text-gray-600 mb-1">Template Name *</label>
+            <label htmlFor="template-name" className="block text-xs text-gray-600 mb-1">Template Name *</label>
             <input
+              id="template-name"
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -154,8 +155,9 @@ export default function CreateEditTemplatePage({ mode }: Props) {
             />
           </div>
           <div>
-            <label className="block text-xs text-gray-600 mb-1">Description</label>
+            <label htmlFor="template-description" className="block text-xs text-gray-600 mb-1">Description</label>
             <input
+              id="template-description"
               value={description}
               onChange={(e) => setDesc(e.target.value)}
               placeholder="Optional description"
@@ -204,8 +206,9 @@ export default function CreateEditTemplatePage({ mode }: Props) {
 
                 <div className="grid grid-cols-3 gap-3">
                   <div className="col-span-2">
-                    <label className="block text-xs text-gray-600 mb-1">Medication Name *</label>
+                    <label htmlFor={`item-${i}-medication-name`} className="block text-xs text-gray-600 mb-1">Medication Name *</label>
                     <MedicationAutocomplete
+                      id={`item-${i}-medication-name`}
                       value={item.medicationName}
                       onChange={(v) => updateItem(i, 'medicationName', v)}
                       onSelect={(med) => handleMedicationSelect(i, med)}
@@ -214,13 +217,13 @@ export default function CreateEditTemplatePage({ mode }: Props) {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-600 mb-1">Generic Name</label>
-                    <input value={item.genericName ?? ''} onChange={(e) => updateItem(i, 'genericName', e.target.value)} placeholder="e.g. Amoxicillin" className={inp} />
+                    <label htmlFor={`item-${i}-generic-name`} className="block text-xs text-gray-600 mb-1">Generic Name</label>
+                    <input id={`item-${i}-generic-name`} value={item.genericName ?? ''} onChange={(e) => updateItem(i, 'genericName', e.target.value)} placeholder="e.g. Amoxicillin" className={inp} />
                   </div>
 
                   <div>
-                    <label className="block text-xs text-gray-600 mb-1">Strength *</label>
-                    <input required value={item.strength} onChange={(e) => updateItem(i, 'strength', e.target.value)} placeholder="e.g. 500mg" className={inp} />
+                    <label htmlFor={`item-${i}-strength`} className="block text-xs text-gray-600 mb-1">Strength *</label>
+                    <input id={`item-${i}-strength`} required value={item.strength} onChange={(e) => updateItem(i, 'strength', e.target.value)} placeholder="e.g. 500mg" className={inp} />
                     {selectedMeds[i] && selectedMeds[i]!.strengths.length > 1 && (
                       <div className="flex flex-wrap gap-1 mt-1">
                         {selectedMeds[i]!.strengths.map((s) => (
@@ -233,34 +236,34 @@ export default function CreateEditTemplatePage({ mode }: Props) {
                     )}
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-600 mb-1">Dosage Form *</label>
-                    <select value={item.dosageForm} onChange={(e) => updateItem(i, 'dosageForm', e.target.value)} className={inp}>
+                    <label htmlFor={`item-${i}-dosage-form`} className="block text-xs text-gray-600 mb-1">Dosage Form *</label>
+                    <select id={`item-${i}-dosage-form`} value={item.dosageForm} onChange={(e) => updateItem(i, 'dosageForm', e.target.value)} className={inp}>
                       {DOSAGE_FORMS.map((f) => <option key={f}>{f}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-600 mb-1">Frequency *</label>
-                    <select value={item.frequency} onChange={(e) => updateItem(i, 'frequency', e.target.value)} className={inp}>
+                    <label htmlFor={`item-${i}-frequency`} className="block text-xs text-gray-600 mb-1">Frequency *</label>
+                    <select id={`item-${i}-frequency`} value={item.frequency} onChange={(e) => updateItem(i, 'frequency', e.target.value)} className={inp}>
                       {FREQUENCIES.map((f) => <option key={f}>{f}</option>)}
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-xs text-gray-600 mb-1">Duration (days) *</label>
-                    <input required type="number" min={1} max={365} value={item.durationDays} onChange={(e) => updateItem(i, 'durationDays', Number(e.target.value))} className={inp} />
+                    <label htmlFor={`item-${i}-duration`} className="block text-xs text-gray-600 mb-1">Duration (days) *</label>
+                    <input id={`item-${i}-duration`} required type="number" min={1} max={365} value={item.durationDays} onChange={(e) => updateItem(i, 'durationDays', Number(e.target.value))} className={inp} />
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-600 mb-1">Quantity *</label>
-                    <input required type="number" min={1} max={9999} value={item.quantity} onChange={(e) => updateItem(i, 'quantity', Number(e.target.value))} className={inp} />
+                    <label htmlFor={`item-${i}-quantity`} className="block text-xs text-gray-600 mb-1">Quantity *</label>
+                    <input id={`item-${i}-quantity`} required type="number" min={1} max={9999} value={item.quantity} onChange={(e) => updateItem(i, 'quantity', Number(e.target.value))} className={inp} />
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-600 mb-1">Refills</label>
-                    <input type="number" min={0} max={12} value={item.refills} onChange={(e) => updateItem(i, 'refills', Number(e.target.value))} className={inp} />
+                    <label htmlFor={`item-${i}-refills`} className="block text-xs text-gray-600 mb-1">Refills</label>
+                    <input id={`item-${i}-refills`} type="number" min={0} max={12} value={item.refills} onChange={(e) => updateItem(i, 'refills', Number(e.target.value))} className={inp} />
                   </div>
 
                   <div className="col-span-3">
-                    <label className="block text-xs text-gray-600 mb-1">Patient Instructions</label>
-                    <input value={item.instructions ?? ''} onChange={(e) => updateItem(i, 'instructions', e.target.value)} placeholder="e.g. Take with food…" className={inp} />
+                    <label htmlFor={`item-${i}-instructions`} className="block text-xs text-gray-600 mb-1">Patient Instructions</label>
+                    <input id={`item-${i}-instructions`} value={item.instructions ?? ''} onChange={(e) => updateItem(i, 'instructions', e.target.value)} placeholder="e.g. Take with food…" className={inp} />
                   </div>
 
                   <div className="col-span-3 flex items-center gap-2">

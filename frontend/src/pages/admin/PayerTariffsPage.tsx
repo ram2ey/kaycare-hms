@@ -214,8 +214,9 @@ export default function PayerTariffsPage() {
 
         {/* Payer Selector */}
         <div className="flex items-center gap-3">
-          <label className="text-sm font-bold text-gray-600">Select Payer:</label>
+          <label htmlFor="payer-tariff-payer-select" className="text-sm font-bold text-gray-600">Select Payer:</label>
           <select
+            id="payer-tariff-payer-select"
             value={selectedPayerId}
             onChange={e => setSelectedPayerId(e.target.value)}
             className="px-3.5 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white font-semibold text-gray-800 shadow-sm"
@@ -366,7 +367,7 @@ export default function PayerTariffsPage() {
               <h3 className="text-lg font-bold text-gray-900">
                 {editingTariff ? 'Edit Tariff Override' : 'Set Tariff Override'}
               </h3>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => setShowModal(false)} aria-label="Close" className="text-gray-400 hover:text-gray-600">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -389,10 +390,11 @@ export default function PayerTariffsPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">
+                <label htmlFor="payer-tariff-price" className="block text-xs font-semibold text-gray-600 mb-1">
                   Custom Tariff Price ({selectedPayerName}) (GHS) *
                 </label>
                 <input
+                  id="payer-tariff-price"
                   type="number"
                   min={0}
                   step="0.01"
@@ -405,10 +407,11 @@ export default function PayerTariffsPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">
+                <label htmlFor="payer-tariff-code" className="block text-xs font-semibold text-gray-600 mb-1">
                   Payer Tariff Code (e.g. NHIS test code)
                 </label>
                 <input
+                  id="payer-tariff-code"
                   maxLength={50}
                   value={tariffCode}
                   onChange={e => setTariffCode(e.target.value)}
@@ -418,8 +421,9 @@ export default function PayerTariffsPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Effective Date *</label>
+                <label htmlFor="payer-tariff-effective-date" className="block text-xs font-semibold text-gray-600 mb-1">Effective Date *</label>
                 <input
+                  id="payer-tariff-effective-date"
                   type="date"
                   required
                   value={effectiveDate}

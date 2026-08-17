@@ -79,22 +79,23 @@ export default function AuditLogsPage() {
         <div className="grid grid-cols-3 gap-4">
           {/* Patient filter */}
           <div>
-            <label className="block text-xs text-gray-600 mb-1">Patient</label>
+            <label htmlFor="audit-patient-search" className="block text-xs text-gray-600 mb-1">Patient</label>
             {selectedPatient ? (
               <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg">
                 <span className="text-sm text-gray-800 flex-1 truncate">{selectedPatient.fullName}</span>
-                <button onClick={clearPatient} className="text-gray-400 hover:text-red-500 text-xs">×</button>
+                <button onClick={clearPatient} aria-label="Clear patient filter" className="text-gray-400 hover:text-red-500 text-xs">×</button>
               </div>
             ) : (
               <div className="relative">
                 <div className="flex gap-1">
-                  <input type="text" value={patientQuery}
+                  <input id="audit-patient-search" type="text" value={patientQuery}
                     onChange={(e) => setPatientQuery(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), searchForPatient())}
                     placeholder="Search patient…"
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   <button onClick={searchForPatient} disabled={searching}
+                    aria-label="Search patient"
                     className="px-2 py-2 bg-gray-100 hover:bg-gray-200 text-sm rounded-lg text-gray-700">
                     {searching ? '…' : '↵'}
                   </button>
@@ -116,8 +117,8 @@ export default function AuditLogsPage() {
 
           {/* Action filter */}
           <div>
-            <label className="block text-xs text-gray-600 mb-1">Action</label>
-            <select value={filters.action ?? ''}
+            <label htmlFor="audit-action" className="block text-xs text-gray-600 mb-1">Action</label>
+            <select id="audit-action" value={filters.action ?? ''}
               onChange={(e) => setFilter('action', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option value="">All Actions</option>
@@ -128,15 +129,15 @@ export default function AuditLogsPage() {
           {/* Date range */}
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-xs text-gray-600 mb-1">From</label>
-              <input type="datetime-local" value={filters.from ?? ''}
+              <label htmlFor="audit-from" className="block text-xs text-gray-600 mb-1">From</label>
+              <input id="audit-from" type="datetime-local" value={filters.from ?? ''}
                 onChange={(e) => setFilter('from', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-600 mb-1">To</label>
-              <input type="datetime-local" value={filters.to ?? ''}
+              <label htmlFor="audit-to" className="block text-xs text-gray-600 mb-1">To</label>
+              <input id="audit-to" type="datetime-local" value={filters.to ?? ''}
                 onChange={(e) => setFilter('to', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />

@@ -210,15 +210,15 @@ export default function BillTemplatesPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
-                  <label className="block text-xs text-gray-600 mb-1">Template Name *</label>
-                  <input required value={form.name}
+                  <label htmlFor="billtmpl-name" className="block text-xs text-gray-600 mb-1">Template Name *</label>
+                  <input id="billtmpl-name" required value={form.name}
                     onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                     placeholder="e.g. Antenatal Visit Package"
                     className={inp} />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-600 mb-1">Category</label>
-                  <input value={form.category ?? ''}
+                  <label htmlFor="billtmpl-category" className="block text-xs text-gray-600 mb-1">Category</label>
+                  <input id="billtmpl-category" value={form.category ?? ''}
                     onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
                     list="tmpl-category-list"
                     placeholder="e.g. Antenatal, Emergency…"
@@ -228,8 +228,8 @@ export default function BillTemplatesPage() {
                   </datalist>
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-600 mb-1">Status</label>
-                  <select value={form.isActive ? 'true' : 'false'}
+                  <label htmlFor="billtmpl-status" className="block text-xs text-gray-600 mb-1">Status</label>
+                  <select id="billtmpl-status" value={form.isActive ? 'true' : 'false'}
                     onChange={e => setForm(f => ({ ...f, isActive: e.target.value === 'true' }))}
                     className={inp}>
                     <option value="true">Active</option>
@@ -237,8 +237,8 @@ export default function BillTemplatesPage() {
                   </select>
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-xs text-gray-600 mb-1">Description</label>
-                  <input value={form.description ?? ''}
+                  <label htmlFor="billtmpl-description" className="block text-xs text-gray-600 mb-1">Description</label>
+                  <input id="billtmpl-description" value={form.description ?? ''}
                     onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                     placeholder="Optional description…"
                     className={inp} />
@@ -256,15 +256,15 @@ export default function BillTemplatesPage() {
                   {safeArray(form.items).map((item, i) => (
                     <div key={i} className="grid grid-cols-12 gap-2 items-start">
                       <div className="col-span-4">
-                        {i === 0 && <div className="text-xs text-gray-400 mb-1">Description *</div>}
-                        <input required value={item.description}
+                        {i === 0 && <label htmlFor="billtmpl-item-description-0" className="block text-xs text-gray-400 mb-1">Description *</label>}
+                        <input id={i === 0 ? 'billtmpl-item-description-0' : undefined} required value={item.description}
                           onChange={e => updateItem(i, 'description', e.target.value)}
                           placeholder="Service or item name"
                           className={inp} />
                       </div>
                       <div className="col-span-3">
-                        {i === 0 && <div className="text-xs text-gray-400 mb-1">Category</div>}
-                        <select value={item.category ?? ''}
+                        {i === 0 && <label htmlFor="billtmpl-item-category-0" className="block text-xs text-gray-400 mb-1">Category</label>}
+                        <select id={i === 0 ? 'billtmpl-item-category-0' : undefined} value={item.category ?? ''}
                           onChange={e => updateItem(i, 'category', e.target.value)}
                           className={inp}>
                           <option value="">—</option>
@@ -272,14 +272,14 @@ export default function BillTemplatesPage() {
                         </select>
                       </div>
                       <div className="col-span-2">
-                        {i === 0 && <div className="text-xs text-gray-400 mb-1">Qty</div>}
-                        <input required type="number" min={1} value={item.quantity}
+                        {i === 0 && <label htmlFor="billtmpl-item-qty-0" className="block text-xs text-gray-400 mb-1">Qty</label>}
+                        <input id={i === 0 ? 'billtmpl-item-qty-0' : undefined} required type="number" min={1} value={item.quantity}
                           onChange={e => updateItem(i, 'quantity', Number(e.target.value))}
                           className={inp} />
                       </div>
                       <div className="col-span-2">
-                        {i === 0 && <div className="text-xs text-gray-400 mb-1">Unit Price</div>}
-                        <input required type="number" step="0.01" min={0} value={item.unitPrice || ''}
+                        {i === 0 && <label htmlFor="billtmpl-item-unitprice-0" className="block text-xs text-gray-400 mb-1">Unit Price</label>}
+                        <input id={i === 0 ? 'billtmpl-item-unitprice-0' : undefined} required type="number" step="0.01" min={0} value={item.unitPrice || ''}
                           onChange={e => updateItem(i, 'unitPrice', Number(e.target.value))}
                           placeholder="0.00" className={inp} />
                       </div>
@@ -288,6 +288,7 @@ export default function BillTemplatesPage() {
                         {form.items.length > 1 && (
                           <button type="button"
                             onClick={() => setForm(f => ({ ...f, items: f.items.filter((_, idx) => idx !== i) }))}
+                            aria-label="Remove line item"
                             className="w-full text-red-400 hover:text-red-600 text-lg leading-none mt-1">×</button>
                         )}
                       </div>

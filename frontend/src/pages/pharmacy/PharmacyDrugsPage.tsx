@@ -248,21 +248,21 @@ export default function PharmacyDrugsPage() {
             </p>
             <form onSubmit={handleMovementSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Adjustment Type *</label>
-                <select value={moveType} onChange={e => setMoveType(e.target.value)} className={inp + ' bg-white'}>
+                <label htmlFor="move-type" className="block text-xs font-semibold text-gray-600 mb-1">Adjustment Type *</label>
+                <select id="move-type" value={moveType} onChange={e => setMoveType(e.target.value)} className={inp + ' bg-white'}>
                   {MANUAL_MOVEMENT_TYPES.map(t => (
                     <option key={t} value={t}>{MOVEMENT_TYPE_LABELS[t]}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Quantity *</label>
-                <input required type="number" min={1} value={moveQty}
+                <label htmlFor="move-qty" className="block text-xs font-semibold text-gray-600 mb-1">Quantity *</label>
+                <input id="move-qty" required type="number" min={1} value={moveQty}
                   onChange={e => setMoveQty(Number(e.target.value))} className={inp} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Reason / Notes</label>
-                <input value={moveNotes} onChange={e => setMoveNotes(e.target.value)}
+                <label htmlFor="move-notes" className="block text-xs font-semibold text-gray-600 mb-1">Reason / Notes</label>
+                <input id="move-notes" value={moveNotes} onChange={e => setMoveNotes(e.target.value)}
                   placeholder="e.g. Monthly audit correction..." className={inp} />
               </div>
               {moveError && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{moveError}</p>}
@@ -294,7 +294,7 @@ export default function PharmacyDrugsPage() {
                 <h3 className="font-bold text-gray-900">{historyDrug.name} — Movement Log</h3>
                 <p className="text-xs text-gray-400 mt-0.5">Current Stock: {historyDrug.currentStock} {historyDrug.unit}</p>
               </div>
-              <button onClick={() => setHistoryDrug(null)} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+              <button onClick={() => setHistoryDrug(null)} aria-label="Close" className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {historyLoading ? (

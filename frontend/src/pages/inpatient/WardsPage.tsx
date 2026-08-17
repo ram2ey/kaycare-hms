@@ -161,9 +161,9 @@ export default function WardsPage() {
                   </div>
                   {isAdmin && (
                     <div className="flex gap-1 ml-2">
-                      <button onClick={() => openEdit(ward)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="Edit">✏️</button>
+                      <button onClick={() => openEdit(ward)} aria-label="Edit ward" className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="Edit">✏️</button>
                       {ward.isActive && (
-                        <button onClick={() => setConfirmAction({ message: `Deactivate ward "${ward.name}"?`, run: () => handleDeactivate(ward) })} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded" title="Deactivate">🗑</button>
+                        <button onClick={() => setConfirmAction({ message: `Deactivate ward "${ward.name}"?`, run: () => handleDeactivate(ward) })} aria-label="Deactivate ward" className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded" title="Deactivate">🗑</button>
                       )}
                     </div>
                   )}
@@ -206,27 +206,27 @@ export default function WardsPage() {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
               <h2 className="font-semibold text-gray-900">{editTarget ? 'Edit Ward' : 'Add Ward'}</h2>
-              <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
+              <button onClick={() => setShowForm(false)} aria-label="Close" className="text-gray-400 hover:text-gray-600 text-xl">×</button>
             </div>
             <div className="px-6 py-4 space-y-4">
               {formError && <div className="bg-red-50 border border-red-200 text-red-600 rounded-lg px-3 py-2 text-sm">{formError}</div>}
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Ward Name *</label>
-                <input className={inp} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+                <label htmlFor="ward-name" className="block text-xs font-medium text-gray-600 mb-1">Ward Name *</label>
+                <input id="ward-name" className={inp} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Ward Type *</label>
-                <select className={inp} value={form.wardType} onChange={e => setForm(f => ({ ...f, wardType: e.target.value }))}>
+                <label htmlFor="ward-type" className="block text-xs font-medium text-gray-600 mb-1">Ward Type *</label>
+                <select id="ward-type" className={inp} value={form.wardType} onChange={e => setForm(f => ({ ...f, wardType: e.target.value }))}>
                   {WARD_TYPES.map(t => <option key={t}>{t}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
-                <input className={inp} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
+                <label htmlFor="ward-description" className="block text-xs font-medium text-gray-600 mb-1">Description</label>
+                <input id="ward-description" className={inp} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Daily Rate (GHS)</label>
-                <input type="number" min="0" step="0.01" className={inp} value={form.dailyRate}
+                <label htmlFor="ward-daily-rate" className="block text-xs font-medium text-gray-600 mb-1">Daily Rate (GHS)</label>
+                <input id="ward-daily-rate" type="number" min="0" step="0.01" className={inp} value={form.dailyRate}
                   onChange={e => setForm(f => ({ ...f, dailyRate: parseFloat(e.target.value) || 0 }))} />
               </div>
               {editTarget && (

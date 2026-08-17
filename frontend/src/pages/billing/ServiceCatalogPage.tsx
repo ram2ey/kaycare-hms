@@ -231,25 +231,25 @@ export default function ServiceCatalogPage() {
             </h3>
             <form onSubmit={handleSave} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Name *</label>
-                <input required value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                <label htmlFor="catalog-name" className="block text-xs font-semibold text-gray-600 mb-1">Name *</label>
+                <input id="catalog-name" required value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                   placeholder="e.g. General Consultation" className={inp} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Category *</label>
-                <select required value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))} className={inp + ' bg-white'}>
+                <label htmlFor="catalog-category" className="block text-xs font-semibold text-gray-600 mb-1">Category *</label>
+                <select id="catalog-category" required value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))} className={inp + ' bg-white'}>
                   {BILL_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Unit Price (GHS) *</label>
-                <input required type="number" step="0.01" min={0} value={form.unitPrice || ''}
+                <label htmlFor="catalog-unit-price" className="block text-xs font-semibold text-gray-600 mb-1">Unit Price (GHS) *</label>
+                <input id="catalog-unit-price" required type="number" step="0.01" min={0} value={form.unitPrice || ''}
                   onChange={(e) => setForm((f) => ({ ...f, unitPrice: Number(e.target.value) }))}
                   placeholder="0.00" className={inp} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Description / Notes</label>
-                <input value={form.description ?? ''} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                <label htmlFor="catalog-description" className="block text-xs font-semibold text-gray-600 mb-1">Description / Notes</label>
+                <input id="catalog-description" value={form.description ?? ''} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                   placeholder="Optional details" className={inp} />
               </div>
               <div className="flex items-center gap-2">

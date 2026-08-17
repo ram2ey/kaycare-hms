@@ -260,7 +260,7 @@ export default function ImagingCatalogPage() {
               <h3 className="text-lg font-bold text-gray-900">
                 {editingItem ? 'Edit Imaging Procedure' : 'Add Imaging Procedure'}
               </h3>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => setShowModal(false)} aria-label="Close" className="text-gray-400 hover:text-gray-600">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -269,8 +269,9 @@ export default function ImagingCatalogPage() {
             <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Procedure Code *</label>
+                  <label htmlFor="imaging-procedure-code" className="block text-xs font-semibold text-gray-600 mb-1">Procedure Code *</label>
                   <input
+                    id="imaging-procedure-code"
                     required
                     maxLength={20}
                     value={procedureCode}
@@ -280,8 +281,9 @@ export default function ImagingCatalogPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Procedure Name *</label>
+                  <label htmlFor="imaging-procedure-name" className="block text-xs font-semibold text-gray-600 mb-1">Procedure Name *</label>
                   <input
+                    id="imaging-procedure-name"
                     required
                     maxLength={200}
                     value={procedureName}
@@ -294,8 +296,9 @@ export default function ImagingCatalogPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Modality *</label>
+                  <label htmlFor="imaging-modality" className="block text-xs font-semibold text-gray-600 mb-1">Modality *</label>
                   <select
+                    id="imaging-modality"
                     value={modality}
                     onChange={e => setModality(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
@@ -308,8 +311,9 @@ export default function ImagingCatalogPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Body Part *</label>
+                  <label htmlFor="imaging-body-part" className="block text-xs font-semibold text-gray-600 mb-1">Body Part *</label>
                   <input
+                    id="imaging-body-part"
                     required
                     maxLength={100}
                     value={bodyPart}
@@ -322,8 +326,9 @@ export default function ImagingCatalogPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Department *</label>
+                  <label htmlFor="imaging-department" className="block text-xs font-semibold text-gray-600 mb-1">Department *</label>
                   <input
+                    id="imaging-department"
                     required
                     maxLength={100}
                     value={department}
@@ -332,8 +337,9 @@ export default function ImagingCatalogPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Turn-around Time (hours)</label>
+                  <label htmlFor="imaging-tat-hours" className="block text-xs font-semibold text-gray-600 mb-1">Turn-around Time (hours)</label>
                   <input
+                    id="imaging-tat-hours"
                     type="number"
                     min={1}
                     max={168}

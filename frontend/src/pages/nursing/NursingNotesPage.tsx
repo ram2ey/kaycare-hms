@@ -94,12 +94,12 @@ export default function NursingNotesPage() {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
               <h2 className="font-semibold text-gray-900">Add Nursing Note</h2>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
+              <button onClick={() => setShowModal(false)} aria-label="Close" className="text-gray-400 hover:text-gray-600 text-xl">×</button>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-2">Note Type</label>
-                <div className="flex flex-wrap gap-2">
+                <span id="note-type-label" className="block text-xs font-medium text-gray-600 mb-2">Note Type</span>
+                <div role="group" aria-labelledby="note-type-label" className="flex flex-wrap gap-2">
                   {NOTE_TYPES.map(t => (
                     <button
                       key={t}
@@ -116,8 +116,9 @@ export default function NursingNotesPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Note</label>
+                <label htmlFor="nursing-note-content" className="block text-xs font-medium text-gray-600 mb-1">Note</label>
                 <textarea
+                  id="nursing-note-content"
                   rows={6}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"
                   placeholder="Enter nursing note…"

@@ -212,6 +212,7 @@ export default function WardDetailPage() {
                       Edit
                     </button>
                     <button onClick={() => setConfirmAction({ message: `Delete bed "${bed.bedNumber}"? This cannot be undone.`, run: () => handleDeleteBed(bed) })}
+                      aria-label="Delete bed"
                       className="text-xs py-1 px-2 text-red-400 hover:bg-red-50 rounded"
                       disabled={bed.status === 'Occupied'} title={bed.status === 'Occupied' ? 'Cannot delete occupied bed' : ''}>
                       ×
@@ -230,18 +231,18 @@ export default function WardDetailPage() {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
               <h2 className="font-semibold text-gray-900">Add Bed</h2>
-              <button onClick={() => setShowAdd(false)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
+              <button onClick={() => setShowAdd(false)} aria-label="Close" className="text-gray-400 hover:text-gray-600 text-xl">×</button>
             </div>
             <div className="px-6 py-4 space-y-4">
               {addError && <div className="bg-red-50 border border-red-200 text-red-600 rounded-lg px-3 py-2 text-sm">{addError}</div>}
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Bed Number *</label>
-                <input className={inp} placeholder="e.g. A1, B3, ICU-02" value={addForm.bedNumber}
+                <label htmlFor="add-bed-number" className="block text-xs font-medium text-gray-600 mb-1">Bed Number *</label>
+                <input id="add-bed-number" className={inp} placeholder="e.g. A1, B3, ICU-02" value={addForm.bedNumber}
                   onChange={e => setAddForm(f => ({ ...f, bedNumber: e.target.value }))} />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
-                <input className={inp} placeholder="Optional notes" value={addForm.notes}
+                <label htmlFor="add-bed-notes" className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
+                <input id="add-bed-notes" className={inp} placeholder="Optional notes" value={addForm.notes}
                   onChange={e => setAddForm(f => ({ ...f, notes: e.target.value }))} />
               </div>
             </div>
@@ -261,17 +262,17 @@ export default function WardDetailPage() {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
               <h2 className="font-semibold text-gray-900">Edit Bed {editBed.bedNumber}</h2>
-              <button onClick={() => setEditBed(null)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
+              <button onClick={() => setEditBed(null)} aria-label="Close" className="text-gray-400 hover:text-gray-600 text-xl">×</button>
             </div>
             <div className="px-6 py-4 space-y-4">
               {editError && <div className="bg-red-50 border border-red-200 text-red-600 rounded-lg px-3 py-2 text-sm">{editError}</div>}
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Bed Number *</label>
-                <input className={inp} value={editForm.bedNumber} onChange={e => setEditForm(f => ({ ...f, bedNumber: e.target.value }))} />
+                <label htmlFor="edit-bed-number" className="block text-xs font-medium text-gray-600 mb-1">Bed Number *</label>
+                <input id="edit-bed-number" className={inp} value={editForm.bedNumber} onChange={e => setEditForm(f => ({ ...f, bedNumber: e.target.value }))} />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
-                <input className={inp} value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} />
+                <label htmlFor="edit-bed-notes" className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
+                <input id="edit-bed-notes" className={inp} value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} />
               </div>
             </div>
             <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3">
@@ -290,13 +291,13 @@ export default function WardDetailPage() {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
               <h2 className="font-semibold text-gray-900">Update Bed {statusBed.bedNumber}</h2>
-              <button onClick={() => setStatusBed(null)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
+              <button onClick={() => setStatusBed(null)} aria-label="Close" className="text-gray-400 hover:text-gray-600 text-xl">×</button>
             </div>
             <div className="px-6 py-4 space-y-4">
               {statusError && <div className="bg-red-50 border border-red-200 text-red-600 rounded-lg px-3 py-2 text-sm">{statusError}</div>}
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-2">Status</label>
-                <div className="grid grid-cols-3 gap-2">
+                <span id="bed-status-label" className="block text-xs font-medium text-gray-600 mb-2">Status</span>
+                <div role="group" aria-labelledby="bed-status-label" className="grid grid-cols-3 gap-2">
                   {BED_STATUS_OPTIONS.map(s => (
                     <button key={s}
                       onClick={() => setStatusForm(f => ({ ...f, status: s }))}
@@ -311,8 +312,8 @@ export default function WardDetailPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
-                <input className={inp} placeholder="Reason for status change" value={statusForm.notes}
+                <label htmlFor="bed-status-notes" className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
+                <input id="bed-status-notes" className={inp} placeholder="Reason for status change" value={statusForm.notes}
                   onChange={e => setStatusForm(f => ({ ...f, notes: e.target.value }))} />
               </div>
             </div>

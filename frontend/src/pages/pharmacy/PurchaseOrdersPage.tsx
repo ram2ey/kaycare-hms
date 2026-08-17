@@ -201,21 +201,21 @@ export default function PurchaseOrdersPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs text-gray-600 mb-1">Supplier</label>
-                  <select value={supplierId} onChange={e => setSupplierId(e.target.value)} className={inp}>
+                  <label htmlFor="po-supplier" className="block text-xs text-gray-600 mb-1">Supplier</label>
+                  <select id="po-supplier" value={supplierId} onChange={e => setSupplierId(e.target.value)} className={inp}>
                     <option value="">— No supplier —</option>
                     {suppliers.map(s => <option key={s.supplierId} value={s.supplierId}>{s.name}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-600 mb-1">Expected Delivery Date</label>
-                  <input type="date" value={expectedDate}
+                  <label htmlFor="po-expected-date" className="block text-xs text-gray-600 mb-1">Expected Delivery Date</label>
+                  <input id="po-expected-date" type="date" value={expectedDate}
                     onChange={e => setExpectedDate(e.target.value)} className={inp} />
                 </div>
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Notes</label>
-                <input value={notes} onChange={e => setNotes(e.target.value)}
+                <label htmlFor="po-notes" className="block text-xs text-gray-600 mb-1">Notes</label>
+                <input id="po-notes" value={notes} onChange={e => setNotes(e.target.value)}
                   placeholder="Optional notes…" className={inp} />
               </div>
 
@@ -263,6 +263,7 @@ export default function PurchaseOrdersPage() {
                       <div className="col-span-1 flex justify-end pb-0.5">
                         {items.length > 1 && (
                           <button type="button" onClick={() => removeItem(item._key)}
+                            aria-label="Remove line item"
                             className="text-red-400 hover:text-red-600 text-lg leading-none">×</button>
                         )}
                       </div>

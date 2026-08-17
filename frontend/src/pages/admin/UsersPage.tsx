@@ -247,36 +247,36 @@ export default function UsersPage() {
             <form onSubmit={handleCreate} className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-gray-600 mb-1">First Name *</label>
-                  <input required value={createForm.firstName}
+                  <label htmlFor="user-create-firstname" className="block text-xs text-gray-600 mb-1">First Name *</label>
+                  <input id="user-create-firstname" required value={createForm.firstName}
                     onChange={e => setCreateForm(f => ({ ...f, firstName: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-600 mb-1">Last Name *</label>
-                  <input required value={createForm.lastName}
+                  <label htmlFor="user-create-lastname" className="block text-xs text-gray-600 mb-1">Last Name *</label>
+                  <input id="user-create-lastname" required value={createForm.lastName}
                     onChange={e => setCreateForm(f => ({ ...f, lastName: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Email *</label>
-                <input required type="email" value={createForm.email}
+                <label htmlFor="user-create-email" className="block text-xs text-gray-600 mb-1">Email *</label>
+                <input id="user-create-email" required type="email" value={createForm.email}
                   onChange={e => setCreateForm(f => ({ ...f, email: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-gray-600 mb-1">Role *</label>
-                  <select required value={createForm.roleId}
+                  <label htmlFor="user-create-role" className="block text-xs text-gray-600 mb-1">Role *</label>
+                  <select id="user-create-role" required value={createForm.roleId}
                     onChange={e => setCreateForm(f => ({ ...f, roleId: Number(e.target.value) }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                     {ROLE_OPTIONS.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-600 mb-1">Department</label>
-                  <input value={createForm.department ?? ''}
+                  <label htmlFor="user-create-department" className="block text-xs text-gray-600 mb-1">Department</label>
+                  <input id="user-create-department" value={createForm.department ?? ''}
                     onChange={e => setCreateForm(f => ({ ...f, department: e.target.value || undefined }))}
                     list="dept-list"
                     placeholder="e.g. General, Paediatrics…"
@@ -285,21 +285,21 @@ export default function UsersPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-gray-600 mb-1">Phone</label>
-                  <input value={createForm.phoneNumber ?? ''}
+                  <label htmlFor="user-create-phone" className="block text-xs text-gray-600 mb-1">Phone</label>
+                  <input id="user-create-phone" value={createForm.phoneNumber ?? ''}
                     onChange={e => setCreateForm(f => ({ ...f, phoneNumber: e.target.value || undefined }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-600 mb-1">License Number</label>
-                  <input value={createForm.licenseNumber ?? ''}
+                  <label htmlFor="user-create-license" className="block text-xs text-gray-600 mb-1">License Number</label>
+                  <input id="user-create-license" value={createForm.licenseNumber ?? ''}
                     onChange={e => setCreateForm(f => ({ ...f, licenseNumber: e.target.value || undefined }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Initial Password * <span className="text-gray-400">(user must change on first login)</span></label>
-                <input required type="password" minLength={8} value={createForm.password}
+                <label htmlFor="user-create-password" className="block text-xs text-gray-600 mb-1">Initial Password * <span className="text-gray-400">(user must change on first login)</span></label>
+                <input id="user-create-password" required type="password" minLength={8} value={createForm.password}
                   onChange={e => setCreateForm(f => ({ ...f, password: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
@@ -325,30 +325,30 @@ export default function UsersPage() {
             <form onSubmit={handleEdit} className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-gray-600 mb-1">First Name *</label>
-                  <input required value={editForm.firstName}
+                  <label htmlFor="user-edit-firstname" className="block text-xs text-gray-600 mb-1">First Name *</label>
+                  <input id="user-edit-firstname" required value={editForm.firstName}
                     onChange={e => setEditForm(f => ({ ...f, firstName: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-600 mb-1">Last Name *</label>
-                  <input required value={editForm.lastName}
+                  <label htmlFor="user-edit-lastname" className="block text-xs text-gray-600 mb-1">Last Name *</label>
+                  <input id="user-edit-lastname" required value={editForm.lastName}
                     onChange={e => setEditForm(f => ({ ...f, lastName: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-gray-600 mb-1">Role *</label>
-                  <select required value={editForm.roleId}
+                  <label htmlFor="user-edit-role" className="block text-xs text-gray-600 mb-1">Role *</label>
+                  <select id="user-edit-role" required value={editForm.roleId}
                     onChange={e => setEditForm(f => ({ ...f, roleId: Number(e.target.value) }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                     {ROLE_OPTIONS.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-600 mb-1">Department</label>
-                  <input value={editForm.department ?? ''}
+                  <label htmlFor="user-edit-department" className="block text-xs text-gray-600 mb-1">Department</label>
+                  <input id="user-edit-department" value={editForm.department ?? ''}
                     onChange={e => setEditForm(f => ({ ...f, department: e.target.value || undefined }))}
                     list="dept-list"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
@@ -356,14 +356,14 @@ export default function UsersPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-gray-600 mb-1">Phone</label>
-                  <input value={editForm.phoneNumber ?? ''}
+                  <label htmlFor="user-edit-phone" className="block text-xs text-gray-600 mb-1">Phone</label>
+                  <input id="user-edit-phone" value={editForm.phoneNumber ?? ''}
                     onChange={e => setEditForm(f => ({ ...f, phoneNumber: e.target.value || undefined }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-600 mb-1">License Number</label>
-                  <input value={editForm.licenseNumber ?? ''}
+                  <label htmlFor="user-edit-license" className="block text-xs text-gray-600 mb-1">License Number</label>
+                  <input id="user-edit-license" value={editForm.licenseNumber ?? ''}
                     onChange={e => setEditForm(f => ({ ...f, licenseNumber: e.target.value || undefined }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
@@ -396,8 +396,8 @@ export default function UsersPage() {
             </p>
             <form onSubmit={handleResetPassword} className="space-y-3">
               <div>
-                <label className="block text-xs text-gray-600 mb-1">New Password *</label>
-                <input required type="password" minLength={8} value={newPassword}
+                <label htmlFor="user-reset-password" className="block text-xs text-gray-600 mb-1">New Password *</label>
+                <input id="user-reset-password" required type="password" minLength={8} value={newPassword}
                   onChange={e => setNewPassword(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
                 <p className="text-xs text-gray-400 mt-1">Minimum 8 characters</p>

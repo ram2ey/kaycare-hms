@@ -57,8 +57,9 @@ export default function ChangePasswordPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
+            <label htmlFor="current-password" className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
             <input
+              id="current-password"
               required
               type="password"
               value={currentPassword}
@@ -67,8 +68,9 @@ export default function ChangePasswordPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+            <label htmlFor="new-password" className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
             <input
+              id="new-password"
               required
               type="password"
               minLength={8}
@@ -79,8 +81,9 @@ export default function ChangePasswordPage() {
             <p className="text-xs text-gray-400 mt-1">Minimum 8 characters</p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+            <label htmlFor="confirm-new-password" className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
             <input
+              id="confirm-new-password"
               required
               type="password"
               value={confirm}

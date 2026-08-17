@@ -163,8 +163,9 @@ export function NewRadiologyOrderPage() {
           <h2 className="font-semibold text-gray-700 mb-3">Order Details</h2>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+              <label htmlFor="radiology-priority" className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
               <select
+                id="radiology-priority"
                 value={priority}
                 onChange={(e) => setPriority(e.target.value)}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
@@ -173,8 +174,9 @@ export function NewRadiologyOrderPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Clinical Indication</label>
+              <label htmlFor="radiology-clinical-indication" className="block text-sm font-medium text-gray-700 mb-1">Clinical Indication</label>
               <input
+                id="radiology-clinical-indication"
                 value={clinicalIndication}
                 onChange={(e) => setClinicalIndication(e.target.value)}
                 placeholder="Optional"
@@ -183,8 +185,9 @@ export function NewRadiologyOrderPage() {
             </div>
           </div>
           <div className="mt-3">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+            <label htmlFor="radiology-notes" className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
             <input
+              id="radiology-notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Optional"
@@ -219,7 +222,7 @@ export function NewRadiologyOrderPage() {
                   className="flex items-center gap-1 bg-sky-100 text-sky-700 px-2 py-1 rounded text-xs font-medium"
                 >
                   {p.procedureName}
-                  <button type="button" onClick={() => toggleProcedure(p)} className="hover:text-red-600">×</button>
+                  <button type="button" onClick={() => toggleProcedure(p)} aria-label={`Remove ${p.procedureName}`} className="hover:text-red-600">×</button>
                 </span>
               ))}
             </div>

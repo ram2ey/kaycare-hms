@@ -74,16 +74,16 @@ export default function VitalsTab({ patientId }: { patientId: string }) {
               { label: 'Height (cm)',          key: 'height' },
             ].map(({ label, key }) => (
               <div key={key}>
-                <label className="block text-xs text-gray-600 mb-1">{label}</label>
-                <input type="number" step="any"
+                <label htmlFor={`vitals-${key}`} className="block text-xs text-gray-600 mb-1">{label}</label>
+                <input id={`vitals-${key}`} type="number" step="any"
                   value={(form as Record<string, number | null>)[key] ?? ''}
                   onChange={e => setForm(f => ({ ...f, [key]: num(e.target.value) }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
               </div>
             ))}
             <div className="col-span-4">
-              <label className="block text-xs text-gray-600 mb-1">Notes</label>
-              <input value={form.notes ?? ''}
+              <label htmlFor="vitals-notes" className="block text-xs text-gray-600 mb-1">Notes</label>
+              <input id="vitals-notes" value={form.notes ?? ''}
                 onChange={e => setForm(f => ({ ...f, notes: e.target.value || null }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
             </div>

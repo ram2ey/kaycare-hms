@@ -110,7 +110,7 @@ export default function VitalSignsPage() {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
               <h2 className="font-semibold text-gray-900">Record Vitals</h2>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
+              <button onClick={() => setShowModal(false)} aria-label="Close" className="text-gray-400 hover:text-gray-600 text-xl">×</button>
             </div>
             <div className="p-6 grid grid-cols-2 gap-4">
               {([
@@ -124,8 +124,9 @@ export default function VitalSignsPage() {
                 ['height', 'Height (cm)'],
               ] as [keyof RecordVitalSignsRequest, string][]).map(([field, label]) => (
                 <div key={field}>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+                  <label htmlFor={`vitalsig-${field}`} className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
                   <input
+                    id={`vitalsig-${field}`}
                     type="number"
                     step={field === 'temperature' || field === 'weight' || field === 'height' ? '0.1' : '1'}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
@@ -135,8 +136,9 @@ export default function VitalSignsPage() {
                 </div>
               ))}
               <div className="col-span-2">
-                <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
+                <label htmlFor="vitalsig-notes" className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
                 <textarea
+                  id="vitalsig-notes"
                   rows={2}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"
                   value={form.notes ?? ''}

@@ -168,8 +168,9 @@ export default function CreateAppointmentPage() {
           <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4">Appointment Details</h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs text-gray-600 mb-1">Doctor *</label>
+              <label htmlFor="appt-doctor" className="block text-xs text-gray-600 mb-1">Doctor *</label>
               <select
+                id="appt-doctor"
                 required
                 value={form.doctorUserId}
                 onChange={(e) => setForm((f) => ({ ...f, doctorUserId: e.target.value }))}
@@ -183,8 +184,9 @@ export default function CreateAppointmentPage() {
             </div>
 
             <div>
-              <label className="block text-xs text-gray-600 mb-1">Type *</label>
+              <label htmlFor="appt-type" className="block text-xs text-gray-600 mb-1">Type *</label>
               <select
+                id="appt-type"
                 required
                 value={form.appointmentType}
                 onChange={(e) => setForm((f) => ({ ...f, appointmentType: e.target.value }))}
@@ -195,8 +197,9 @@ export default function CreateAppointmentPage() {
             </div>
 
             <div>
-              <label className="block text-xs text-gray-600 mb-1">Date & Time *</label>
+              <label htmlFor="appt-scheduled-at" className="block text-xs text-gray-600 mb-1">Date & Time *</label>
               <input
+                id="appt-scheduled-at"
                 required
                 type="datetime-local"
                 value={form.scheduledAt}
@@ -206,8 +209,9 @@ export default function CreateAppointmentPage() {
             </div>
 
             <div>
-              <label className="block text-xs text-gray-600 mb-1">Duration (minutes)</label>
+              <label htmlFor="appt-duration" className="block text-xs text-gray-600 mb-1">Duration (minutes)</label>
               <input
+                id="appt-duration"
                 type="number"
                 min={5}
                 max={480}
@@ -218,8 +222,9 @@ export default function CreateAppointmentPage() {
             </div>
 
             <div>
-              <label className="block text-xs text-gray-600 mb-1">Room</label>
+              <label htmlFor="appt-room" className="block text-xs text-gray-600 mb-1">Room</label>
               <input
+                id="appt-room"
                 value={form.room}
                 onChange={(e) => setForm((f) => ({ ...f, room: e.target.value }))}
                 placeholder="e.g. Room 3A"
@@ -228,8 +233,9 @@ export default function CreateAppointmentPage() {
             </div>
 
             <div>
-              <label className="block text-xs text-gray-600 mb-1">Chief Complaint</label>
+              <label htmlFor="appt-chief-complaint" className="block text-xs text-gray-600 mb-1">Chief Complaint</label>
               <input
+                id="appt-chief-complaint"
                 value={form.chiefComplaint}
                 onChange={(e) => setForm((f) => ({ ...f, chiefComplaint: e.target.value }))}
                 placeholder="e.g. Chest pain"
@@ -238,8 +244,9 @@ export default function CreateAppointmentPage() {
             </div>
 
             <div className="col-span-2">
-              <label className="block text-xs text-gray-600 mb-1">Notes</label>
+              <label htmlFor="appt-notes" className="block text-xs text-gray-600 mb-1">Notes</label>
               <textarea
+                id="appt-notes"
                 rows={3}
                 value={form.notes}
                 onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}

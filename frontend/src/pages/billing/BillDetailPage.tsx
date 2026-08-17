@@ -591,8 +591,9 @@ export default function BillDetailPage() {
 
             <form onSubmit={handleDiscount} className="space-y-3">
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Discount Amount (GHS) *</label>
+                <label htmlFor="bill-discount-amount" className="block text-xs text-gray-600 mb-1">Discount Amount (GHS) *</label>
                 <input
+                  id="bill-discount-amount"
                   required
                   type="number"
                   step="0.01"
@@ -609,8 +610,9 @@ export default function BillDetailPage() {
                 )}
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Reason</label>
+                <label htmlFor="bill-discount-reason" className="block text-xs text-gray-600 mb-1">Reason</label>
                 <input
+                  id="bill-discount-reason"
                   value={discountForm.discountReason ?? ''}
                   onChange={(e) => setDiscountForm((f) => ({ ...f, discountReason: e.target.value }))}
                   placeholder="e.g. Staff discount, Charity care, NHIS waiver…"
@@ -643,8 +645,9 @@ export default function BillDetailPage() {
             </p>
             <form onSubmit={handleAdjustment} className="space-y-3">
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Amount (GHS) *</label>
+                <label htmlFor="bill-adjust-amount" className="block text-xs text-gray-600 mb-1">Amount (GHS) *</label>
                 <input
+                  id="bill-adjust-amount"
                   required
                   type="number"
                   step="0.01"
@@ -660,8 +663,9 @@ export default function BillDetailPage() {
                 )}
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Reason *</label>
+                <label htmlFor="bill-adjust-reason" className="block text-xs text-gray-600 mb-1">Reason *</label>
                 <input
+                  id="bill-adjust-reason"
                   required
                   value={adjustForm.reason}
                   onChange={(e) => setAdjustForm((f) => ({ ...f, reason: e.target.value }))}
@@ -697,8 +701,9 @@ export default function BillDetailPage() {
             </p>
             <form onSubmit={handleWriteOff} className="space-y-3">
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Reason *</label>
+                <label htmlFor="bill-writeoff-reason" className="block text-xs text-gray-600 mb-1">Reason *</label>
                 <input
+                  id="bill-writeoff-reason"
                   required
                   value={writeOffForm.reason}
                   onChange={(e) => setWriteOffForm({ reason: e.target.value })}
@@ -730,32 +735,32 @@ export default function BillDetailPage() {
             <p className="text-sm text-gray-500 mb-4">Balance due: <span className="font-semibold text-red-600">{fmt(bill.balanceDue)}</span></p>
             <form onSubmit={handlePayment} className="space-y-3">
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Amount (GHS) *</label>
-                <input required type="number" step="0.01" min={0.01} max={bill.balanceDue}
+                <label htmlFor="bill-payment-amount" className="block text-xs text-gray-600 mb-1">Amount (GHS) *</label>
+                <input id="bill-payment-amount" required type="number" step="0.01" min={0.01} max={bill.balanceDue}
                   value={paymentForm.amount || ''}
                   onChange={(e) => setPaymentForm((f) => ({ ...f, amount: Number(e.target.value) }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Payment Method *</label>
-                <select value={paymentForm.paymentMethod}
+                <label htmlFor="bill-payment-method" className="block text-xs text-gray-600 mb-1">Payment Method *</label>
+                <select id="bill-payment-method" value={paymentForm.paymentMethod}
                   onChange={(e) => setPaymentForm((f) => ({ ...f, paymentMethod: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                   {PAYMENT_METHODS.map((m) => <option key={m}>{m}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Reference</label>
-                <input value={paymentForm.reference ?? ''}
+                <label htmlFor="bill-payment-reference" className="block text-xs text-gray-600 mb-1">Reference</label>
+                <input id="bill-payment-reference" value={paymentForm.reference ?? ''}
                   onChange={(e) => setPaymentForm((f) => ({ ...f, reference: e.target.value }))}
                   placeholder="e.g. transaction ID, cheque #"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Notes</label>
-                <input value={paymentForm.notes ?? ''}
+                <label htmlFor="bill-payment-notes" className="block text-xs text-gray-600 mb-1">Notes</label>
+                <input id="bill-payment-notes" value={paymentForm.notes ?? ''}
                   onChange={(e) => setPaymentForm((f) => ({ ...f, notes: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -786,20 +791,20 @@ export default function BillDetailPage() {
             </p>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Amount (GHS) *</label>
-                <input type="number" min="0.01" step="0.01" value={cnAmount}
+                <label htmlFor="bill-cn-amount" className="block text-xs text-gray-600 mb-1">Amount (GHS) *</label>
+                <input id="bill-cn-amount" type="number" min="0.01" step="0.01" value={cnAmount}
                   onChange={(e) => setCnAmount(e.target.value)} required
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Reason *</label>
-                <input value={cnReason} onChange={(e) => setCnReason(e.target.value)}
+                <label htmlFor="bill-cn-reason" className="block text-xs text-gray-600 mb-1">Reason *</label>
+                <input id="bill-cn-reason" value={cnReason} onChange={(e) => setCnReason(e.target.value)}
                   placeholder="e.g. Billing error, Service not rendered…"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Notes</label>
-                <textarea value={cnNotes} onChange={(e) => setCnNotes(e.target.value)} rows={2}
+                <label htmlFor="bill-cn-notes" className="block text-xs text-gray-600 mb-1">Notes</label>
+                <textarea id="bill-cn-notes" value={cnNotes} onChange={(e) => setCnNotes(e.target.value)} rows={2}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
               </div>
               {actionError && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{actionError}</p>}
@@ -841,33 +846,33 @@ export default function BillDetailPage() {
             </p>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Amount (GHS) *</label>
-                <input type="number" min="0.01" step="0.01" max={bill.paidAmount} value={refundAmount}
+                <label htmlFor="bill-refund-amount" className="block text-xs text-gray-600 mb-1">Amount (GHS) *</label>
+                <input id="bill-refund-amount" type="number" min="0.01" step="0.01" max={bill.paidAmount} value={refundAmount}
                   onChange={(e) => setRefundAmount(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-400" />
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Reason *</label>
-                <input value={refundReason} onChange={(e) => setRefundReason(e.target.value)}
+                <label htmlFor="bill-refund-reason" className="block text-xs text-gray-600 mb-1">Reason *</label>
+                <input id="bill-refund-reason" value={refundReason} onChange={(e) => setRefundReason(e.target.value)}
                   placeholder="e.g. Overpayment, Cancelled service…"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-400" />
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Refund Method *</label>
-                <select value={refundMethod} onChange={(e) => setRefundMethod(e.target.value)}
+                <label htmlFor="bill-refund-method" className="block text-xs text-gray-600 mb-1">Refund Method *</label>
+                <select id="bill-refund-method" value={refundMethod} onChange={(e) => setRefundMethod(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-400">
                   {REFUND_METHODS.map((m) => <option key={m} value={m}>{REFUND_METHOD_LABELS[m] ?? m}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Reference</label>
-                <input value={refundRef} onChange={(e) => setRefundRef(e.target.value)}
+                <label htmlFor="bill-refund-reference" className="block text-xs text-gray-600 mb-1">Reference</label>
+                <input id="bill-refund-reference" value={refundRef} onChange={(e) => setRefundRef(e.target.value)}
                   placeholder="e.g. transaction ID, cheque #"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-400" />
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Notes</label>
-                <textarea value={refundNotes} onChange={(e) => setRefundNotes(e.target.value)} rows={2}
+                <label htmlFor="bill-refund-notes" className="block text-xs text-gray-600 mb-1">Notes</label>
+                <textarea id="bill-refund-notes" value={refundNotes} onChange={(e) => setRefundNotes(e.target.value)} rows={2}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-400" />
               </div>
               {actionError && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{actionError}</p>}
@@ -907,15 +912,15 @@ export default function BillDetailPage() {
             <p className="text-sm text-gray-500 mb-4">Claim against <strong>{bill.payerName}</strong> for invoice {bill.billNumber}</p>
             <div className="space-y-4">
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Claim Amount (GHS) <span className="text-red-500">*</span></label>
-                <input type="number" min="0.01" step="0.01" value={claimAmount}
+                <label htmlFor="bill-claim-amount" className="block text-xs text-gray-500 mb-1">Claim Amount (GHS) <span className="text-red-500">*</span></label>
+                <input id="bill-claim-amount" type="number" min="0.01" step="0.01" value={claimAmount}
                   onChange={(e) => setClaimAmount(e.target.value)}
                   className="border border-gray-300 rounded px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 <p className="text-xs text-gray-500 mt-1">Balance due: GHS {bill.balanceDue.toFixed(2)}</p>
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Notes</label>
-                <textarea value={claimNotes} onChange={(e) => setClaimNotes(e.target.value)}
+                <label htmlFor="bill-claim-notes" className="block text-xs text-gray-500 mb-1">Notes</label>
+                <textarea id="bill-claim-notes" value={claimNotes} onChange={(e) => setClaimNotes(e.target.value)}
                   rows={2} className="border border-gray-300 rounded px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               {actionError && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{actionError}</p>}

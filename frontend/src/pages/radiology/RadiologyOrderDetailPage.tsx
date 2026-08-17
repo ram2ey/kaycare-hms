@@ -284,8 +284,9 @@ export function RadiologyOrderDetailPage() {
             <h3 className="font-semibold text-gray-800 mb-4">Radiology Report — {reportItem.procedureName}</h3>
             <form onSubmit={handleEnterReport} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Findings <span className="text-red-500">*</span></label>
+                <label htmlFor="radiology-report-findings" className="block text-sm font-medium text-gray-700 mb-1">Findings <span className="text-red-500">*</span></label>
                 <textarea
+                  id="radiology-report-findings"
                   required
                   rows={4}
                   value={reportForm.findings}
@@ -295,8 +296,9 @@ export function RadiologyOrderDetailPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Impression <span className="text-red-500">*</span></label>
+                <label htmlFor="radiology-report-impression" className="block text-sm font-medium text-gray-700 mb-1">Impression <span className="text-red-500">*</span></label>
                 <textarea
+                  id="radiology-report-impression"
                   required
                   rows={3}
                   value={reportForm.impression}
@@ -306,8 +308,9 @@ export function RadiologyOrderDetailPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Recommendations</label>
+                <label htmlFor="radiology-report-recommendations" className="block text-sm font-medium text-gray-700 mb-1">Recommendations</label>
                 <textarea
+                  id="radiology-report-recommendations"
                   rows={2}
                   value={reportForm.recommendations}
                   onChange={(e) => setReportForm({ ...reportForm, recommendations: e.target.value })}
@@ -316,8 +319,9 @@ export function RadiologyOrderDetailPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">PACS Viewer URL</label>
+                <label htmlFor="radiology-report-pacs-url" className="block text-sm font-medium text-gray-700 mb-1">PACS Viewer URL</label>
                 <input
+                  id="radiology-report-pacs-url"
                   value={reportForm.pacsViewerUrl}
                   onChange={(e) => setReportForm({ ...reportForm, pacsViewerUrl: e.target.value })}
                   placeholder="https://pacs.hospital.com/viewer/…"
@@ -325,8 +329,9 @@ export function RadiologyOrderDetailPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">PACS Study UID</label>
+                <label htmlFor="radiology-report-pacs-uid" className="block text-sm font-medium text-gray-700 mb-1">PACS Study UID</label>
                 <input
+                  id="radiology-report-pacs-uid"
                   value={reportForm.pacsStudyUid}
                   onChange={(e) => setReportForm({ ...reportForm, pacsStudyUid: e.target.value })}
                   placeholder="1.2.840.10008…"

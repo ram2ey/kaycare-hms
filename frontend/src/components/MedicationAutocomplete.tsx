@@ -7,9 +7,10 @@ interface Props {
   onSelect: (medication: MedicationEntry) => void;
   placeholder?: string;
   className?: string;
+  id?: string;
 }
 
-export default function MedicationAutocomplete({ value, onChange, onSelect, placeholder, className }: Props) {
+export default function MedicationAutocomplete({ value, onChange, onSelect, placeholder, className, id }: Props) {
   const [results, setResults] = useState<MedicationEntry[]>([]);
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -57,6 +58,7 @@ export default function MedicationAutocomplete({ value, onChange, onSelect, plac
   return (
     <div ref={containerRef} className="relative">
       <input
+        id={id}
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}

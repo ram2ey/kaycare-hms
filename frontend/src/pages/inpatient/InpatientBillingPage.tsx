@@ -325,7 +325,7 @@ export default function InpatientBillingPage() {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
               <h2 className="font-semibold text-gray-900">{editCharge ? 'Edit Charge' : 'Add Charge'}</h2>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
+              <button onClick={() => setShowModal(false)} aria-label="Close" className="text-gray-400 hover:text-gray-600 text-xl">×</button>
             </div>
             <div className="px-6 py-4 space-y-4">
               {modalError && (
@@ -333,13 +333,13 @@ export default function InpatientBillingPage() {
               )}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Date *</label>
-                  <input type="date" className={inp} value={form.chargeDate}
+                  <label htmlFor="charge-date" className="block text-xs font-medium text-gray-600 mb-1">Date *</label>
+                  <input id="charge-date" type="date" className={inp} value={form.chargeDate}
                     onChange={e => setForm(f => ({ ...f, chargeDate: e.target.value }))} />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Category *</label>
-                  <select className={inp} value={form.category}
+                  <label htmlFor="charge-category" className="block text-xs font-medium text-gray-600 mb-1">Category *</label>
+                  <select id="charge-category" className={inp} value={form.category}
                     onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
                     {INPATIENT_CHARGE_CATEGORIES.filter(c => c !== 'Accommodation').map(c => (
                       <option key={c} value={c}>{c}</option>
@@ -348,20 +348,20 @@ export default function InpatientBillingPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Description *</label>
-                <input className={inp} value={form.description}
+                <label htmlFor="charge-description" className="block text-xs font-medium text-gray-600 mb-1">Description *</label>
+                <input id="charge-description" className={inp} value={form.description}
                   onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                   placeholder="e.g. Wound dressing, IV cannulation…" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Quantity *</label>
-                  <input type="number" min={1} className={inp} value={form.quantity}
+                  <label htmlFor="charge-quantity" className="block text-xs font-medium text-gray-600 mb-1">Quantity *</label>
+                  <input id="charge-quantity" type="number" min={1} className={inp} value={form.quantity}
                     onChange={e => setForm(f => ({ ...f, quantity: parseInt(e.target.value) || 1 }))} />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Unit Price *</label>
-                  <input type="number" min={0} step="0.01" className={inp} value={form.unitPrice}
+                  <label htmlFor="charge-unit-price" className="block text-xs font-medium text-gray-600 mb-1">Unit Price *</label>
+                  <input id="charge-unit-price" type="number" min={0} step="0.01" className={inp} value={form.unitPrice}
                     onChange={e => setForm(f => ({ ...f, unitPrice: parseFloat(e.target.value) || 0 }))} />
                 </div>
               </div>
@@ -369,8 +369,8 @@ export default function InpatientBillingPage() {
                 Total: <span className="font-bold text-gray-900">{total(form)}</span>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
-                <input className={inp} value={form.notes ?? ''}
+                <label htmlFor="charge-notes" className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
+                <input id="charge-notes" className={inp} value={form.notes ?? ''}
                   onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
               </div>
             </div>

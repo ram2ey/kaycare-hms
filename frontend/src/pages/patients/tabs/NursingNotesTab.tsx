@@ -66,15 +66,15 @@ export default function NursingNotesTab({ patientId }: { patientId: string }) {
         <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-gray-200 p-5 mb-4">
           <div className="grid grid-cols-4 gap-4">
             <div>
-              <label className="block text-xs text-gray-600 mb-1">Type</label>
-              <select value={form.noteType} onChange={e => setForm(f => ({ ...f, noteType: e.target.value }))}
+              <label htmlFor="nursing-note-type" className="block text-xs text-gray-600 mb-1">Type</label>
+              <select id="nursing-note-type" value={form.noteType} onChange={e => setForm(f => ({ ...f, noteType: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                 {NOTE_TYPES.map(t => <option key={t}>{t}</option>)}
               </select>
             </div>
             <div className="col-span-3">
-              <label className="block text-xs text-gray-600 mb-1">Note *</label>
-              <textarea required rows={3} value={form.note}
+              <label htmlFor="nursing-note-text" className="block text-xs text-gray-600 mb-1">Note *</label>
+              <textarea id="nursing-note-text" required rows={3} value={form.note}
                 onChange={e => setForm(f => ({ ...f, note: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none"
                 placeholder="Enter nursing note…" />

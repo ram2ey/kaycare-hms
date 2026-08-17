@@ -202,14 +202,14 @@ export default function AdmissionsPage() {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white">
               <h2 className="font-semibold text-gray-900">Admit Patient</h2>
-              <button onClick={() => setShowAdmit(false)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
+              <button onClick={() => setShowAdmit(false)} aria-label="Close" className="text-gray-400 hover:text-gray-600 text-xl">×</button>
             </div>
             <div className="px-6 py-4 space-y-4">
               {admitError && <div className="bg-red-50 border border-red-200 text-red-600 rounded-lg px-3 py-2 text-sm">{admitError}</div>}
 
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Patient *</label>
-                <select className={inp} value={admitForm.patientId ?? ''}
+                <label htmlFor="admit-patient" className="block text-xs font-medium text-gray-600 mb-1">Patient *</label>
+                <select id="admit-patient" className={inp} value={admitForm.patientId ?? ''}
                   onChange={e => setAdmitForm(f => ({ ...f, patientId: e.target.value }))}>
                   <option value="">Select patient…</option>
                   {patients.map(p => (
@@ -219,16 +219,16 @@ export default function AdmissionsPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Ward</label>
-                <select className={inp} onChange={e => handleWardChange(e.target.value)}>
+                <label htmlFor="admit-ward" className="block text-xs font-medium text-gray-600 mb-1">Ward</label>
+                <select id="admit-ward" className={inp} onChange={e => handleWardChange(e.target.value)}>
                   <option value="">Select ward to filter beds…</option>
                   {wards.map(w => <option key={w.wardId} value={w.wardId}>{w.name} ({w.availableBeds} available)</option>)}
                 </select>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Bed *</label>
-                <select className={inp} value={admitForm.bedId ?? ''}
+                <label htmlFor="admit-bed" className="block text-xs font-medium text-gray-600 mb-1">Bed *</label>
+                <select id="admit-bed" className={inp} value={admitForm.bedId ?? ''}
                   onChange={e => setAdmitForm(f => ({ ...f, bedId: e.target.value }))}>
                   <option value="">Select available bed…</option>
                   {availableBeds.map(b => (
@@ -238,8 +238,8 @@ export default function AdmissionsPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Admitting Doctor *</label>
-                <select className={inp} value={admitForm.admittingDoctorUserId ?? ''}
+                <label htmlFor="admit-doctor" className="block text-xs font-medium text-gray-600 mb-1">Admitting Doctor *</label>
+                <select id="admit-doctor" className={inp} value={admitForm.admittingDoctorUserId ?? ''}
                   onChange={e => setAdmitForm(f => ({ ...f, admittingDoctorUserId: e.target.value }))}>
                   <option value="">Select doctor…</option>
                   {doctors.map(d => <option key={d.userId} value={d.userId}>{d.fullName}</option>)}
@@ -247,20 +247,20 @@ export default function AdmissionsPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Admission Reason *</label>
-                <textarea className={inp} rows={2} value={admitForm.admissionReason}
+                <label htmlFor="admit-reason" className="block text-xs font-medium text-gray-600 mb-1">Admission Reason *</label>
+                <textarea id="admit-reason" className={inp} rows={2} value={admitForm.admissionReason}
                   onChange={e => setAdmitForm(f => ({ ...f, admissionReason: e.target.value }))} />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Diagnosis on Admission</label>
-                <input className={inp} value={admitForm.diagnosisOnAdmission ?? ''}
+                <label htmlFor="admit-diagnosis" className="block text-xs font-medium text-gray-600 mb-1">Diagnosis on Admission</label>
+                <input id="admit-diagnosis" className={inp} value={admitForm.diagnosisOnAdmission ?? ''}
                   onChange={e => setAdmitForm(f => ({ ...f, diagnosisOnAdmission: e.target.value }))} />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Expected Discharge Date</label>
-                <input type="date" className={inp} value={admitForm.expectedDischargeDate ?? ''}
+                <label htmlFor="admit-expected-discharge" className="block text-xs font-medium text-gray-600 mb-1">Expected Discharge Date</label>
+                <input id="admit-expected-discharge" type="date" className={inp} value={admitForm.expectedDischargeDate ?? ''}
                   onChange={e => setAdmitForm(f => ({ ...f, expectedDischargeDate: e.target.value || undefined }))} />
               </div>
             </div>

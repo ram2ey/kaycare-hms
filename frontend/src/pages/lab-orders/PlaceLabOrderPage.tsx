@@ -194,6 +194,7 @@ export default function PlaceLabOrderPage() {
                       <span>{t.testName}</span>
                       <button
                         onClick={() => toggleTest(t.labTestCatalogId)}
+                        aria-label={`Remove ${t.testName}`}
                         className="text-red-400 hover:text-red-600 ml-2"
                       >
                         ×

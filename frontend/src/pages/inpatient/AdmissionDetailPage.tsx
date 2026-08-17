@@ -211,13 +211,13 @@ export default function AdmissionDetailPage() {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
               <h2 className="font-semibold text-gray-900">Discharge Patient</h2>
-              <button onClick={() => setShowDischarge(false)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
+              <button onClick={() => setShowDischarge(false)} aria-label="Close" className="text-gray-400 hover:text-gray-600 text-xl">×</button>
             </div>
             <div className="px-6 py-4 space-y-4">
               {dischargeError && <div className="bg-red-50 border border-red-200 text-red-600 rounded-lg px-3 py-2 text-sm">{dischargeError}</div>}
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-2">Discharge Type</label>
-                <div className="grid grid-cols-2 gap-2">
+                <span id="discharge-type-label" className="block text-xs font-medium text-gray-600 mb-2">Discharge Type</span>
+                <div role="group" aria-labelledby="discharge-type-label" className="grid grid-cols-2 gap-2">
                   {DISCHARGE_TYPES.map(t => (
                     <button key={t}
                       onClick={() => setDischargeForm(f => ({ ...f, dischargeType: t }))}
@@ -232,8 +232,8 @@ export default function AdmissionDetailPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Discharge Notes</label>
-                <textarea className={inp} rows={3} value={dischargeForm.dischargeNotes}
+                <label htmlFor="discharge-notes" className="block text-xs font-medium text-gray-600 mb-1">Discharge Notes</label>
+                <textarea id="discharge-notes" className={inp} rows={3} value={dischargeForm.dischargeNotes}
                   onChange={e => setDischargeForm(f => ({ ...f, dischargeNotes: e.target.value }))} />
               </div>
             </div>
@@ -253,14 +253,14 @@ export default function AdmissionDetailPage() {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
               <h2 className="font-semibold text-gray-900">Transfer Patient</h2>
-              <button onClick={() => setShowTransfer(false)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
+              <button onClick={() => setShowTransfer(false)} aria-label="Close" className="text-gray-400 hover:text-gray-600 text-xl">×</button>
             </div>
             <div className="px-6 py-4 space-y-4">
               {transferError && <div className="bg-red-50 border border-red-200 text-red-600 rounded-lg px-3 py-2 text-sm">{transferError}</div>}
               <p className="text-sm text-gray-500">Current: <span className="font-medium text-gray-800">{admission.wardName} · Bed {admission.bedNumber}</span></p>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">New Bed *</label>
-                <select className={inp} value={transferForm.newBedId}
+                <label htmlFor="transfer-bed" className="block text-xs font-medium text-gray-600 mb-1">New Bed *</label>
+                <select id="transfer-bed" className={inp} value={transferForm.newBedId}
                   onChange={e => setTransferForm(f => ({ ...f, newBedId: e.target.value }))}>
                   <option value="">Select available bed…</option>
                   {availableBeds.map(b => (
@@ -270,8 +270,8 @@ export default function AdmissionDetailPage() {
                 {availableBeds.length === 0 && <p className="text-xs text-yellow-600 mt-1">No available beds in current ward. Select a different ward from the Wards page.</p>}
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Reason</label>
-                <input className={inp} value={transferForm.reason ?? ''}
+                <label htmlFor="transfer-reason" className="block text-xs font-medium text-gray-600 mb-1">Reason</label>
+                <input id="transfer-reason" className={inp} value={transferForm.reason ?? ''}
                   onChange={e => setTransferForm(f => ({ ...f, reason: e.target.value }))} />
               </div>
             </div>

@@ -202,8 +202,9 @@ export default function AppointmentDetailPage() {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">Cancel Appointment</h3>
-            <label className="block text-sm text-gray-600 mb-2">Reason (optional)</label>
+            <label htmlFor="appt-cancel-reason" className="block text-sm text-gray-600 mb-2">Reason (optional)</label>
             <textarea
+              id="appt-cancel-reason"
               value={cancelReason}
               onChange={(e) => setCancelReason(e.target.value)}
               rows={3}

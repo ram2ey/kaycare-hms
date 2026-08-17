@@ -283,14 +283,14 @@ export default function ClaimDetailPage() {
             <h2 className="text-lg font-bold mb-4">Record Insurer Approval</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Approved Amount (GHS) <span className="text-red-500">*</span></label>
-                <input type="number" min="0.01" step="0.01" value={approvedAmount}
+                <label htmlFor="claim-approved-amount" className="block text-xs text-gray-500 mb-1">Approved Amount (GHS) <span className="text-red-500">*</span></label>
+                <input id="claim-approved-amount" type="number" min="0.01" step="0.01" value={approvedAmount}
                   onChange={(e) => setApprovedAmount(e.target.value)} className={inp} />
                 <p className="text-xs text-gray-500 mt-1">Claimed: {fmt(claim.claimAmount)}</p>
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Notes</label>
-                <textarea value={approveNotes} onChange={(e) => setApproveNotes(e.target.value)}
+                <label htmlFor="claim-approve-notes" className="block text-xs text-gray-500 mb-1">Notes</label>
+                <textarea id="claim-approve-notes" value={approveNotes} onChange={(e) => setApproveNotes(e.target.value)}
                   rows={2} className={inp} />
               </div>
             </div>
@@ -311,13 +311,13 @@ export default function ClaimDetailPage() {
             <h2 className="text-lg font-bold mb-4">Record Rejection</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Rejection Reason <span className="text-red-500">*</span></label>
-                <textarea value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)}
+                <label htmlFor="claim-rejection-reason" className="block text-xs text-gray-500 mb-1">Rejection Reason <span className="text-red-500">*</span></label>
+                <textarea id="claim-rejection-reason" value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)}
                   rows={3} className={inp} placeholder="e.g. Service not covered, Invalid NHIS number…" />
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Notes</label>
-                <textarea value={rejectNotes} onChange={(e) => setRejectNotes(e.target.value)}
+                <label htmlFor="claim-reject-notes" className="block text-xs text-gray-500 mb-1">Notes</label>
+                <textarea id="claim-reject-notes" value={rejectNotes} onChange={(e) => setRejectNotes(e.target.value)}
                   rows={2} className={inp} />
               </div>
             </div>
