@@ -9,7 +9,7 @@ Full original writeup with exploit scenarios and per-finding fixes: the publishe
 `Artifact action: list` if the link is lost). This file tracks status only — treat the artifact as
 the source of truth for *why* each remaining item matters.
 
-Last updated: 2026-08-15.
+Last updated: 2026-08-17.
 
 ---
 
@@ -237,74 +237,130 @@ follow-up, not part of this change.
 
 Organized by track, most-severe first within each. None of these were touched.
 
+**Update 2026-08-17**: everything below not requiring a live hosted target ("Tier 1" — mechanical,
+bounded, no open design question) was completed and verified this session (`dotnet build`/
+`dotnet test` 34/34/`npm run build` all clean throughout). See commits `0fb0b12`, `bcd4603`,
+`ea0aafb`, `c7d1d0e`, `3a89b48`. Items still unchecked below ("Tier 2") are large and/or need a
+design decision this session deliberately didn't make unilaterally — see "Suggested next pass"
+below for how to pick these up.
+
 ### Backend security
-- [ ] **M1** — No rate limiting anywhere (login or otherwise). `Program.cs`.
-- [ ] **M2** — Password policy is an 8-char minimum only, no complexity check. `ChangePasswordRequest.cs:10`.
-- [ ] **M3** — No token revocation/logout; stateless 8h JWTs can't be invalidated early. `TokenService.cs`.
-- [ ] **M4** — Postgres connection allows unencrypted fallback (`SSL Mode=Prefer`) and skips cert validation (`Trust Server Certificate=true`). `DependencyInjection.cs:116`.
-- [ ] **M6** — Missing HSTS. `Program.cs`.
-- [ ] **M7** — Patient PHI sent to free-tier third-party AI models with no de-identification. `AiController.cs`.
-- [ ] **M9** — Document uploads have no file-type allow-list or enforced size cap. `DocumentsController.cs`, `DocumentService.cs`.
-- [ ] **L2** — Financial DTOs (`CreateBillRequest`, `AddPaymentRequest`) have no `[Range]` validation as a backstop (service layer already guards, this is defense-in-depth only).
-- [ ] **L3** — Audit log has no tamper-evidence beyond normal DB ACLs (same issue as DB16 below). `AuditService.cs`.
-- [ ] **L4** — JWT signing key strength never validated at startup. `Program.cs`.
-- [ ] **L5** — AI provider key fallback chain (OpenRouter → Gemini) is confusing. `AiController.cs`.
-- [ ] **L6** — Minor timing side-channel on login (user-not-found skips BCrypt verify). `AuthService.cs`.
+- [x] **M1** — Rate limiting added: .NET 8 built-in `Microsoft.AspNetCore.RateLimiting`, global
+      100/min per-IP plus a stricter 10/min policy on `/api/auth/login`.
+- [x] **M2** — New `StrongPasswordAttribute` (3-of-4 character classes) applied alongside the
+      existing 8-char minimum on all three password-setting DTOs.
+- [x] **M4** — Postgres `SSL Mode=Require` + real cert validation outside Development (was
+      `Prefer`/`Trust Server Certificate=true` unconditionally).
+- [x] **M6** — `app.UseHsts()` outside Development.
+- [x] **M9** — New `DocumentConstants` (25MB cap, PDF/JPEG/PNG/TIFF/DOC/DOCX allow-list) enforced
+      in `DocumentsController.Upload`.
+- [x] **L2** — `[Required]`/`[Range]` added to `CreateBillRequest`, `AddPaymentRequest`,
+      `BillItemRequest` (previously zero data-annotations on any of these).
+- [ ] **M3** — No token revocation/logout — Tier 2, design decision (blocklist store).
+- [ ] **M7** — Patient PHI sent to third-party AI models with no de-identification — Tier 2,
+      compliance-shaped design work.
+- [x] **L3** — Same fix as DB16 below (Postgres trigger, DB-enforced append-only).
+- [x] **L4** — `RequireRealSecret` extended to cover `Jwt:Key` (previously only the two HL7
+      secrets), plus a new 32-byte minimum length check. Also generalized the placeholder-string
+      check itself (was an exact match against one literal that would never have caught `Jwt:Key`'s
+      actual placeholder text).
+- [ ] **L5** — AI provider key fallback chain "confusing" — Tier 2, vague/subjective, needs a
+      closer read before scoping, low priority.
+- [x] **L6** — `AuthService.LoginAsync` now runs a dummy BCrypt verify on the not-found/inactive
+      path so it costs the same ~250-300ms as a real wrong-password attempt.
 
 ### Backend architecture
-- [ ] **F9.1 (partial)** — Structured logging added to the 8 billing/dispensing/admission services this
-      pass (see Part 2); the other ~40 services (appointments, consultations, lab, radiology,
-      referrals, users, tenants, reports, etc.) are still silent.
-- [ ] **F1.3 / F6.1** — Stock deduction can silently no-op on a name mismatch while the dispense/bill still record success; root cause is `PrescriptionItem`→`DrugInventory` linked by string, not FK. `StockMovementService.cs`, `PrescriptionItem.cs`.
-- [ ] **F2.1** — Per-observation DB query on every HL7 lab result ingested. `LabResultService.cs:207-211`.
-- [ ] **F9.3 (partial)** — Audit trail expanded to billing/dispensing/admission this pass (see Part 2);
-      still not called from ~39 other services (appointments, consultations, lab/radiology orders,
-      referrals, user management, tenant admin, etc.).
-- [ ] **F11.1 (partial)** — `MigrateAsync()` itself still has no advisory lock around it; a race remains if the app is ever scaled to 2+ instances.
-- [ ] **F2.2** — N+1 via per-entity `Reference().LoadAsync()`. `InpatientBillingService.cs:188-189`.
-- [ ] **F2.3** — Accession numbers generated one-by-one in a loop. `RadiologyOrderService.cs`.
-- [ ] **F2.4** — Pagination implemented in only 1 of 32 service interfaces (`IPatientService`).
-- [ ] **F4.1** — `TenantsController` has its own try/catch producing a different error JSON shape than the global handler.
-- [ ] **F5.1** — Admin-role check duplicated 7×; `UsersController.cs:31` hardcodes role-name strings instead of using the shared `Roles` constants.
-- [ ] **F5.2** — Sequence-number generation logic (bill/admission/MRN/accession/refund numbers) duplicated ~10×.
-- [ ] **F5.3** — `PayerTariffService.UpdateAsync`/`UpsertAsync` duplicate a field-assignment block.
-- [ ] **F6.4** — Undocumented SQL Server → Postgres translation shim in `AppDbContext.OnModelCreating`.
-- [ ] **F7.1** — Mixed authorization style (attribute-only vs. attribute + inline `IsInRole` checks); will get harder to keep consistent as more manager roles are added.
-- [ ] **F10.1** — `AiQuotaResetDate` defaults to year-1 `DateTime` (also DB21, same issue).
-- [ ] **F3.1 (partial)** — No `RowVersion`/optimistic-concurrency tokens exist anywhere in the schema. The practical races on `Bill` and `Bed` are now closed via advisory locks, but the general absence of concurrency tokens elsewhere is still true.
+- [ ] **F9.1 (partial)** — Still only the 8 billing/dispensing/admission services from Part 2;
+      the other ~39 (appointments, consultations, lab, radiology, referrals, users, tenants,
+      reports, etc.) are still silent — Tier 2, needs triage of which actually need audit trail vs.
+      just logging before treating as one uniform extension.
+- [ ] **F1.3 / F6.1** — Stock deduction silent no-op — Tier 2, real fix is a schema change
+      (`PrescriptionItem`→`DrugInventory` FK) that also touches prescription creation UI/API.
+- [x] **F2.1** — `LabResultService` batches the lab-catalog lookup once per HL7 message instead of
+      once per observation.
+- [ ] **F9.3 (partial)** — Same status as F9.1 above — Tier 2.
+- [x] **F11.1** — `DbInitializer.MigrateAsync` wrapped in a new session-level Postgres advisory
+      lock (`pg_advisory_lock`, not the existing transaction-scoped helper, since `MigrateAsync`
+      manages its own internal per-migration transactions).
+- [x] **F2.2** — `InpatientBillingService` loads the `CreatedBy` user once per batch (every charge
+      shares the same user) instead of once per charge.
+- [x] **F2.3** — `RadiologyOrderService` computes the starting accession sequence once per order
+      and increments in-memory, instead of re-querying on every loop iteration.
+- [ ] **F2.4** — Pagination in only 1 of ~46 service interfaces — Tier 2, needs a shared
+      `PagedResult<T>` convention decision.
+- [x] **F4.1** — `TenantsController`'s custom try/catch removed; bubbles to the global handler
+      like every other controller now.
+- [x] **F5.1** — New `ClaimsPrincipalExtensions.IsAdminOrSuperAdmin()` replaces the duplicated
+      check in all 7 controllers; `UsersController`'s hardcoded role-name strings fixed too.
+- [x] **F5.2** — New `SequenceNumberExtensions` (`GetNextSequenceAsync`/`GenerateSequenceNumberAsync`)
+      replaces all 11 near-identical private methods. Also fixed `ReferralService`, which used a
+      materially weaker `CountAsync`-based approach with no lookback/locking — now wrapped in the
+      same transaction+advisory-lock pattern as the other 11.
+- [x] **F5.3** — `PayerTariffService`'s duplicated field-assignment block extracted into one
+      `ApplyFields` helper.
+- [x] **F6.4** — Documented (confirmed still load-bearing — every `*Configuration.cs` file still
+      writes SQL Server-syntax default-value SQL, not dead code).
+- [ ] **F7.1** — Mixed authorization style — Tier 2, design decision, touches 31 controllers (found
+      3 distinct patterns in play, not just 2).
+- [ ] **F10.1** — `AiQuotaResetDate` bad default is a symptom; the actual monthly-quota-reset logic
+      doesn't exist anywhere in the app yet (also DB21) — Tier 2, really a small feature not a bug
+      fix, fixing just the default alone is low-value.
+- [ ] **F3.1 (partial)** — General absence of `RowVersion`/optimistic-concurrency tokens — Tier 2,
+      large, Bill/Bed's practical races are already closed via advisory locks.
 
 ### Frontend security
-- [ ] **10** — File-upload client-side checks are cosmetic-only or absent. `DocumentsPage.tsx`, `FacilitySettingsPage.tsx`.
-- [ ] **11** — No Content-Security-Policy anywhere in the project.
-- [ ] **4b** — `.env.production` is committed to git (currently a placeholder only).
-- [ ] **7b** — Full error stack traces render to the screen. `ErrorBoundary.tsx`.
+- [x] **10** — Real client-side MIME/size checks (not just the cosmetic `accept=` attribute) added
+      to `DocumentsPage.tsx` and `FacilitySettingsPage.tsx`.
+- [x] **11** — Baseline CSP added via `render.yaml`'s `headers:` block (mirrored into
+      `vite.config.ts`'s `preview.headers` so it's testable locally without live hosting). Verified
+      with a real headless-Chromium check — zero CSP violations, login page renders fully styled.
+- [x] **4b** — `.env.production` untracked from git (`git rm --cached`; only ever held a
+      placeholder, never a real secret) and `.gitignore` updated.
+- [x] **7b** — `ErrorBoundary.tsx`'s raw error message/stack now gated on `import.meta.env.DEV`.
 
 ### Frontend UI/UX
-- [ ] **§1** — No shared UI primitive library; input/card styles copy-pasted 100+ times across 44-66 files.
-- [ ] **§2** — No semantic color tokens; "primary" button color varies across 64 files.
-- [ ] **§3** — 12+ other files still silently swallow fetch errors into an empty state (only `CriticalAlertsWidget` was fixed).
-- [ ] **§4** — Inconsistent form conventions (required-field marker, validation error display).
-- [ ] **§5** — Accessibility gaps: no `aria-label` on icon-only buttons, no modal focus-trap/Escape/`role=dialog`, `htmlFor`/`id` used in only 10/87 pages.
-- [ ] **§6** — Responsive gaps: fixed 256px sidebar with no collapse, patient registration form not responsive.
-- [ ] **§8** — No shared Table component; pagination in only 3/~20 list pages.
-- [ ] **§10** — Dead code: `pages/Placeholder.tsx`, never imported.
-- [ ] **§11 (partial)** — Medication administration (MAR) recording still has no secondary review step before submit.
+- [ ] **§1** — No shared UI primitive library — Tier 2, large, explicitly design-decision-heavy.
+- [ ] **§2** — No semantic color tokens — Tier 2, tied to §1.
+- [ ] **§3** — 17+ files (recount — more than the original "12+") silently swallow fetch errors —
+      Tier 2, mechanical (same pattern as the completed UI §9) but a large standalone lift, offered
+      as an opt-in add-on rather than bundled by default.
+- [ ] **§4** — Inconsistent form conventions — Tier 2, tied to §1.
+- [x] **§5 (partial)** — `ConfirmDialog.tsx` (used across ~30+ pages) now has `role="dialog"`,
+      `aria-modal`, `aria-labelledby`, an Escape-key handler, and a minimal focus trap. The broader
+      `aria-label`/`htmlFor` sweep across ~77 individual pages remains — Tier 2, large.
+- [ ] **§6** — Responsive gaps — Tier 2, design decision.
+- [ ] **§8** — No shared Table component — Tier 2, large, design-heavy like §1.
+- [x] **§10** — Dead code (`pages/Placeholder.tsx`) deleted — confirmed never imported.
+- [ ] **§11 (partial)** — MAR secondary-review-step — Tier 2, feature design work.
 
 ### Database & migrations
-- [ ] **DB6** — ~15 tenant-scoped entities require manual `TenantId` assignment in service code, with no DB-level safety net if a developer forgets.
-- [ ] **DB7-9** — `BillItem`, `PrescriptionItem`, `BillTemplateItem` have no index beyond the implicit FK.
-- [ ] **DB10** — `Bill.AdmissionId` has an index but no FK constraint.
-- [ ] **DB11** — `Patient.NationalId` has no per-tenant uniqueness (even filtered).
-- [ ] **DB12** — `PayerTariff` cascades from both `Payer` and `ServiceCatalogItem` (should be `Restrict`).
-- [ ] **DB13** — Soft-delete pattern (`IsActive`) is inconsistent — present on some entities, missing on others (`Bed`, `Ward`, `Payer`, `Supplier`).
-- [ ] **DB14** — `PayerTariff.TariffPrice` uses `HasPrecision(18,2)` vs. `decimal(12,2)` everywhere else.
-- [ ] **DB15** — Audit log `Details` has no structured before/after value shape.
-- [ ] **DB16** — Audit log "append-only" is convention only, not DB-enforced (same as L3 above).
-- [ ] **DB17** — Patient PII (NationalId, phone, address, NHIS number, insurance policy number) stored unencrypted.
-- [ ] **DB18** — `Tenant.CustomOpenRouterKey` is masked from the API now, but the database column itself is still plaintext.
-- [ ] **DB19** — Minor indexing gaps on `DispenseEventItem` and `LabOrderItem`'s order-lookup path.
-- [ ] **DB20** — `docs/schema.sql` is a stale T-SQL artifact describing a schema the app no longer has.
-- [ ] **DB21** — Same as F10.1 (`AiQuotaResetDate` default).
+- [ ] **DB6** — Tenant-scoped entities need a DB-level `TenantId` safety net — Tier 2, design
+      decision (SaveChanges interceptor vs. Postgres RLS).
+- [x] **DB7-9** — Composite `(TenantId, FK-column)` indexes added to `BillItem`, `PrescriptionItem`,
+      `BillTemplateItem`.
+- [x] **DB10** — `Bill.AdmissionId` now has a real FK constraint (`Restrict`), plus the
+      `Admission` navigation property it was missing entirely.
+- [x] **DB11** — Partial unique index on `(TenantId, NationalId)`, filtered `NOT NULL`. Verified
+      against real seeded data — no existing duplicates.
+- [x] **DB12** — `PayerTariff`'s cascades from both `Payer` and `ServiceCatalogItem` flipped to
+      `Restrict`.
+- [x] **DB13** — **Stale finding, corrected**: re-verified against current code and `Ward`/
+      `Payer`/`Supplier` already have `IsActive` — no work was needed here. Only `Bed` genuinely
+      lacks it, and `Bed` has a `Status` string instead, which is a design question (can a bed be
+      "occupied" and "inactive" independently?), not an oversight — left alone.
+- [x] **DB14** — `PayerTariff.TariffPrice` narrowed to `decimal(12,2)` to match every other money
+      column. Verified no existing value exceeded 12 total digits first.
+- [ ] **DB15** — Audit log `Details` has no structured before/after shape — Tier 2, naturally
+      bundled with the F9.1/F9.3 extension since it touches the same call sites.
+- [x] **DB16** — Postgres trigger (`prevent_auditlog_modification`) now rejects `UPDATE`/`DELETE`
+      on `AuditLogs` at the DB level. New `AuditLogTests.cs` verifies both directions.
+- [ ] **DB17** — Patient PII stored unencrypted — Tier 2, compliance-shaped, needs a key-management
+      design.
+- [ ] **DB18** — `Tenant.CustomOpenRouterKey` column still plaintext — Tier 2, bundle with DB17.
+- [x] **DB19** — Composite indexes added to `DispenseEventItem`/`LabOrderItem`'s order-lookup path.
+- [x] **DB20** — Stale `docs/schema.sql` deleted (confirmed nothing referenced it outside this
+      tracker).
+- [ ] **DB21** — Same as F10.1 — Tier 2.
 
 ---
 
@@ -313,18 +369,35 @@ Organized by track, most-severe first within each. None of these were touched.
 Roughly in order of bang-for-buck:
 1. ~~**DB4 + DB5**~~ — done. Needs migration generation, see Part 1.
 2. ~~**F9.1 + F9.3** (billing/dispensing/admission)~~ — done for the 8 named services. Remaining:
-   extend the same `ILogger<T>` + `IAuditService` pattern to the other ~40 services (appointments,
-   consultations, lab/radiology orders, referrals, user management, tenant admin, reports) — purely
-   mechanical repetition of what was just done, no new design decisions needed.
+   extend the same `ILogger<T>` + `IAuditService` pattern to the other ~39 services (appointments,
+   consultations, lab/radiology orders, referrals, user management, tenant admin, reports) —
+   **needs triage first** (see Part 3 note) since some of those ~39 are read-only report/PDF
+   generators or infra plumbing where "audit trail" doesn't obviously apply the same way; not a
+   uniform mechanical extension the way it looked before actually reading all 39.
 3. ~~**UI §9**~~ — done, all 30 files / 79 call sites converted. **UI §1** (shared component library:
    no shared Input/Card/Button primitives, styles copy-pasted 100+ times across 44-66 files) is
    still open — genuinely large, design-decision-heavy work, not a mechanical extension.
 4. ~~**1 (JWT in localStorage)**~~ — done via a full plan-mode design pass (JWT moved to an httpOnly
-   cookie, CSRF protection added from scratch, CORS tightened as a side effect). **Now verified**:
-   `dotnet build` and `dotnet test` (32/32) both pass as of 2026-08-17 — see Part 1. Still
-   outstanding before Production: the Render config checks (`Cors:AllowedOrigins`,
-   `ASPNETCORE_ENVIRONMENT=Production`) and the manual browser/Safari pass, neither of which can be
-   done from this dev environment.
-5. **DB17 + M7** (PII/PHI encryption at rest, AI data handling) — compliance-shaped, worth doing before any real patient data goes into a production instance.
-6. **M3** (token revocation/logout) — natural follow-on to the JWT-cookie migration; today logout
+   cookie, CSRF protection added from scratch, CORS tightened as a side effect). **Verified**:
+   `dotnet build`/`dotnet test` (34/34) pass as of 2026-08-17 — see Part 1. Still outstanding before
+   Production: the Render config checks (`Cors:AllowedOrigins`, `ASPNETCORE_ENVIRONMENT=Production`)
+   and the manual browser/Safari pass, neither of which can be done from this dev environment.
+5. ~~**Part 3 Tier 1**~~ — done, 2026-08-17. All ~31 mechanical/bounded Part 3 findings (rate
+   limiting, password policy, CSP, sequence-number dedup, missing indexes/FKs, audit-log
+   append-only enforcement, etc.) — see the checkboxes above for the full per-item list. One
+   correction found along the way: DB13 was stale, no work needed. Everything verified via
+   `dotnet build`/`dotnet test`/`npm run build`, plus a real headless-browser check for the CSP
+   change specifically. All pushed to `origin/main`.
+6. **DB17 + M7** (PII/PHI encryption at rest, AI data handling) — compliance-shaped, worth doing
+   before any real patient data goes into a production instance. Tier 2 — needs a key-management
+   design decision, not mechanical.
+7. **M3** (token revocation/logout) — natural follow-on to the JWT-cookie migration; today logout
    only stops the current browser, a stolen cookie/token is still valid until natural expiry.
+   Tier 2 — needs a revocation-store design decision.
+8. **UI §1/§2/§4/§8** (shared component library, color tokens, form conventions, shared Table) —
+   all explicitly Tier 2, large and design-decision-heavy, best done as one coordinated pass since
+   they're interdependent (a Table component needs the same design-token decisions as everything
+   else).
+9. **F7.1** (standardize authorization style) and **F2.4** (pagination convention) — both Tier 2,
+   each needs one upfront design decision before touching the ~30-46 files they'd otherwise touch
+   mechanically once decided.
