@@ -6,6 +6,7 @@ using KayCare.Core.Exceptions;
 using KayCare.Core.Interfaces;
 using KayCare.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace KayCare.Infrastructure.Services;
 
@@ -15,13 +16,15 @@ public class PatientService : IPatientService
     private readonly ITenantContext      _tenantContext;
     private readonly ICurrentUserService _currentUser;
     private readonly IAuditService       _audit;
+    private readonly ILogger<PatientService> _logger;
 
-    public PatientService(AppDbContext db, ITenantContext tenantContext, ICurrentUserService currentUser, IAuditService audit)
+    public PatientService(AppDbContext db, ITenantContext tenantContext, ICurrentUserService currentUser, IAuditService audit, ILogger<PatientService> logger)
     {
         _db          = db;
         _tenantContext = tenantContext;
         _currentUser = currentUser;
         _audit       = audit;
+        _logger      = logger;
     }
 
     // ── Register ──────────────────────────────────────────────────────────────
@@ -66,6 +69,7 @@ public class PatientService : IPatientService
         await _db.SaveChangesAsync(ct);
 
         await _audit.LogAsync(AuditActions.PatientCreate, nameof(Patient), patient.PatientId, patient.PatientId, ct: ct);
+        _logger.LogInformation("Patient {PatientId} registered with MRN {Mrn}", patient.PatientId, patient.MedicalRecordNumber);
 
         await transaction.CommitAsync(ct);
 
@@ -118,6 +122,7 @@ public class PatientService : IPatientService
             ?? throw new NotFoundException(nameof(Patient), patientId);
 
         await _audit.LogAsync(AuditActions.PatientView, nameof(Patient), patientId, patientId, ct: ct);
+        _logger.LogInformation("Patient {PatientId} record viewed", patientId);
         return MapToDetail(patient);
     }
 
@@ -155,6 +160,7 @@ public class PatientService : IPatientService
         await _db.SaveChangesAsync(ct);
 
         await _audit.LogAsync(AuditActions.PatientUpdate, nameof(Patient), patientId, patientId, ct: ct);
+        _logger.LogInformation("Patient {PatientId} updated", patientId);
 
         return MapToDetail(patient);
     }

@@ -1,6 +1,8 @@
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using KayCare.Core.Constants;
 using KayCare.Core.DTOs.Tenants;
 using KayCare.Core.Entities;
 using KayCare.Core.Exceptions;
@@ -9,7 +11,7 @@ using KayCare.Infrastructure.Data;
 
 namespace KayCare.Infrastructure.Services;
 
-public class TenantService(AppDbContext db) : ITenantService
+public class TenantService(AppDbContext db, IAuditService audit, ILogger<TenantService> logger) : ITenantService
 {
     public async Task<List<TenantResponse>> GetAllAsync(CancellationToken ct = default)
     {
@@ -90,6 +92,10 @@ public class TenantService(AppDbContext db) : ITenantService
                {adminUser.PasswordHash}, {adminUser.FirstName}, {adminUser.LastName},
                {1}, {1}, {0}, {now}, {now})", ct);
 
+        await audit.LogAsync(AuditActions.TenantCreate, nameof(Tenant), tenantId, null,
+            details: $"TenantCode={code}; TenantName={tenant.TenantName}", ct: ct);
+        logger.LogInformation("Tenant {TenantId} ({TenantCode}) created with admin user {AdminEmail}", tenantId, code, adminUser.Email);
+
         var response = ToResponse(tenant, 1);
         return new CreateTenantResponse
         {
@@ -135,6 +141,10 @@ public class TenantService(AppDbContext db) : ITenantService
 
         await db.SaveChangesAsync(ct);
 
+        await audit.LogAsync(AuditActions.TenantUpdate, nameof(Tenant), id, null,
+            details: $"TenantName={tenant.TenantName}; Plan={tenant.SubscriptionPlan}", ct: ct);
+        logger.LogInformation("Tenant {TenantId} updated", id);
+
         var count = await db.Users.CountAsync(u => u.TenantId == id, ct);
         return ToResponse(tenant, count);
     }
@@ -148,6 +158,13 @@ public class TenantService(AppDbContext db) : ITenantService
         tenant.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
 
+        await audit.LogAsync(AuditActions.TenantSetActive, nameof(Tenant), id, null,
+            details: $"IsActive={isActive}", ct: ct);
+        if (isActive)
+            logger.LogInformation("Tenant {TenantId} activated", id);
+        else
+            logger.LogWarning("Tenant {TenantId} deactivated", id);
+
         var count = await db.Users.CountAsync(u => u.TenantId == id, ct);
         return ToResponse(tenant, count);
     }
@@ -159,6 +176,9 @@ public class TenantService(AppDbContext db) : ITenantService
 
         db.Tenants.Remove(tenant);
         await db.SaveChangesAsync(ct);
+
+        await audit.LogAsync(AuditActions.TenantDelete, nameof(Tenant), id, null, ct: ct);
+        logger.LogWarning("Tenant {TenantId} deleted", id);
     }
 
     private static TenantResponse ToResponse(Tenant t, int userCount) => new()

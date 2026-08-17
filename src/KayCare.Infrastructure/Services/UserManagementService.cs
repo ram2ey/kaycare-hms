@@ -1,9 +1,11 @@
+using KayCare.Core.Constants;
 using KayCare.Core.DTOs.Users;
 using KayCare.Core.Entities;
 using KayCare.Core.Exceptions;
 using KayCare.Core.Interfaces;
 using KayCare.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace KayCare.Infrastructure.Services;
 
@@ -11,11 +13,15 @@ public class UserManagementService : IUserManagementService
 {
     private readonly AppDbContext _db;
     private readonly ITenantContext _tenantContext;
+    private readonly IAuditService _audit;
+    private readonly ILogger<UserManagementService> _logger;
 
-    public UserManagementService(AppDbContext db, ITenantContext tenantContext)
+    public UserManagementService(AppDbContext db, ITenantContext tenantContext, IAuditService audit, ILogger<UserManagementService> logger)
     {
         _db = db;
         _tenantContext = tenantContext;
+        _audit = audit;
+        _logger = logger;
     }
 
     public async Task<List<UserResponse>> GetAllAsync(bool includeInactive = false, string? role = null, CancellationToken ct = default)
@@ -80,6 +86,10 @@ public class UserManagementService : IUserManagementService
         _db.Users.Add(user);
         await _db.SaveChangesAsync(ct);
 
+        await _audit.LogAsync(AuditActions.UserCreate, nameof(User), user.UserId, null,
+            details: $"Email={user.Email}; Role={role.RoleName}", ct: ct);
+        _logger.LogInformation("User {UserId} created with email {Email}, role {Role}", user.UserId, user.Email, role.RoleName);
+
         user.Role = role;
         return Map(user);
     }
@@ -101,6 +111,10 @@ public class UserManagementService : IUserManagementService
 
         await _db.SaveChangesAsync(ct);
 
+        await _audit.LogAsync(AuditActions.UserUpdate, nameof(User), user.UserId, null,
+            details: $"Role={role.RoleName}", ct: ct);
+        _logger.LogInformation("User {UserId} updated", user.UserId);
+
         user.Role = role;
         return Map(user);
     }
@@ -111,6 +125,9 @@ public class UserManagementService : IUserManagementService
         user.IsActive  = false;
         user.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.UserDeactivate, nameof(User), userId, null, ct: ct);
+        _logger.LogWarning("User {UserId} deactivated", userId);
     }
 
     public async Task ReactivateAsync(Guid userId, CancellationToken ct = default)
@@ -119,6 +136,9 @@ public class UserManagementService : IUserManagementService
         user.IsActive  = true;
         user.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.UserReactivate, nameof(User), userId, null, ct: ct);
+        _logger.LogInformation("User {UserId} reactivated", userId);
     }
 
     public async Task ResetPasswordAsync(Guid userId, ResetPasswordRequest request, CancellationToken ct = default)
@@ -130,6 +150,9 @@ public class UserManagementService : IUserManagementService
         user.LockedUntil       = null;
         user.UpdatedAt         = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.UserPasswordReset, nameof(User), userId, null, ct: ct);
+        _logger.LogWarning("Password reset by administrator for user {UserId}", userId);
     }
 
     public async Task<List<DepartmentSummary>> GetDepartmentsAsync(CancellationToken ct = default)
@@ -168,6 +191,10 @@ public class UserManagementService : IUserManagementService
         }
 
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.UserDepartmentRename, nameof(User), Guid.Empty, null,
+            details: $"OldName={oldName}; NewName={newName}; UserCount={users.Count}", ct: ct);
+        _logger.LogInformation("Department renamed from {OldName} to {NewName} for {UserCount} user(s)", oldName, newName, users.Count);
     }
 
     // ── helpers ────────────────────────────────────────────────────────────────

@@ -137,4 +137,29 @@ public static class AuditActions
     public const string BedStatusUpdate = "Bed.StatusUpdate";
     public const string BedUpdate       = "Bed.Update";
     public const string BedDelete       = "Bed.Delete";
+
+    public const string UserCreate           = "User.Create";
+    public const string UserUpdate           = "User.Update";
+    public const string UserDeactivate       = "User.Deactivate";
+    public const string UserReactivate       = "User.Reactivate";
+    public const string UserPasswordReset    = "User.PasswordReset";
+    public const string UserDepartmentRename = "User.DepartmentRename";
+    public const string UserLogin            = "User.Login";
+    public const string UserPasswordChange   = "User.PasswordChange";
+
+    public const string TenantCreate    = "Tenant.Create";
+    public const string TenantUpdate    = "Tenant.Update";
+    public const string TenantSetActive = "Tenant.SetActive";
+    public const string TenantDelete    = "Tenant.Delete";
+
+    public const string DocumentUpload = "Document.Upload";
+    public const string DocumentDelete = "Document.Delete";
+
+    public const string InpatientChargeCreate             = "InpatientCharge.Create";
+    public const string InpatientChargeUpdate             = "InpatientCharge.Update";
+    public const string InpatientChargeRemove             = "InpatientCharge.Remove";
+    public const string InpatientChargeApplyAccommodation = "InpatientCharge.ApplyAccommodation";
+    public const string BillGenerateFromAdmission          = "Bill.GenerateFromAdmission";
+
+    public const string LabResultReceiveHl7 = "LabResult.ReceiveHl7";
 }

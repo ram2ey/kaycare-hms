@@ -1,8 +1,11 @@
+using KayCare.Core.Constants;
 using KayCare.Core.DTOs.Auth;
+using KayCare.Core.Entities;
 using KayCare.Core.Exceptions;
 using KayCare.Core.Interfaces;
 using KayCare.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace KayCare.Infrastructure.Services;
 
@@ -13,6 +16,8 @@ public class AuthService : IAuthService
     private readonly ITenantContext _tenantContext;
     private readonly ICurrentUserService _currentUser;
     private readonly ITokenRevocationService _tokenRevocation;
+    private readonly IAuditService _audit;
+    private readonly ILogger<AuthService> _logger;
 
     // Computed once at process startup. Verified against on the not-found/inactive-user path below
     // so that path pays the same ~250-300ms BCrypt cost as a real user's wrong-password path —
@@ -21,13 +26,16 @@ public class AuthService : IAuthService
         BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString(), workFactor: 12);
 
     public AuthService(AppDbContext db, ITokenService tokenService, ITenantContext tenantContext,
-        ICurrentUserService currentUser, ITokenRevocationService tokenRevocation)
+        ICurrentUserService currentUser, ITokenRevocationService tokenRevocation,
+        IAuditService audit, ILogger<AuthService> logger)
     {
         _db = db;
         _tokenService = tokenService;
         _tenantContext = tenantContext;
         _currentUser = currentUser;
         _tokenRevocation = tokenRevocation;
+        _audit = audit;
+        _logger = logger;
     }
 
     public async Task<LoginResponse> LoginAsync(LoginRequest request, CancellationToken ct = default)
@@ -43,12 +51,16 @@ public class AuthService : IAuthService
         if (user is null || !user.IsActive)
         {
             BCrypt.Net.BCrypt.Verify(request.Password, DummyPasswordHash);
+            _logger.LogWarning("Login failed for {Email}: no such active user", email);
             throw new UnauthorizedException();
         }
 
         // Account lockout check (HIPAA: 5 failed attempts = 30 min lock)
         if (user.LockedUntil.HasValue && user.LockedUntil > DateTime.UtcNow)
+        {
+            _logger.LogWarning("Login blocked for {Email}: account locked until {LockedUntil}", email, user.LockedUntil.Value);
             throw new AccountLockedException(user.LockedUntil.Value);
+        }
 
         if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
         {
@@ -58,6 +70,7 @@ public class AuthService : IAuthService
 
             user.UpdatedAt = DateTime.UtcNow;
             await _db.SaveChangesAsync(ct);
+            _logger.LogWarning("Login failed for {Email}: invalid password (failed attempt {FailedLoginCount})", email, user.FailedLoginCount);
             throw new UnauthorizedException();
         }
 
@@ -69,6 +82,10 @@ public class AuthService : IAuthService
         await _db.SaveChangesAsync(ct);
 
         var (token, expiresAt) = _tokenService.GenerateToken(user, user.Role.RoleName);
+
+        await _audit.LogAsync(AuditActions.UserLogin, nameof(User), user.UserId, null,
+            details: $"Email={user.Email}", ct: ct);
+        _logger.LogInformation("User {UserId} ({Email}) logged in successfully", user.UserId, user.Email);
 
         return new LoginResponse
         {
@@ -100,6 +117,9 @@ public class AuthService : IAuthService
         user.LockedUntil        = null;
         user.UpdatedAt          = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.UserPasswordChange, nameof(User), userId, null, ct: ct);
+        _logger.LogInformation("User {UserId} changed their password", userId);
 
         // Revoke the pre-change-password token so a cached/stolen copy of it can't keep
         // authenticating after the password (and its MustChangePassword claim) has moved on.

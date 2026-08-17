@@ -5,6 +5,7 @@ using KayCare.Core.Exceptions;
 using KayCare.Core.Interfaces;
 using KayCare.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace KayCare.Infrastructure.Services;
 
@@ -13,12 +14,17 @@ public class InpatientBillingService : IInpatientBillingService
     private readonly AppDbContext        _db;
     private readonly ITenantContext      _tenantContext;
     private readonly ICurrentUserService _currentUser;
+    private readonly IAuditService       _audit;
+    private readonly ILogger<InpatientBillingService> _logger;
 
-    public InpatientBillingService(AppDbContext db, ITenantContext tenantContext, ICurrentUserService currentUser)
+    public InpatientBillingService(AppDbContext db, ITenantContext tenantContext, ICurrentUserService currentUser,
+        IAuditService audit, ILogger<InpatientBillingService> logger)
     {
         _db            = db;
         _tenantContext = tenantContext;
         _currentUser   = currentUser;
+        _audit         = audit;
+        _logger        = logger;
     }
 
     public async Task<List<InpatientChargeResponse>> GetChargesAsync(Guid admissionId, CancellationToken ct = default)
@@ -81,7 +87,7 @@ public class InpatientBillingService : IInpatientBillingService
     public async Task<InpatientChargeResponse> AddChargeAsync(
         Guid admissionId, SaveInpatientChargeRequest request, CancellationToken ct = default)
     {
-        _ = await _db.Admissions.FirstOrDefaultAsync(a => a.AdmissionId == admissionId, ct)
+        var admission = await _db.Admissions.FirstOrDefaultAsync(a => a.AdmissionId == admissionId, ct)
             ?? throw new NotFoundException("Admission", admissionId);
 
         if (!InpatientChargeCategory.All.Contains(request.Category))
@@ -105,6 +111,11 @@ public class InpatientBillingService : IInpatientBillingService
         _db.InpatientCharges.Add(charge);
         await _db.SaveChangesAsync(ct);
 
+        await _audit.LogAsync(AuditActions.InpatientChargeCreate, nameof(InpatientCharge), charge.InpatientChargeId, admission.PatientId,
+            details: $"Category={charge.Category}; Amount={charge.TotalPrice}", ct: ct);
+        _logger.LogInformation("Inpatient charge {ChargeId} added to admission {AdmissionId}: {Category} amount {Amount}",
+            charge.InpatientChargeId, admissionId, charge.Category, charge.TotalPrice);
+
         await _db.Entry(charge).Reference(c => c.CreatedBy).LoadAsync(ct);
         return ToResponse(charge);
     }
@@ -114,6 +125,7 @@ public class InpatientBillingService : IInpatientBillingService
     {
         var charge = await _db.InpatientCharges
             .Include(c => c.CreatedBy)
+            .Include(c => c.Admission)
             .FirstOrDefaultAsync(c => c.InpatientChargeId == chargeId, ct)
             ?? throw new NotFoundException("InpatientCharge", chargeId);
 
@@ -129,17 +141,26 @@ public class InpatientBillingService : IInpatientBillingService
         charge.Notes       = request.Notes?.Trim();
 
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.InpatientChargeUpdate, nameof(InpatientCharge), chargeId, charge.Admission.PatientId,
+            details: $"Category={charge.Category}; Amount={charge.TotalPrice}", ct: ct);
+        _logger.LogInformation("Inpatient charge {ChargeId} updated: {Category} amount {Amount}", chargeId, charge.Category, charge.TotalPrice);
+
         return ToResponse(charge);
     }
 
     public async Task RemoveChargeAsync(Guid chargeId, CancellationToken ct = default)
     {
         var charge = await _db.InpatientCharges
+            .Include(c => c.Admission)
             .FirstOrDefaultAsync(c => c.InpatientChargeId == chargeId, ct)
             ?? throw new NotFoundException("InpatientCharge", chargeId);
 
         _db.InpatientCharges.Remove(charge);
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.InpatientChargeRemove, nameof(InpatientCharge), chargeId, charge.Admission.PatientId, ct: ct);
+        _logger.LogWarning("Inpatient charge {ChargeId} removed from admission {AdmissionId}", chargeId, charge.AdmissionId);
     }
 
     public async Task<List<InpatientChargeResponse>> ApplyAccommodationChargesAsync(
@@ -184,6 +205,11 @@ public class InpatientBillingService : IInpatientBillingService
 
         _db.InpatientCharges.AddRange(charges);
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.InpatientChargeApplyAccommodation, nameof(Admission), admissionId, admission.PatientId,
+            details: $"SegmentCount={charges.Count}; RemovedCount={existing.Count}", ct: ct);
+        _logger.LogInformation("Accommodation charges recalculated for admission {AdmissionId}: {SegmentCount} segment(s), {RemovedCount} previous charge(s) replaced",
+            admissionId, charges.Count, existing.Count);
 
         // Every charge in this batch shares the same CreatedByUserId (the current request's
         // user) — load it once instead of one query per charge.
@@ -262,6 +288,12 @@ public class InpatientBillingService : IInpatientBillingService
             bill.TotalAmount = charges.Sum(c => c.TotalPrice);
 
             await _db.SaveChangesAsync(ct);
+
+            await _audit.LogAsync(AuditActions.BillGenerateFromAdmission, nameof(Bill), bill.BillId, admission.PatientId,
+                details: $"AdmissionId={admissionId}; ChargeCount={charges.Count}; TotalAmount={bill.TotalAmount}", ct: ct);
+            _logger.LogInformation("Bill {BillId} generated/updated from admission {AdmissionId} with {ChargeCount} charge(s), total {TotalAmount}",
+                bill.BillId, admissionId, charges.Count, bill.TotalAmount);
+
             await transaction.CommitAsync(ct);
             return bill.BillId;
         }

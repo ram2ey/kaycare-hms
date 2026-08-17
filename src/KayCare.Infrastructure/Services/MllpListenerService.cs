@@ -207,6 +207,10 @@ public sealed class MllpListenerService : BackgroundService
         using var scope          = _scopeFactory.CreateScope();
         var db                   = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var tenantContext         = scope.ServiceProvider.GetRequiredService<ITenantContext>();
+        // Resolved from the per-message scope, not the constructor: IAuditService is Scoped
+        // (it depends on AppDbContext), while this hosted service is a process-lifetime
+        // singleton — constructor injection would be a captive-dependency / DI-validation error.
+        var audit                = scope.ServiceProvider.GetRequiredService<IAuditService>();
 
         // ── Resolve tenant from MSH-4 (sending facility = TenantCode) ────────
         var tenant = await db.Tenants
@@ -327,6 +331,9 @@ public sealed class MllpListenerService : BackgroundService
         }
 
         await db.SaveChangesAsync(ct);
+
+        await audit.LogAsync(AuditActions.LabResultReceiveHl7, nameof(LabResult), labResult.LabResultId, patient.PatientId,
+            details: $"AccessionNumber={labResult.AccessionNumber}; ObservationCount={parsed.Observations.Count}", ct: ct);
 
         // ── Doctor notification (structured log — extend to email/push later) ─
         if (doctor != null)

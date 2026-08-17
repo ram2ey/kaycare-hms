@@ -1,9 +1,11 @@
+using KayCare.Core.Constants;
 using KayCare.Core.DTOs.Documents;
 using KayCare.Core.Entities;
 using KayCare.Core.Exceptions;
 using KayCare.Core.Interfaces;
 using KayCare.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace KayCare.Infrastructure.Services;
 
@@ -15,17 +17,23 @@ public class DocumentService : IDocumentService
     private readonly IBlobStorageService _blob;
     private readonly ICurrentUserService _currentUser;
     private readonly ITenantContext      _tenantContext;
+    private readonly IAuditService       _audit;
+    private readonly ILogger<DocumentService> _logger;
 
     public DocumentService(
         AppDbContext        db,
         IBlobStorageService blob,
         ICurrentUserService currentUser,
-        ITenantContext      tenantContext)
+        ITenantContext      tenantContext,
+        IAuditService        audit,
+        ILogger<DocumentService> logger)
     {
         _db            = db;
         _blob          = blob;
         _currentUser   = currentUser;
         _tenantContext = tenantContext;
+        _audit         = audit;
+        _logger        = logger;
     }
 
     // ── Upload ────────────────────────────────────────────────────────────────
@@ -66,6 +74,11 @@ public class DocumentService : IDocumentService
 
         _db.PatientDocuments.Add(document);
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.DocumentUpload, nameof(PatientDocument), document.DocumentId, request.PatientId,
+            details: $"FileName={file.FileName}; Category={request.Category}", ct: ct);
+        _logger.LogInformation("Document {DocumentId} uploaded for patient {PatientId}: {FileName}",
+            document.DocumentId, request.PatientId, file.FileName);
 
         return await LoadResponseAsync(document.DocumentId, ct);
     }
@@ -114,6 +127,9 @@ public class DocumentService : IDocumentService
 
         _db.PatientDocuments.Remove(doc);
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.DocumentDelete, nameof(PatientDocument), documentId, doc.PatientId, ct: ct);
+        _logger.LogWarning("Document {DocumentId} deleted for patient {PatientId}: {FileName}", documentId, doc.PatientId, doc.FileName);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
