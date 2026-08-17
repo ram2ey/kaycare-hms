@@ -5,6 +5,7 @@ using KayCare.Core.Exceptions;
 using KayCare.Core.Interfaces;
 using KayCare.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace KayCare.Infrastructure.Services;
 
@@ -15,14 +16,25 @@ public class PrescriptionService : IPrescriptionService
     private readonly ITenantContext        _tenantContext;
     private readonly IChargeCaptureService _chargeCapture;
     private readonly IStockMovementService _stockMovement;
+    private readonly IAuditService         _audit;
+    private readonly ILogger<PrescriptionService> _logger;
 
-    public PrescriptionService(AppDbContext db, ICurrentUserService currentUser, ITenantContext tenantContext, IChargeCaptureService chargeCapture, IStockMovementService stockMovement)
+    public PrescriptionService(
+        AppDbContext db,
+        ICurrentUserService currentUser,
+        ITenantContext tenantContext,
+        IChargeCaptureService chargeCapture,
+        IStockMovementService stockMovement,
+        IAuditService audit,
+        ILogger<PrescriptionService> logger)
     {
         _db            = db;
         _currentUser   = currentUser;
         _tenantContext = tenantContext;
         _chargeCapture = chargeCapture;
         _stockMovement = stockMovement;
+        _audit         = audit;
+        _logger        = logger;
     }
 
     // ── Create ────────────────────────────────────────────────────────────────
@@ -69,6 +81,11 @@ public class PrescriptionService : IPrescriptionService
 
         _db.PrescriptionItems.AddRange(items);
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.PrescriptionCreate, nameof(Prescription), prescription.PrescriptionId, prescription.PatientId,
+            details: $"ItemCount={items.Count}", ct: ct);
+        _logger.LogInformation("Prescription {PrescriptionId} created for patient {PatientId} with {ItemCount} item(s)",
+            prescription.PrescriptionId, prescription.PatientId, items.Count);
 
         return await LoadDetailAsync(prescription.PrescriptionId, ct);
     }
@@ -183,6 +200,11 @@ public class PrescriptionService : IPrescriptionService
             await _chargeCapture.CaptureDispenseChargesAsync(prescriptionId, dispenseEvent.DispenseEventId, ct);
             await _stockMovement.DeductForDispenseAsync(prescriptionId, prescription.Items.Select(i => (i.MedicationName, i.Quantity)), ct);
 
+            await _audit.LogAsync(AuditActions.PrescriptionDispense, nameof(Prescription), prescriptionId, prescription.PatientId,
+                details: $"DispenseEventId={dispenseEvent.DispenseEventId}; ItemCount={dispenseEvent.Items.Count}", ct: ct);
+            _logger.LogInformation("Prescription {PrescriptionId} fully dispensed via event {DispenseEventId}",
+                prescriptionId, dispenseEvent.DispenseEventId);
+
             await transaction.CommitAsync(ct);
 
             return await LoadDetailAsync(prescriptionId, ct);
@@ -274,6 +296,11 @@ public class PrescriptionService : IPrescriptionService
             await _chargeCapture.CaptureDispenseChargesAsync(prescriptionId, dispenseEvent.DispenseEventId, ct);
             await _stockMovement.DeductForDispenseAsync(prescriptionId, eventItems.Select(i => (itemMap[i.PrescriptionItemId].MedicationName, i.QuantityDispensed)), ct);
 
+            await _audit.LogAsync(AuditActions.PrescriptionPartialDispense, nameof(Prescription), prescriptionId, prescription.PatientId,
+                details: $"DispenseEventId={dispenseEvent.DispenseEventId}; ItemCount={eventItems.Count}; NewStatus={prescription.Status}", ct: ct);
+            _logger.LogInformation("Prescription {PrescriptionId} partially dispensed via event {DispenseEventId}, new status {Status}",
+                prescriptionId, dispenseEvent.DispenseEventId, prescription.Status);
+
             await transaction.CommitAsync(ct);
 
             return await LoadDetailAsync(prescriptionId, ct);
@@ -298,6 +325,10 @@ public class PrescriptionService : IPrescriptionService
 
         prescription.Status = PrescriptionStatus.Cancelled;
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.PrescriptionCancel, nameof(Prescription), prescriptionId, prescription.PatientId, ct: ct);
+        _logger.LogWarning("Prescription {PrescriptionId} cancelled", prescriptionId);
+
         return await LoadDetailAsync(prescriptionId, ct);
     }
 

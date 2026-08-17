@@ -5,6 +5,7 @@ using KayCare.Core.Exceptions;
 using KayCare.Core.Interfaces;
 using KayCare.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace KayCare.Infrastructure.Services;
 
@@ -13,12 +14,21 @@ public class AdmissionService : IAdmissionService
     private readonly AppDbContext        _db;
     private readonly ITenantContext      _tenantContext;
     private readonly ICurrentUserService _currentUser;
+    private readonly IAuditService       _audit;
+    private readonly ILogger<AdmissionService> _logger;
 
-    public AdmissionService(AppDbContext db, ITenantContext tenantContext, ICurrentUserService currentUser)
+    public AdmissionService(
+        AppDbContext db,
+        ITenantContext tenantContext,
+        ICurrentUserService currentUser,
+        IAuditService audit,
+        ILogger<AdmissionService> logger)
     {
         _db            = db;
         _tenantContext = tenantContext;
         _currentUser   = currentUser;
+        _audit         = audit;
+        _logger        = logger;
     }
 
     public async Task<List<AdmissionSummaryResponse>> GetAllAsync(
@@ -55,6 +65,12 @@ public class AdmissionService : IAdmissionService
     {
         using var transaction = await _db.Database.BeginTransactionAsync(ct);
         await _db.AcquireAdvisoryLockAsync(_tenantContext.TenantId, "AdmissionNumber", ct);
+
+        // The AdmissionNumber lock above only serializes number generation — it does not stop
+        // two concurrent admission requests from both seeing this bed as Available. Lock the
+        // specific bed too, before loading and checking its status, so the status read below is
+        // guaranteed to reflect any concurrently-committed change rather than a stale snapshot.
+        await _db.AcquireAdvisoryLockAsync(_tenantContext.TenantId, $"Bed_{request.BedId}", ct);
 
         var bed = await _db.Beds.Include(b => b.Ward)
             .FirstOrDefaultAsync(b => b.BedId == request.BedId, ct)
@@ -96,6 +112,11 @@ public class AdmissionService : IAdmissionService
         _db.Admissions.Add(admission);
         await _db.SaveChangesAsync(ct);
 
+        await _audit.LogAsync(AuditActions.AdmissionAdmit, nameof(Admission), admission.AdmissionId, admission.PatientId,
+            details: $"AdmissionNumber={admission.AdmissionNumber}; BedId={admission.BedId}; WardId={admission.WardId}", ct: ct);
+        _logger.LogInformation("Admission {AdmissionId} ({AdmissionNumber}) created for patient {PatientId} in bed {BedId}",
+            admission.AdmissionId, admission.AdmissionNumber, admission.PatientId, admission.BedId);
+
         await transaction.CommitAsync(ct);
 
         return ToDetail((await LoadDetail(admission.AdmissionId, ct))!);
@@ -123,12 +144,19 @@ public class AdmissionService : IAdmissionService
         admission.Bed.Status = BedStatus.Available;
 
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.AdmissionDischarge, nameof(Admission), admissionId, admission.PatientId,
+            details: $"DischargeType={admission.DischargeType}", ct: ct);
+        _logger.LogInformation("Admission {AdmissionId} discharged, type {DischargeType}", admissionId, admission.DischargeType);
+
         return ToDetail((await LoadDetail(admissionId, ct))!);
     }
 
     public async Task<AdmissionDetailResponse> TransferAsync(
         Guid admissionId, TransferPatientRequest request, CancellationToken ct = default)
     {
+        using var transaction = await _db.Database.BeginTransactionAsync(ct);
+
         var admission = await _db.Admissions
             .Include(a => a.Bed)
             .FirstOrDefaultAsync(a => a.AdmissionId == admissionId, ct)
@@ -139,6 +167,16 @@ public class AdmissionService : IAdmissionService
 
         if (admission.BedId == request.NewBedId)
             throw new AppException("Patient is already in the requested bed.", 400);
+
+        // Lock both the source and destination bed, in a consistent order (sorted by GUID) so
+        // two concurrent transfers that cross each other's source/destination beds can't
+        // deadlock. The destination bed is (re)loaded after both locks are held, so its status
+        // check below reflects any concurrently-committed change rather than a stale snapshot.
+        var (firstBedId, secondBedId) = admission.BedId.CompareTo(request.NewBedId) < 0
+            ? (admission.BedId, request.NewBedId)
+            : (request.NewBedId, admission.BedId);
+        await _db.AcquireAdvisoryLockAsync(_tenantContext.TenantId, $"Bed_{firstBedId}", ct);
+        await _db.AcquireAdvisoryLockAsync(_tenantContext.TenantId, $"Bed_{secondBedId}", ct);
 
         var newBed = await _db.Beds.Include(b => b.Ward)
             .FirstOrDefaultAsync(b => b.BedId == request.NewBedId, ct)
@@ -168,6 +206,13 @@ public class AdmissionService : IAdmissionService
 
         _db.AdmissionTransfers.Add(transfer);
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.AdmissionTransfer, nameof(Admission), admissionId, admission.PatientId,
+            details: $"FromBedId={transfer.FromBedId}; ToBedId={transfer.ToBedId}; Reason={transfer.Reason}", ct: ct);
+        _logger.LogInformation("Admission {AdmissionId} transferred from bed {FromBedId} to bed {ToBedId}",
+            admissionId, transfer.FromBedId, transfer.ToBedId);
+
+        await transaction.CommitAsync(ct);
 
         return ToDetail((await LoadDetail(admissionId, ct))!);
     }
@@ -210,6 +255,10 @@ public class AdmissionService : IAdmissionService
         a.AttendingPhysicianNotes = request.AttendingPhysicianNotes?.Trim();
 
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.AdmissionUpdateDischargeSummary, nameof(Admission), admissionId, a.PatientId, ct: ct);
+        _logger.LogInformation("Discharge summary updated for admission {AdmissionId}", admissionId);
+
         return ToDischargeSummary(a);
     }
 

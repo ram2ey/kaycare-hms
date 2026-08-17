@@ -5,6 +5,7 @@ using KayCare.Core.Exceptions;
 using KayCare.Core.Interfaces;
 using KayCare.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace KayCare.Infrastructure.Services;
 
@@ -12,11 +13,19 @@ public class CreditNoteService : ICreditNoteService
 {
     private readonly AppDbContext        _db;
     private readonly ICurrentUserService _currentUser;
+    private readonly IAuditService       _audit;
+    private readonly ILogger<CreditNoteService> _logger;
 
-    public CreditNoteService(AppDbContext db, ICurrentUserService currentUser)
+    public CreditNoteService(
+        AppDbContext db,
+        ICurrentUserService currentUser,
+        IAuditService audit,
+        ILogger<CreditNoteService> logger)
     {
         _db          = db;
         _currentUser = currentUser;
+        _audit       = audit;
+        _logger      = logger;
     }
 
     // ── Create ────────────────────────────────────────────────────────────────
@@ -54,6 +63,11 @@ public class CreditNoteService : ICreditNoteService
 
         _db.CreditNotes.Add(cn);
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.CreditNoteCreate, nameof(CreditNote), cn.CreditNoteId, cn.PatientId,
+            details: $"CreditNoteNumber={cn.CreditNoteNumber}; Amount={cn.Amount:F2}; BillId={cn.BillId}", ct: ct);
+        _logger.LogInformation("Credit note {CreditNoteId} ({CreditNoteNumber}) created for {Amount:F2} against bill {BillId}",
+            cn.CreditNoteId, cn.CreditNoteNumber, cn.Amount, cn.BillId);
 
         await transaction.CommitAsync(ct);
 
@@ -106,6 +120,9 @@ public class CreditNoteService : ICreditNoteService
 
         await _db.SaveChangesAsync(ct);
 
+        await _audit.LogAsync(AuditActions.CreditNoteApprove, nameof(CreditNote), id, cn.PatientId, ct: ct);
+        _logger.LogInformation("Credit note {CreditNoteId} approved", id);
+
         return await LoadDetailAsync(id, ct)
             ?? throw new InvalidOperationException("Failed to load credit note after approval.");
     }
@@ -141,6 +158,11 @@ public class CreditNoteService : ICreditNoteService
 
         await _db.SaveChangesAsync(ct);
 
+        await _audit.LogAsync(AuditActions.CreditNoteApply, nameof(CreditNote), id, cn.PatientId,
+            details: $"Amount={cn.Amount:F2}; BillId={bill.BillId}", ct: ct);
+        _logger.LogInformation("Credit note {CreditNoteId} applied to bill {BillId}, new bill status {Status}",
+            id, bill.BillId, bill.Status);
+
         return await LoadDetailAsync(id, ct)
             ?? throw new InvalidOperationException("Failed to load credit note after applying.");
     }
@@ -161,6 +183,9 @@ public class CreditNoteService : ICreditNoteService
         cn.Status = CreditNoteStatus.Voided;
 
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.CreditNoteVoid, nameof(CreditNote), id, cn.PatientId, ct: ct);
+        _logger.LogWarning("Credit note {CreditNoteId} voided", id);
 
         return await LoadDetailAsync(id, ct)
             ?? throw new InvalidOperationException("Failed to load credit note after voiding.");

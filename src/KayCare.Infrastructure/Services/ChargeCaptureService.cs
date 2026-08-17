@@ -3,6 +3,7 @@ using KayCare.Core.Entities;
 using KayCare.Core.Interfaces;
 using KayCare.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace KayCare.Infrastructure.Services;
 
@@ -11,12 +12,21 @@ public class ChargeCaptureService : IChargeCaptureService
     private readonly AppDbContext        _db;
     private readonly ICurrentUserService _currentUser;
     private readonly ITenantContext      _tenantContext;
+    private readonly IAuditService       _audit;
+    private readonly ILogger<ChargeCaptureService> _logger;
 
-    public ChargeCaptureService(AppDbContext db, ICurrentUserService currentUser, ITenantContext tenantContext)
+    public ChargeCaptureService(
+        AppDbContext db,
+        ICurrentUserService currentUser,
+        ITenantContext tenantContext,
+        IAuditService audit,
+        ILogger<ChargeCaptureService> logger)
     {
         _db           = db;
         _currentUser  = currentUser;
         _tenantContext = tenantContext;
+        _audit        = audit;
+        _logger       = logger;
     }
 
     // ── Consultation ──────────────────────────────────────────────────────────
@@ -41,7 +51,7 @@ public class ChargeCaptureService : IChargeCaptureService
             if (alreadyCaptured) return;
 
             var bill  = await FindOrCreateBillAsync(consultation.PatientId, consultationId, ct);
-            var price = await GetCatalogPriceAsync("Medical Consultation", "Consultation", ct);
+            var price = await _db.ResolvePriceAsync("Medical Consultation", "Consultation", bill.PayerId, ct);
 
             _db.BillItems.Add(new BillItem
             {
@@ -57,6 +67,11 @@ public class ChargeCaptureService : IChargeCaptureService
 
             await _db.SaveChangesAsync(ct);
             await RecalculateTotalAsync(bill.BillId, ct);
+
+            await _audit.LogAsync(AuditActions.ChargeCapture, nameof(Bill), bill.BillId, consultation.PatientId,
+                details: $"Consultation charge captured; ConsultationId={consultationId}", ct: ct);
+            _logger.LogInformation("Consultation charge captured on bill {BillId} for consultation {ConsultationId}",
+                bill.BillId, consultationId);
 
             if (ownsTransaction && transaction != null)
             {
@@ -118,7 +133,7 @@ public class ChargeCaptureService : IChargeCaptureService
                                 && i.SourceId   == labItem.LabOrderItemId, ct);
                 if (alreadyCaptured) continue;
 
-                var price = FindCatalogPrice(catalog, labItem.TestName, "Laboratory");
+                var price = await _db.ResolvePriceFromCatalogAsync(catalog, labItem.TestName, "Laboratory", bill.PayerId, ct);
 
                 _db.BillItems.Add(new BillItem
                 {
@@ -138,6 +153,11 @@ public class ChargeCaptureService : IChargeCaptureService
             {
                 await _db.SaveChangesAsync(ct);
                 await RecalculateTotalAsync(bill.BillId, ct);
+
+                await _audit.LogAsync(AuditActions.ChargeCapture, nameof(Bill), bill.BillId, order.PatientId,
+                    details: $"Lab order charges captured; LabOrderId={labOrderId}", ct: ct);
+                _logger.LogInformation("Lab order charges captured on bill {BillId} for lab order {LabOrderId}",
+                    bill.BillId, labOrderId);
             }
 
             if (ownsTransaction && transaction != null)
@@ -199,7 +219,7 @@ public class ChargeCaptureService : IChargeCaptureService
             foreach (var eventItem in dispenseEvent.Items)
             {
                 var med      = eventItem.PrescriptionItem;
-                var price    = FindCatalogPrice(catalog, med.MedicationName, "Medication");
+                var price    = await _db.ResolvePriceFromCatalogAsync(catalog, med.MedicationName, "Medication", bill.PayerId, ct);
                 var desc     = string.IsNullOrWhiteSpace(med.Strength)
                     ? med.MedicationName
                     : $"{med.MedicationName} {med.Strength}";
@@ -219,6 +239,11 @@ public class ChargeCaptureService : IChargeCaptureService
 
             await _db.SaveChangesAsync(ct);
             await RecalculateTotalAsync(bill.BillId, ct);
+
+            await _audit.LogAsync(AuditActions.ChargeCapture, nameof(Bill), bill.BillId, prescription.PatientId,
+                details: $"Dispense charges captured; PrescriptionId={prescriptionId}; DispenseEventId={dispenseEventId}", ct: ct);
+            _logger.LogInformation("Dispense charges captured on bill {BillId} for prescription {PrescriptionId}",
+                bill.BillId, prescriptionId);
 
             if (ownsTransaction && transaction != null)
             {
@@ -296,25 +321,6 @@ public class ChargeCaptureService : IChargeCaptureService
             .SumAsync(i => i.TotalPrice, ct);
 
         await _db.SaveChangesAsync(ct);
-    }
-
-    /// <summary>Looks up a price by item name first, then category fallback. Checks PayerTariff if payerId is set.</summary>
-    private async Task<decimal> GetCatalogPriceAsync(string name, string category, CancellationToken ct)
-    {
-        var item = await _db.ServiceCatalogItems
-            .FirstOrDefaultAsync(s => s.IsActive && (s.Name.ToLower() == name.ToLower() || s.Category.ToLower() == category.ToLower()), ct);
-
-        return item?.UnitPrice ?? 0m;
-    }
-
-    /// <summary>Finds a catalog price from a pre-loaded list (avoids N+1 in loops), checking tariffs if available.</summary>
-    private static decimal FindCatalogPrice(List<ServiceCatalogItem> catalog, string name, string category)
-    {
-        var byName = catalog.FirstOrDefault(s => s.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
-        if (byName is not null) return byName.UnitPrice;
-
-        var byCategory = catalog.FirstOrDefault(s => s.Category.Equals(category, StringComparison.OrdinalIgnoreCase));
-        return byCategory?.UnitPrice ?? 0m;
     }
 
     private async Task<string> GenerateBillNumberAsync(CancellationToken ct)

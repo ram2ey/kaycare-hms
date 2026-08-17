@@ -5,6 +5,7 @@ using KayCare.Core.Exceptions;
 using KayCare.Core.Interfaces;
 using KayCare.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace KayCare.Infrastructure.Services;
 
@@ -13,12 +14,21 @@ public class BillingService : IBillingService
     private readonly AppDbContext        _db;
     private readonly ICurrentUserService _currentUser;
     private readonly ITenantContext      _tenantContext;
+    private readonly IAuditService       _audit;
+    private readonly ILogger<BillingService> _logger;
 
-    public BillingService(AppDbContext db, ICurrentUserService currentUser, ITenantContext tenantContext)
+    public BillingService(
+        AppDbContext db,
+        ICurrentUserService currentUser,
+        ITenantContext tenantContext,
+        IAuditService audit,
+        ILogger<BillingService> logger)
     {
         _db          = db;
         _currentUser = currentUser;
         _tenantContext = tenantContext;
+        _audit       = audit;
+        _logger      = logger;
     }
 
     // ── Create ────────────────────────────────────────────────────────────────
@@ -68,15 +78,29 @@ public class BillingService : IBillingService
         _db.Bills.Add(bill);
         await _db.SaveChangesAsync(ct); // flush to get BillId
 
-        var items = req.Items.Select(i => new BillItem
+        // If a submitted line item matches an active catalog service, re-derive its price from
+        // the catalog/payer tariff server-side rather than trusting the client-submitted amount —
+        // a manually-editable price field must never be the sole authority on what gets billed.
+        // Lines with no catalog match (genuinely ad-hoc/manual charges) keep the submitted price.
+        var catalog = await _db.ServiceCatalogItems.Where(s => s.IsActive).AsNoTracking().ToListAsync(ct);
+        var items = new List<BillItem>();
+        foreach (var i in req.Items)
         {
-            BillId      = bill.BillId,
-            TenantId    = _tenantContext.TenantId,
-            Description = i.Description.Trim(),
-            Category    = i.Category?.Trim(),
-            Quantity    = i.Quantity,
-            UnitPrice   = i.UnitPrice
-        }).ToList();
+            var matched = catalog.FirstOrDefault(c => c.Name.Equals(i.Description.Trim(), StringComparison.OrdinalIgnoreCase));
+            var unitPrice = matched is not null
+                ? await _db.ResolveTariffOrCatalogPriceAsync(matched, bill.PayerId, ct)
+                : i.UnitPrice;
+
+            items.Add(new BillItem
+            {
+                BillId      = bill.BillId,
+                TenantId    = _tenantContext.TenantId,
+                Description = i.Description.Trim(),
+                Category    = i.Category?.Trim(),
+                Quantity    = i.Quantity,
+                UnitPrice   = unitPrice
+            });
+        }
 
         _db.BillItems.AddRange(items);
         await _db.SaveChangesAsync(ct);
@@ -88,6 +112,11 @@ public class BillingService : IBillingService
 
         bill.TotalAmount = total;
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.BillCreate, nameof(Bill), bill.BillId, bill.PatientId,
+            details: $"BillNumber={bill.BillNumber}; Total={bill.TotalAmount:F2}", ct: ct);
+        _logger.LogInformation("Bill {BillId} ({BillNumber}) created for patient {PatientId}, total {TotalAmount:F2}",
+            bill.BillId, bill.BillNumber, bill.PatientId, bill.TotalAmount);
 
         await transaction.CommitAsync(ct);
 
@@ -131,6 +160,9 @@ public class BillingService : IBillingService
 
     public async Task<BillDetailResponse> IssueAsync(Guid billId, CancellationToken ct = default)
     {
+        using var transaction = await _db.Database.BeginTransactionAsync(ct);
+        await _db.AcquireAdvisoryLockAsync(_tenantContext.TenantId, $"Bill_{billId}", ct);
+
         var bill = await _db.Bills
             .FirstOrDefaultAsync(b => b.BillId == billId, ct)
             ?? throw new NotFoundException(nameof(Bill), billId);
@@ -142,6 +174,11 @@ public class BillingService : IBillingService
         bill.IssuedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
 
+        await _audit.LogAsync(AuditActions.BillIssue, nameof(Bill), billId, bill.PatientId, ct: ct);
+        _logger.LogInformation("Bill {BillId} issued", billId);
+
+        await transaction.CommitAsync(ct);
+
         return await LoadDetailAsync(billId, ct);
     }
 
@@ -149,6 +186,9 @@ public class BillingService : IBillingService
 
     public async Task<BillDetailResponse> AddPaymentAsync(Guid billId, AddPaymentRequest req, CancellationToken ct = default)
     {
+        using var transaction = await _db.Database.BeginTransactionAsync(ct);
+        await _db.AcquireAdvisoryLockAsync(_tenantContext.TenantId, $"Bill_{billId}", ct);
+
         var bill = await _db.Bills
             .FirstOrDefaultAsync(b => b.BillId == billId, ct)
             ?? throw new NotFoundException(nameof(Bill), billId);
@@ -184,6 +224,13 @@ public class BillingService : IBillingService
 
         await _db.SaveChangesAsync(ct);
 
+        await _audit.LogAsync(AuditActions.BillPayment, nameof(Bill), billId, bill.PatientId,
+            details: $"PaymentId={payment.PaymentId}; Amount={payment.Amount:F2}; Method={payment.PaymentMethod}", ct: ct);
+        _logger.LogInformation("Payment {PaymentId} of {Amount:F2} recorded against bill {BillId}, new status {Status}",
+            payment.PaymentId, payment.Amount, billId, bill.Status);
+
+        await transaction.CommitAsync(ct);
+
         return await LoadDetailAsync(billId, ct);
     }
 
@@ -191,6 +238,9 @@ public class BillingService : IBillingService
 
     public async Task<BillDetailResponse> ApplyDiscountAsync(Guid billId, ApplyDiscountRequest req, CancellationToken ct = default)
     {
+        using var transaction = await _db.Database.BeginTransactionAsync(ct);
+        await _db.AcquireAdvisoryLockAsync(_tenantContext.TenantId, $"Bill_{billId}", ct);
+
         var bill = await _db.Bills
             .FirstOrDefaultAsync(b => b.BillId == billId, ct)
             ?? throw new NotFoundException(nameof(Bill), billId);
@@ -208,6 +258,12 @@ public class BillingService : IBillingService
         bill.DiscountReason = req.DiscountReason?.Trim();
         await _db.SaveChangesAsync(ct);
 
+        await _audit.LogAsync(AuditActions.BillDiscount, nameof(Bill), billId, bill.PatientId,
+            details: $"DiscountAmount={bill.DiscountAmount:F2}; Reason={bill.DiscountReason}", ct: ct);
+        _logger.LogInformation("Discount of {DiscountAmount:F2} applied to bill {BillId}", bill.DiscountAmount, billId);
+
+        await transaction.CommitAsync(ct);
+
         return await LoadDetailAsync(billId, ct);
     }
 
@@ -215,6 +271,9 @@ public class BillingService : IBillingService
 
     public async Task<BillDetailResponse> AddAdjustmentAsync(Guid billId, AddAdjustmentRequest req, CancellationToken ct = default)
     {
+        using var transaction = await _db.Database.BeginTransactionAsync(ct);
+        await _db.AcquireAdvisoryLockAsync(_tenantContext.TenantId, $"Bill_{billId}", ct);
+
         var bill = await _db.Bills
             .FirstOrDefaultAsync(b => b.BillId == billId, ct)
             ?? throw new NotFoundException(nameof(Bill), billId);
@@ -245,6 +304,13 @@ public class BillingService : IBillingService
         bill.AdjustmentTotal += req.Amount;
         await _db.SaveChangesAsync(ct);
 
+        await _audit.LogAsync(AuditActions.BillAdjustment, nameof(Bill), billId, bill.PatientId,
+            details: $"AdjustmentId={adjustment.BillAdjustmentId}; Amount={adjustment.Amount:F2}; Reason={adjustment.Reason}", ct: ct);
+        _logger.LogInformation("Adjustment of {Amount:F2} applied to bill {BillId}: {Reason}",
+            adjustment.Amount, billId, adjustment.Reason);
+
+        await transaction.CommitAsync(ct);
+
         return await LoadDetailAsync(billId, ct);
     }
 
@@ -252,6 +318,9 @@ public class BillingService : IBillingService
 
     public async Task<BillDetailResponse> WriteOffAsync(Guid billId, WriteOffRequest req, CancellationToken ct = default)
     {
+        using var transaction = await _db.Database.BeginTransactionAsync(ct);
+        await _db.AcquireAdvisoryLockAsync(_tenantContext.TenantId, $"Bill_{billId}", ct);
+
         var bill = await _db.Bills
             .FirstOrDefaultAsync(b => b.BillId == billId, ct)
             ?? throw new NotFoundException(nameof(Bill), billId);
@@ -268,6 +337,13 @@ public class BillingService : IBillingService
 
         await _db.SaveChangesAsync(ct);
 
+        await _audit.LogAsync(AuditActions.BillWriteOff, nameof(Bill), billId, bill.PatientId,
+            details: $"WriteOffAmount={bill.WriteOffAmount:F2}; Reason={bill.WriteOffReason}", ct: ct);
+        _logger.LogWarning("Bill {BillId} written off for {WriteOffAmount:F2}: {Reason}",
+            billId, bill.WriteOffAmount, bill.WriteOffReason);
+
+        await transaction.CommitAsync(ct);
+
         return await LoadDetailAsync(billId, ct);
     }
 
@@ -275,6 +351,9 @@ public class BillingService : IBillingService
 
     public async Task<BillDetailResponse> CancelAsync(Guid billId, CancellationToken ct = default)
     {
+        using var transaction = await _db.Database.BeginTransactionAsync(ct);
+        await _db.AcquireAdvisoryLockAsync(_tenantContext.TenantId, $"Bill_{billId}", ct);
+
         var bill = await _db.Bills
             .FirstOrDefaultAsync(b => b.BillId == billId, ct)
             ?? throw new NotFoundException(nameof(Bill), billId);
@@ -285,6 +364,11 @@ public class BillingService : IBillingService
         bill.Status = BillStatus.Cancelled;
         await _db.SaveChangesAsync(ct);
 
+        await _audit.LogAsync(AuditActions.BillCancel, nameof(Bill), billId, bill.PatientId, ct: ct);
+        _logger.LogWarning("Bill {BillId} cancelled", billId);
+
+        await transaction.CommitAsync(ct);
+
         return await LoadDetailAsync(billId, ct);
     }
 
@@ -292,6 +376,9 @@ public class BillingService : IBillingService
 
     public async Task<BillDetailResponse> VoidAsync(Guid billId, CancellationToken ct = default)
     {
+        using var transaction = await _db.Database.BeginTransactionAsync(ct);
+        await _db.AcquireAdvisoryLockAsync(_tenantContext.TenantId, $"Bill_{billId}", ct);
+
         var bill = await _db.Bills
             .FirstOrDefaultAsync(b => b.BillId == billId, ct)
             ?? throw new NotFoundException(nameof(Bill), billId);
@@ -301,6 +388,11 @@ public class BillingService : IBillingService
 
         bill.Status = BillStatus.Void;
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.BillVoid, nameof(Bill), billId, bill.PatientId, ct: ct);
+        _logger.LogWarning("Bill {BillId} voided", billId);
+
+        await transaction.CommitAsync(ct);
 
         return await LoadDetailAsync(billId, ct);
     }

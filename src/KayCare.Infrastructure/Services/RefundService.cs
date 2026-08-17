@@ -5,6 +5,7 @@ using KayCare.Core.Exceptions;
 using KayCare.Core.Interfaces;
 using KayCare.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace KayCare.Infrastructure.Services;
 
@@ -12,11 +13,19 @@ public class RefundService : IRefundService
 {
     private readonly AppDbContext        _db;
     private readonly ICurrentUserService _currentUser;
+    private readonly IAuditService       _audit;
+    private readonly ILogger<RefundService> _logger;
 
-    public RefundService(AppDbContext db, ICurrentUserService currentUser)
+    public RefundService(
+        AppDbContext db,
+        ICurrentUserService currentUser,
+        IAuditService audit,
+        ILogger<RefundService> logger)
     {
         _db          = db;
         _currentUser = currentUser;
+        _audit       = audit;
+        _logger      = logger;
     }
 
     // ── Create ────────────────────────────────────────────────────────────────
@@ -70,6 +79,11 @@ public class RefundService : IRefundService
 
         _db.Refunds.Add(refund);
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.RefundCreate, nameof(Refund), refund.RefundId, refund.PatientId,
+            details: $"RefundNumber={refund.RefundNumber}; Amount={refund.Amount:F2}; BillId={refund.BillId}", ct: ct);
+        _logger.LogInformation("Refund {RefundId} ({RefundNumber}) created for {Amount:F2} against bill {BillId}",
+            refund.RefundId, refund.RefundNumber, refund.Amount, refund.BillId);
 
         await transaction.CommitAsync(ct);
 
@@ -146,6 +160,12 @@ public class RefundService : IRefundService
             refund.ProcessedAt     = DateTime.UtcNow;
 
             await _db.SaveChangesAsync(ct);
+
+            await _audit.LogAsync(AuditActions.RefundProcess, nameof(Refund), id, refund.PatientId,
+                details: $"Amount={refund.Amount:F2}; BillId={bill.BillId}", ct: ct);
+            _logger.LogInformation("Refund {RefundId} processed for {Amount:F2} against bill {BillId}",
+                id, refund.Amount, bill.BillId);
+
             await transaction.CommitAsync(ct);
 
             return await LoadDetailAsync(id, ct)
@@ -171,6 +191,9 @@ public class RefundService : IRefundService
         refund.Status = RefundStatus.Cancelled;
 
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.RefundCancel, nameof(Refund), id, refund.PatientId, ct: ct);
+        _logger.LogWarning("Refund {RefundId} cancelled", id);
 
         return await LoadDetailAsync(id, ct)
             ?? throw new InvalidOperationException("Failed to load refund after cancellation.");

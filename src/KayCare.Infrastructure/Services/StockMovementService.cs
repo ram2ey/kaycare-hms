@@ -5,6 +5,7 @@ using KayCare.Core.Exceptions;
 using KayCare.Core.Interfaces;
 using KayCare.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace KayCare.Infrastructure.Services;
 
@@ -13,12 +14,21 @@ public class StockMovementService : IStockMovementService
     private readonly AppDbContext        _db;
     private readonly ITenantContext      _tenantContext;
     private readonly ICurrentUserService _currentUser;
+    private readonly IAuditService       _audit;
+    private readonly ILogger<StockMovementService> _logger;
 
-    public StockMovementService(AppDbContext db, ITenantContext tenantContext, ICurrentUserService currentUser)
+    public StockMovementService(
+        AppDbContext db,
+        ITenantContext tenantContext,
+        ICurrentUserService currentUser,
+        IAuditService audit,
+        ILogger<StockMovementService> logger)
     {
         _db            = db;
         _tenantContext = tenantContext;
         _currentUser   = currentUser;
+        _audit         = audit;
+        _logger        = logger;
     }
 
     public async Task<StockMovementResponse> RecordMovementAsync(
@@ -80,6 +90,11 @@ public class StockMovementService : IStockMovementService
 
             _db.StockMovements.Add(movement);
             await _db.SaveChangesAsync(ct);
+
+            await _audit.LogAsync(AuditActions.StockMovementRecord, nameof(DrugInventory), drugInventoryId, null,
+                details: $"Type={movementType}; Qty={quantity}; {previous}->{next}", ct: ct);
+            _logger.LogInformation("Stock movement recorded for drug {DrugInventoryId} ({DrugName}): {MovementType} {Quantity}, {Previous}->{New}",
+                drugInventoryId, drug.Name, movementType, quantity, previous, next);
 
             if (ownsTransaction && transaction != null)
             {
@@ -199,8 +214,16 @@ public class StockMovementService : IStockMovementService
                 });
             }
 
-            if (_db.ChangeTracker.HasChanges())
+            var deductedCount = _db.ChangeTracker.Entries<StockMovement>().Count(e => e.State == EntityState.Added);
+            if (deductedCount > 0)
+            {
                 await _db.SaveChangesAsync(ct);
+
+                await _audit.LogAsync(AuditActions.StockMovementDispenseDeduct, "Prescription", prescriptionId, null,
+                    details: $"Deducted stock for {deductedCount} drug(s) dispensed", ct: ct);
+                _logger.LogInformation("Stock deducted for {DrugCount} drug(s) dispensed under prescription {PrescriptionId}",
+                    deductedCount, prescriptionId);
+            }
 
             if (ownsTransaction && transaction != null)
             {

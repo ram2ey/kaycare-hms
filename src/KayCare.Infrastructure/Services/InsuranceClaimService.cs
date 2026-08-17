@@ -5,6 +5,7 @@ using KayCare.Core.Exceptions;
 using KayCare.Core.Interfaces;
 using KayCare.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
@@ -16,12 +17,21 @@ public class InsuranceClaimService : IInsuranceClaimService
     private readonly AppDbContext        _db;
     private readonly ICurrentUserService _currentUser;
     private readonly ITenantContext      _tenantContext;
+    private readonly IAuditService       _audit;
+    private readonly ILogger<InsuranceClaimService> _logger;
 
-    public InsuranceClaimService(AppDbContext db, ICurrentUserService currentUser, ITenantContext tenantContext)
+    public InsuranceClaimService(
+        AppDbContext db,
+        ICurrentUserService currentUser,
+        ITenantContext tenantContext,
+        IAuditService audit,
+        ILogger<InsuranceClaimService> logger)
     {
         _db            = db;
         _currentUser   = currentUser;
         _tenantContext = tenantContext;
+        _audit         = audit;
+        _logger        = logger;
     }
 
     // ── Create ────────────────────────────────────────────────────────────────
@@ -83,6 +93,11 @@ public class InsuranceClaimService : IInsuranceClaimService
         _db.InsuranceClaims.Add(claim);
         await _db.SaveChangesAsync(ct);
 
+        await _audit.LogAsync(AuditActions.ClaimCreate, nameof(InsuranceClaim), claim.ClaimId, claim.PatientId,
+            details: $"ClaimNumber={claim.ClaimNumber}; Amount={claim.ClaimAmount:F2}; PayerId={claim.PayerId}", ct: ct);
+        _logger.LogInformation("Claim {ClaimId} ({ClaimNumber}) created for {Amount:F2} against bill {BillId}",
+            claim.ClaimId, claim.ClaimNumber, claim.ClaimAmount, claim.BillId);
+
         await transaction.CommitAsync(ct);
 
         return await LoadDetailAsync(claim.ClaimId, ct)
@@ -137,6 +152,9 @@ public class InsuranceClaimService : IInsuranceClaimService
         claim.SubmittedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.ClaimSubmit, nameof(InsuranceClaim), claimId, claim.PatientId, ct: ct);
+        _logger.LogInformation("Claim {ClaimId} submitted", claimId);
 
         return await LoadDetailAsync(claimId, ct)
             ?? throw new InvalidOperationException("Failed to load claim after submit.");
@@ -199,6 +217,12 @@ public class InsuranceClaimService : IInsuranceClaimService
                 claim.Notes = req.Notes.Trim();
 
             await _db.SaveChangesAsync(ct);
+
+            await _audit.LogAsync(AuditActions.ClaimApprove, nameof(InsuranceClaim), claimId, claim.PatientId,
+                details: $"ApprovedAmount={claim.ApprovedAmount:F2}; PaymentId={payment.PaymentId}", ct: ct);
+            _logger.LogInformation("Claim {ClaimId} approved for {ApprovedAmount:F2}, status {Status}",
+                claimId, claim.ApprovedAmount, claim.Status);
+
             await transaction.CommitAsync(ct);
 
             return await LoadDetailAsync(claimId, ct)
@@ -230,6 +254,10 @@ public class InsuranceClaimService : IInsuranceClaimService
 
         await _db.SaveChangesAsync(ct);
 
+        await _audit.LogAsync(AuditActions.ClaimReject, nameof(InsuranceClaim), claimId, claim.PatientId,
+            details: $"Reason={claim.RejectionReason}", ct: ct);
+        _logger.LogWarning("Claim {ClaimId} rejected: {Reason}", claimId, claim.RejectionReason);
+
         return await LoadDetailAsync(claimId, ct)
             ?? throw new InvalidOperationException("Failed to load claim after rejection.");
     }
@@ -250,6 +278,9 @@ public class InsuranceClaimService : IInsuranceClaimService
         claim.Status = ClaimStatus.Cancelled;
 
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.ClaimCancel, nameof(InsuranceClaim), claimId, claim.PatientId, ct: ct);
+        _logger.LogWarning("Claim {ClaimId} cancelled", claimId);
 
         return await LoadDetailAsync(claimId, ct)
             ?? throw new InvalidOperationException("Failed to load claim after cancellation.");
