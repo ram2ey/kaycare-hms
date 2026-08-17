@@ -99,24 +99,33 @@ public class TenantIsolationTests : IClassFixture<MediCloudWebAppFactory>
     // ── Authentication cross-tenant ───────────────────────────────────────────
 
     [Fact]
-    public async Task TenantA_Token_IsRejectedByTenantB_Endpoints()
+    public async Task TenantA_Token_IgnoresSpoofedTenantBHeader()
     {
-        // Log in as TenantA, then try to call a TenantB-header endpoint using that token
         var clientA = await _factory.CreateAdminClientAsync(_factory.TenantA);
 
-        // Swap the tenant header to TenantB while keeping TenantA's JWT
+        // Create a uniquely-named patient under TenantA
+        var uniqueName = "StolenToken" + Guid.NewGuid().ToString("N")[..8];
+        await clientA.PostAsJsonAsync("/api/patients", new CreatePatientRequest
+        {
+            FirstName   = uniqueName,
+            LastName    = "Leak",
+            DateOfBirth = new DateOnly(1980, 1, 1),
+            Gender      = "Male",
+        });
+
+        // Swap the tenant header to TenantB while keeping TenantA's JWT — an attempt to escape
+        // tenant scope via a spoofed header rather than a stolen/forged token
         clientA.DefaultRequestHeaders.Remove("X-Tenant-Code");
         clientA.DefaultRequestHeaders.Add("X-Tenant-Code", _factory.TenantB.TenantCode);
 
-        // The JWT's sub claim carries TenantA's UserId; TenantB's DB has no such user
-        // → patient list should return empty (not TenantA's patients)
-        var resp = await clientA.GetAsync("/api/patients");
-        // The request will succeed (200) but return empty results for TenantB
+        // TenantResolutionMiddleware ignores X-Tenant-Code entirely once a request is
+        // authenticated and resolves scope from the JWT's tenantId claim instead — so this must
+        // still return TenantA's own patient (not TenantB's scope, not a 404/401).
+        var resp = await clientA.GetAsync($"/api/patients?query={uniqueName}");
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
 
         var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
-        // TenantB has no patients — the cross-tenant token sees TenantB's empty scope
-        Assert.Equal(0, body.GetProperty("totalCount").GetInt32());
+        Assert.Equal(1, body.GetProperty("totalCount").GetInt32());
     }
 
     // ── Bill isolation ────────────────────────────────────────────────────────
