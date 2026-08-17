@@ -30,6 +30,11 @@ public class LabOrderItemConfiguration : IEntityTypeConfiguration<LabOrderItem>
                .IsUnique()
                .HasFilter("\"AccessionNumber\" IS NOT NULL");
 
+        // Order-lookup path — EF's automatic FK index on the bare LabOrderId column doesn't
+        // include TenantId, so a tenant-scoped "items for this order" query can't use it as a
+        // covering index.
+        builder.HasIndex(i => new { i.TenantId, i.LabOrderId });
+
         builder.HasOne(i => i.LabTestCatalog)
                .WithMany()
                .HasForeignKey(i => i.LabTestCatalogId)

@@ -57,5 +57,14 @@ public class BillConfiguration : IEntityTypeConfiguration<Bill>
             .WithMany()
             .HasForeignKey(b => b.PayerId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        // The (TenantId, AdmissionId) index above existed with no matching FK constraint — a
+        // Bill could reference a nonexistent Admission. Restrict (not Cascade/SetNull) matches
+        // Patient/CreatedBy above: an Admission with billing history attached must not be
+        // deletable out from under it.
+        builder.HasOne(b => b.Admission)
+            .WithMany()
+            .HasForeignKey(b => b.AdmissionId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

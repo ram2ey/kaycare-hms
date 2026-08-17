@@ -29,5 +29,7 @@ public class BillTemplateItemConfiguration : IEntityTypeConfiguration<BillTempla
             .WithMany(t => t.Items)
             .HasForeignKey(i => i.BillTemplateId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasIndex(i => new { i.TenantId, i.BillTemplateId });
     }
 }

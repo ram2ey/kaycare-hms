@@ -48,6 +48,15 @@ public class PatientConfiguration : IEntityTypeConfiguration<Patient>
         builder.HasIndex(p => new { p.TenantId, p.MedicalRecordNumber }).IsUnique();
         builder.HasIndex(p => new { p.TenantId, p.LastName });
 
+        // Partial (filtered) unique index: NationalId has no uniqueness guarantee at all today,
+        // so two Patient rows in the same tenant could carry the same national ID with nothing
+        // to catch it. Filtered on NOT NULL since it's an optional field — most patients won't
+        // have one recorded, and NULL <> NULL means a plain unique index would incorrectly
+        // reject the second NULL-NationalId patient rather than allowing any number of them.
+        builder.HasIndex(p => new { p.TenantId, p.NationalId })
+            .IsUnique()
+            .HasFilter("\"NationalId\" IS NOT NULL");
+
         builder.HasMany(p => p.Allergies)
             .WithOne(a => a.Patient)
             .HasForeignKey(a => a.PatientId)

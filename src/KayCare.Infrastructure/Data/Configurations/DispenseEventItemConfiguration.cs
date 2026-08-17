@@ -22,5 +22,7 @@ public class DispenseEventItemConfiguration : IEntityTypeConfiguration<DispenseE
             .WithMany()
             .HasForeignKey(i => i.PrescriptionItemId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasIndex(i => new { i.TenantId, i.DispenseEventId });
     }
 }

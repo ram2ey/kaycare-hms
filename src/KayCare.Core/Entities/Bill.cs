@@ -22,9 +22,10 @@ public class Bill : TenantEntity
     public decimal  BalanceDue       { get; set; }   // computed: TotalAmount + AdjustmentTotal - DiscountAmount - WriteOffAmount - CreditNoteTotal - PaidAmount
     public DateTime? IssuedAt         { get; set; }
 
-    public Patient Patient   { get; set; } = null!;
-    public User    CreatedBy { get; set; } = null!;
-    public Payer?  Payer     { get; set; }
+    public Patient    Patient   { get; set; } = null!;
+    public User       CreatedBy { get; set; } = null!;
+    public Payer?     Payer     { get; set; }
+    public Admission? Admission { get; set; }
 
     public ICollection<BillItem>       Items       { get; set; } = [];
     public ICollection<Payment>        Payments    { get; set; } = [];
