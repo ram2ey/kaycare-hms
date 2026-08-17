@@ -48,13 +48,16 @@ export class ErrorBoundary extends Component<Props, State> {
               <h2 className="text-xl font-semibold text-gray-800">Something went wrong</h2>
             </div>
             <p className="text-sm text-gray-500 mb-4">
-              This page ran into an unexpected error. The message below can help diagnose the issue.
+              This page ran into an unexpected error.
+              {import.meta.env.DEV && ' The message below can help diagnose the issue.'}
             </p>
-            <pre className="bg-red-50 border border-red-200 rounded-lg p-4 text-xs text-red-800 overflow-auto max-h-48 whitespace-pre-wrap break-all mb-6">
-              {this.state.error.message}
-              {'\n\n'}
-              {this.state.error.stack}
-            </pre>
+            {import.meta.env.DEV && (
+              <pre className="bg-red-50 border border-red-200 rounded-lg p-4 text-xs text-red-800 overflow-auto max-h-48 whitespace-pre-wrap break-all mb-6">
+                {this.state.error.message}
+                {'\n\n'}
+                {this.state.error.stack}
+              </pre>
+            )}
             <button
               onClick={this.handleReset}
               className="w-full bg-blue-700 hover:bg-blue-800 text-white text-sm font-medium py-2.5 rounded-lg transition-colors"

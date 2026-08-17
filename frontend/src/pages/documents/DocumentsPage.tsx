@@ -3,7 +3,7 @@ import { getPatientDocuments, getDownloadUrl, uploadDocument, deleteDocument } f
 import { searchPatients } from '../../api/patients';
 import type { DocumentResponse } from '../../types/documents';
 import type { PatientResponse } from '../../types/patients';
-import { DOCUMENT_CATEGORIES, formatBytes } from '../../types/documents';
+import { DOCUMENT_CATEGORIES, formatBytes, validateDocumentFile, ALLOWED_DOCUMENT_TYPES } from '../../types/documents';
 import { safeArray } from '../../utils/array';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 
@@ -192,7 +192,19 @@ export default function DocumentsPage() {
           <div className="mb-4">
             <label className="block text-xs text-gray-600 mb-1">File *</label>
             <input ref={fileRef} type="file" required
-              onChange={(e) => setUploadFile(e.target.files?.[0] ?? null)}
+              accept={ALLOWED_DOCUMENT_TYPES.join(',')}
+              onChange={(e) => {
+                const file = e.target.files?.[0] ?? null;
+                const validationError = file ? validateDocumentFile(file) : null;
+                if (validationError) {
+                  setUploadError(validationError);
+                  setUploadFile(null);
+                  if (fileRef.current) fileRef.current.value = '';
+                  return;
+                }
+                setUploadError('');
+                setUploadFile(file);
+              }}
               className="w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
             />
             {uploadFile && (

@@ -64,9 +64,24 @@ export default function FacilitySettingsPage() {
   async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    setLogoUploading(true);
     setSuccess('');
     setError('');
+
+    // Mirrors FacilitySettingsController.UploadLogo's server-side check — a real guard, not just
+    // the accept="" attribute on the input, which only filters the OS file picker and doesn't
+    // block drag-drop or a renamed file.
+    if (file.size > 2 * 1024 * 1024) {
+      setError('Logo must be 2 MB or smaller.');
+      if (fileRef.current) fileRef.current.value = '';
+      return;
+    }
+    if (!['image/png', 'image/jpeg'].includes(file.type)) {
+      setError('Only PNG and JPEG files are accepted.');
+      if (fileRef.current) fileRef.current.value = '';
+      return;
+    }
+
+    setLogoUploading(true);
     try {
       const updated = await uploadLogo(file);
       setSettings(updated);

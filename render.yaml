@@ -77,3 +77,11 @@ services:
       - type: rewrite
         source: /*
         destination: /index.html
+    headers:
+      # Keep in sync with the CONTENT_SECURITY_POLICY constant in frontend/vite.config.ts, which
+      # exists so this can be verified locally via `npm run preview` before every real deploy —
+      # this is what actually takes effect once deployed, Vite's own dev/preview servers don't
+      # serve traffic here. See that constant's comment for the reasoning per directive.
+      - path: /*
+        name: Content-Security-Policy
+        value: "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
