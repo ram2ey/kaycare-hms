@@ -4,7 +4,7 @@ import { changePassword } from '../api/auth';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function ChangePasswordPage() {
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const navigate = useNavigate();
 
   const [currentPassword, setCurrentPassword] = useState('');
@@ -29,16 +29,10 @@ export default function ChangePasswordPage() {
     setSaving(true);
     try {
       await changePassword({ currentPassword, newPassword });
-      // Update local auth state — clear mustChangePassword flag and redirect
-      const raw = localStorage.getItem('auth');
-      if (raw) {
-        const auth = JSON.parse(raw);
-        auth.mustChangePassword = false;
-        localStorage.setItem('auth', JSON.stringify(auth));
-      }
+      // The server already rotated the auth cookie with MustChangePassword cleared — just
+      // re-sync local state from it and navigate normally, no hard reload needed.
+      await refreshUser();
       navigate('/patients', { replace: true });
-      // Reload so AuthContext picks up updated localStorage
-      window.location.href = '/patients';
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
       setError(msg || 'Failed to change password. Check your current password and try again.');

@@ -17,7 +17,7 @@ public class TokenService : ITokenService
         _config = config;
     }
 
-    public string GenerateToken(User user, string roleName)
+    public (string Token, DateTime ExpiresAt) GenerateToken(User user, string roleName)
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -41,6 +41,6 @@ public class TokenService : ITokenService
             signingCredentials: creds
         );
 
-        return new JwtSecurityTokenHandler().WriteToken(token);
+        return (new JwtSecurityTokenHandler().WriteToken(token), expiry);
     }
 }

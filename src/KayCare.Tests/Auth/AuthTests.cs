@@ -17,7 +17,7 @@ public class AuthTests : IClassFixture<MediCloudWebAppFactory>
     // ── Happy path ────────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task Login_WithValidCredentials_Returns200AndToken()
+    public async Task Login_WithValidCredentials_Returns200AndSetsAuthCookie()
     {
         var client = _factory.CreateAnonymousClientForTenant(_factory.TenantA);
 
@@ -29,9 +29,14 @@ public class AuthTests : IClassFixture<MediCloudWebAppFactory>
 
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
 
-        var body = await resp.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
-        var token = body.GetProperty("token").GetString();
+        // The JWT is delivered via an httpOnly Set-Cookie, never in the response body (frontend
+        // security finding #1 — closes the XSS-token-theft path). Assert both halves of that
+        // contract so a future change can't silently reintroduce the token into the JSON body.
+        var token = MediCloudWebAppFactory.ExtractAuthCookieValue(resp);
         Assert.False(string.IsNullOrEmpty(token));
+
+        var body = await resp.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+        Assert.False(body.TryGetProperty("token", out _), "Login response body must never contain the raw token.");
         Assert.Equal(_factory.TenantA.AdminEmail, body.GetProperty("email").GetString());
         Assert.Equal("Admin", body.GetProperty("role").GetString());
     }

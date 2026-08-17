@@ -1,14 +1,7 @@
-using System.Text.Json.Serialization;
-
 namespace KayCare.Core.DTOs.Auth;
 
-public class LoginResponse
+public class MeResponse
 {
-    // Never serialized to the client — delivered via an httpOnly Set-Cookie instead. Kept on the
-    // DTO only so AuthService can hand the raw value to the controller in C#.
-    [JsonIgnore]
-    public string Token { get; set; } = string.Empty;
-    public DateTime ExpiresAt { get; set; }
     public string UserId { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string FullName { get; set; } = string.Empty;

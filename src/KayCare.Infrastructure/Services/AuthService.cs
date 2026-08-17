@@ -54,25 +54,25 @@ public class AuthService : IAuthService
         user.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
 
-        var tenant = await _db.Tenants.AsNoTracking()
-            .FirstOrDefaultAsync(t => t.TenantId == _tenantContext.TenantId, ct);
+        var (token, expiresAt) = _tokenService.GenerateToken(user, user.Role.RoleName);
 
-        var expiryHours = 8;
         return new LoginResponse
         {
-            Token              = _tokenService.GenerateToken(user, user.Role.RoleName),
-            ExpiresAt          = DateTime.UtcNow.AddHours(expiryHours),
+            Token              = token,
+            ExpiresAt          = expiresAt,
             UserId             = user.UserId.ToString(),
             Email              = user.Email,
             FullName           = $"{user.FirstName} {user.LastName}",
             Role               = user.Role.RoleName,
+            TenantCode         = _tenantContext.TenantCode,
             MustChangePassword = user.MustChangePassword,
         };
     }
 
-    public async Task ChangePasswordAsync(Guid userId, ChangePasswordRequest request, CancellationToken ct = default)
+    public async Task<(string Token, DateTime ExpiresAt)> ChangePasswordAsync(Guid userId, ChangePasswordRequest request, CancellationToken ct = default)
     {
         var user = await _db.Users
+            .Include(u => u.Role)
             .IgnoreQueryFilters()
             .FirstOrDefaultAsync(u => u.UserId == userId && u.TenantId == _tenantContext.TenantId, ct)
             ?? throw new UnauthorizedException("User not found.");
@@ -86,5 +86,30 @@ public class AuthService : IAuthService
         user.LockedUntil        = null;
         user.UpdatedAt          = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
+
+        // Reissue only after the save is confirmed — a failed save must never imply a token was
+        // issued for a password change that didn't actually persist. The old token still carries
+        // MustChangePassword=true until this one is set as the new cookie by the controller.
+        return _tokenService.GenerateToken(user, user.Role.RoleName);
+    }
+
+    public async Task<MeResponse?> GetCurrentUserAsync(Guid userId, CancellationToken ct = default)
+    {
+        var user = await _db.Users
+            .Include(u => u.Role)
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.UserId == userId && u.TenantId == _tenantContext.TenantId, ct);
+
+        if (user is null || !user.IsActive) return null;
+
+        return new MeResponse
+        {
+            UserId             = user.UserId.ToString(),
+            Email              = user.Email,
+            FullName           = $"{user.FirstName} {user.LastName}",
+            Role               = user.Role.RoleName,
+            TenantCode         = _tenantContext.TenantCode,
+            MustChangePassword = user.MustChangePassword,
+        };
     }
 }

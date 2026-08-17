@@ -6,20 +6,24 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-  token: string;
+  csrfToken: string;
   email: string;
   fullName: string;
   role: string;
+  tenantCode: string;
   mustChangePassword: boolean;
 }
 
+export interface MeResponse extends LoginResponse {
+  userId: string;
+}
+
 export interface AuthUser {
-  token: string;
   email: string;
   fullName: string;
   role: string;
-  mustChangePassword: boolean;
   tenantCode: string;
+  mustChangePassword: boolean;
 }
 
 // Common

@@ -1,5 +1,8 @@
+using KayCare.API.Auth;
+using KayCare.Core.Constants;
 using KayCare.Core.DTOs.Auth;
 using KayCare.Core.Interfaces;
+using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,35 +14,78 @@ public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
     private readonly ICurrentUserService _currentUser;
+    private readonly IAntiforgery _antiforgery;
+    private readonly IWebHostEnvironment _env;
 
-    public AuthController(IAuthService authService, ICurrentUserService currentUser)
+    public AuthController(IAuthService authService, ICurrentUserService currentUser,
+        IAntiforgery antiforgery, IWebHostEnvironment env)
     {
         _authService = authService;
         _currentUser = currentUser;
+        _antiforgery = antiforgery;
+        _env         = env;
     }
 
     /// <summary>
-    /// Authenticates a user and returns a JWT token (8hr expiry).
-    /// Requires X-Tenant-Code header or a recognised subdomain.
+    /// Authenticates a user. The JWT is delivered via an httpOnly cookie, never in the response
+    /// body. Requires X-Tenant-Code header or a recognised subdomain.
     /// </summary>
     [HttpPost("login")]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(LoginResponse), 200)]
     [ProducesResponseType(401)]
     [ProducesResponseType(423)]
     public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken ct)
     {
         var response = await _authService.LoginAsync(request, ct);
+
+        Response.Cookies.Append(AuthCookieNames.Token, response.Token, AuthCookiePolicy.Build(_env, response.ExpiresAt));
+        response.CsrfToken = _antiforgery.GetAndStoreTokens(HttpContext).RequestToken!;
+
         return Ok(response);
     }
 
     /// <summary>
-    /// Change the current user's password. Clears the MustChangePassword flag on success.
+    /// Returns the current user, or 401. Called on every SPA boot — the httpOnly cookie can't be
+    /// read by JS, so this is how "am I logged in" is determined, and it (re)primes the CSRF
+    /// token. Must stay AllowAnonymous at the route level (checked inside) so a
+    /// must-change-password user's boot check doesn't get rejected by auth middleware first.
+    /// </summary>
+    [HttpGet("me")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(MeResponse), 200)]
+    [ProducesResponseType(401)]
+    public async Task<IActionResult> Me(CancellationToken ct)
+    {
+        if (User.Identity?.IsAuthenticated != true) return Unauthorized();
+
+        var me = await _authService.GetCurrentUserAsync(_currentUser.UserId, ct);
+        if (me is null) return Unauthorized();
+
+        me.CsrfToken = _antiforgery.GetAndStoreTokens(HttpContext).RequestToken!;
+        return Ok(me);
+    }
+
+    /// <summary>Clears the auth cookie. Safe to call without an active session.</summary>
+    [HttpPost("logout")]
+    [AllowAnonymous]
+    public IActionResult Logout()
+    {
+        Response.Cookies.Append(AuthCookieNames.Token, string.Empty, AuthCookiePolicy.Build(_env, DateTimeOffset.UnixEpoch));
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Change the current user's password. Clears the MustChangePassword flag and rotates the
+    /// auth cookie so the new claim takes effect on the very next request — no client-side hack
+    /// or hard reload needed.
     /// </summary>
     [HttpPost("change-password")]
     [Authorize]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request, CancellationToken ct)
     {
-        await _authService.ChangePasswordAsync(_currentUser.UserId, request, ct);
+        var (token, expiresAt) = await _authService.ChangePasswordAsync(_currentUser.UserId, request, ct);
+        Response.Cookies.Append(AuthCookieNames.Token, token, AuthCookiePolicy.Build(_env, expiresAt));
         return NoContent();
     }
 }

@@ -1,3 +1,4 @@
+using KayCare.Core.Constants;
 using KayCare.Core.Interfaces;
 using KayCare.Infrastructure.Data;
 using KayCare.Infrastructure.Services;
@@ -88,6 +89,13 @@ public class MediCloudWebAppFactory : WebApplicationFactory<Program>, IAsyncLife
     /// Creates an HttpClient that is logged in as the given user and pre-configured
     /// with the X-Tenant-Code header for the given tenant.
     /// </summary>
+    /// <remarks>
+    /// The JWT is delivered via an httpOnly Set-Cookie, not the response body (frontend security
+    /// finding #1 — never exposing the token to JS). Tests extract it from the cookie and resend
+    /// it as an explicit Authorization: Bearer header rather than relying on HttpClient's cookie
+    /// jar, exercising the same header-based fallback path Swagger/tooling use — that path is
+    /// deliberately kept alive and is CSRF-exempt by design (see CsrfProtectionMiddleware).
+    /// </remarks>
     public async Task<HttpClient> CreateAuthenticatedClientAsync(TestTenant tenant, string email)
     {
         var client = CreateClient();
@@ -97,13 +105,31 @@ public class MediCloudWebAppFactory : WebApplicationFactory<Program>, IAsyncLife
             new { Email = email, Password = TestPassword });
         resp.EnsureSuccessStatusCode();
 
-        var body  = await resp.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
-        var token = body.GetProperty("token").GetString()!;
+        var token = ExtractAuthCookieValue(resp)
+            ?? throw new InvalidOperationException("Login response did not set the auth cookie.");
 
         client.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
         return client;
+    }
+
+    /// <summary>Pulls the raw JWT value out of the Set-Cookie header written by AuthController.</summary>
+    internal static string? ExtractAuthCookieValue(HttpResponseMessage resp)
+    {
+        if (!resp.Headers.TryGetValues("Set-Cookie", out var cookies)) return null;
+
+        var prefix = AuthCookieNames.Token + "=";
+        foreach (var cookie in cookies)
+        {
+            if (!cookie.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) continue;
+
+            var value     = cookie[prefix.Length..];
+            var semicolon = value.IndexOf(';');
+            return semicolon >= 0 ? value[..semicolon] : value;
+        }
+
+        return null;
     }
 
     public Task<HttpClient> CreateAdminClientAsync(TestTenant tenant) =>

@@ -4,5 +4,5 @@ namespace KayCare.Core.Interfaces;
 
 public interface ITokenService
 {
-    string GenerateToken(User user, string roleName);
+    (string Token, DateTime ExpiresAt) GenerateToken(User user, string roleName);
 }
