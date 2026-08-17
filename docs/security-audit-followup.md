@@ -16,42 +16,49 @@ Last updated: 2026-08-15.
 ## Part 1 — Before deploying what was just implemented
 
 These are not optional. The 14-item pass made backend changes that were reviewed carefully but
-**never compiled** — this environment has the .NET runtime but no SDK, so `dotnet build` was never
-run. Do these in order before pushing to Production:
+**never compiled** — this environment had the .NET runtime but no SDK, so `dotnet build` was never
+run. **Update 2026-08-17: the SDK gap is fixed** (.NET 8 SDK installed; this machine is Windows
+ARM64, so a side-by-side x64 SDK was also installed at `C:\Program Files\dotnet\x64\dotnet.exe`
+since QuestPDF has no `win-arm64` native — use that path, not plain `dotnet`, for build/test/ef on
+this machine). Do these in order before pushing to Production:
 
-- [ ] `dotnet build` — confirm the whole solution compiles. This matters more than usual for the
-      JWT-cookie migration below: several ASP.NET Core APIs used there (`IAntiforgery`,
-      `CookieBuilder.SecurePolicy`, `ForwardedHeadersOptions`) were hand-verified against
-      documentation/existing patterns but never compiled.
-- [ ] `dotnet test` — **there is a real integration test suite** at `src/KayCare.Tests/`
-      (`Auth/AuthTests.cs`, `Patients/PatientTests.cs`, `Billing/BillingTests.cs`,
-      `TenantIsolation/TenantIsolationTests.cs`) that spins up a real Postgres test DB via
-      `WebApplicationFactory`. The JWT-cookie migration below broke `MediCloudWebAppFactory.
-      CreateAuthenticatedClientAsync` (it read the JWT from the login response body, which no
-      longer exists) — already fixed to extract it from the `Set-Cookie` header instead, and
-      `AuthTests.Login_WithValidCredentials_Returns200AndToken` was renamed/updated to assert the
-      cookie is set and the body has no `token` key. Both fixes are unverified — needs `dotnet
-      test` (or at minimum `dotnet build` on the `KayCare.Tests` project) to confirm they compile
-      and the whole suite still passes, since none of it could be run in this environment.
-- [ ] `dotnet ef migrations has-pending-model-changes --project src/KayCare.Infrastructure --startup-project src/KayCare.API`
-      (or a trial `dotnet ef migrations add TestSync` that should come out empty) — confirms the
-      hand-patched `AppDbContextModelSnapshot.cs` (added the 5 manager roles) actually matches the
-      model now. If it's not clean, fix the snapshot before doing anything else below.
-- [ ] `dotnet ef migrations add FixUnsafeCascades --project src/KayCare.Infrastructure --startup-project src/KayCare.API`
-      — generates the actual migration for the two `Cascade` → `Restrict` config changes
-      (`LabOrderItemConfiguration.cs`, `InpatientChargeConfiguration.cs`). This migration was never
-      generated; only the config source was edited.
-- [ ] `dotnet ef migrations add AddCheckConstraints --project src/KayCare.Infrastructure --startup-project src/KayCare.API`
-      — generates the migration for the DB4 (non-negative monetary/quantity) and DB5 (status/state
-      allow-list) `HasCheckConstraint` calls added across ~30 `*Configuration.cs` files. Also never
-      generated; only the config source was edited (same situation as `FixUnsafeCascades` above — no
-      .NET SDK in this environment to run `dotnet ef`). Before applying to any environment with real
-      rows, run a check first (e.g. `SELECT * FROM "Bills" WHERE NOT ("TotalAmount" >= 0 AND ...)`
-      per constraint) — if the demo/seed data or any existing row violates a new constraint, the
-      migration will fail to apply until that row is fixed.
-- [ ] `dotnet ef database update` against a real/staging Postgres — confirms all three pending
-      migrations (`FixUnsafeCascades`, `AddCheckConstraints`, and the manager-roles snapshot fix)
-      apply cleanly.
+- [x] `dotnet build` — **done 2026-08-17.** First real build caught a genuine compile bug: 6 of the
+      ~30 DB4/DB5 config files chained two `.HasCheckConstraint()` calls in one `ToTable(t => ...)`
+      lambda, which doesn't compile (`TableBuilder.HasCheckConstraint` returns a
+      `CheckConstraintBuilder`, not a `TableBuilder`). Fixed by splitting into separate statements.
+      Build is now clean (0 errors, 2 pre-existing unrelated warnings). Confirms the JWT-cookie
+      APIs (`IAntiforgery`, `CookieBuilder.SecurePolicy`, `ForwardedHeadersOptions`) compile fine.
+- [x] `dotnet test` — **done 2026-08-17, 32/32 pass** (confirmed stable across two consecutive
+      runs). Needed three more fixes along the way, all in test infrastructure, not production
+      code: (1) local PostgreSQL 16 installed (`postgres`/`postgres`, matches the factory's
+      existing default connection string); (2) `MediCloudWebAppFactory` never configured
+      `Hl7:WebhookApiKey`/`MllpSharedSecret`, so the app refused to start under the H3/H4 fail-fast
+      check regardless of which test ran — added test dummy values; (3) the test client used
+      `http://localhost`, but `AntiforgeryOptions.Cookie.SecurePolicy=Always` (active outside
+      Development) makes `IAntiforgery.GetAndStoreTokens()` throw on non-HTTPS requests instead of
+      degrading — switched to `BaseAddress=https://localhost`, matching production (always HTTPS
+      via Render). Also fixed one flaky/stale test:
+      `TenantA_Token_IsRejectedByTenantB_Endpoints` assumed the `X-Tenant-Code` header could shift
+      an authenticated request's tenant scope, which the C1 fix deliberately made impossible
+      (`TenantResolutionMiddleware` ignores the header once authenticated, using the JWT's
+      `tenantId` claim only) — rewrote as `TenantA_Token_IgnoresSpoofedTenantBHeader` to assert the
+      actual invariant. **This means the JWT-cookie migration (login, CSRF, cookie-based auth) and
+      tenant isolation are now genuinely verified**, not just hand-reviewed.
+- [x] `dotnet ef migrations has-pending-model-changes` — **done 2026-08-17.** The manager-roles
+      migration already existed as a real file (`20260804215200_AddDepartmentManagerRoles.cs`), so
+      that item was already resolved. Found other pending changes (see below), now clean.
+- [x] Generate the pending EF migration(s) — **done 2026-08-17** as a single migration
+      `AddCheckConstraintsAndFixCascades` (EF diffs the whole model at once, so `FixUnsafeCascades`
+      and `AddCheckConstraints` couldn't be generated as two separate migrations after the fact).
+      Contains all 38 `AddCheckConstraint` calls (count verified against the 38
+      `HasCheckConstraint` occurrences in source), the 2 `Cascade`→`Restrict` FK changes
+      (DB2/DB3), and 4 unrelated pre-existing `AlterColumn` defaults on `Tenants` AI-tier columns
+      that `has-pending-model-changes` also caught. Verified against real data: applied cleanly to
+      the local `KayCareTestDb` (already populated with patients/bills/prescriptions from prior
+      test runs) with zero constraint violations, 32/32 tests still pass afterward.
+- [ ] `dotnet ef database update` against a real/staging Postgres — the local `KayCareTestDb`
+      confirms the migration *can* apply cleanly against realistic data, but staging/production has
+      its own data and hasn't been checked yet.
 - [ ] In the Render dashboard, set real values for `Hl7__WebhookApiKey` and `Hl7__MllpSharedSecret`
       (env var entries were added to `render.yaml` with `sync: false`, so Render will prompt for
       them). The app now **refuses to start** if these are missing or left as the placeholder.
@@ -62,7 +69,8 @@ run. Do these in order before pushing to Production:
 - [ ] Confirm `Seeding__EnableDemoData` is `false` (or unset) in Production's Render env vars — the
       demo tenant/accounts will not be seeded/reset without it now, which is correct, but double
       check nothing depended on the old always-on behavior.
-- [x] `npm run build` in `frontend/` was run and passed (2026-08-15, after the UI §9 pass below) —
+- [x] `npm run build` — re-verify after the migration work above didn't touch frontend; last run
+      2026-08-15, after the UI §9 pass below —
       `tsc -b && vite build` completes with zero TS errors. One real issue was caught this way that
       individual files' `tsc --noEmit` checks missed (an unused parameter left over from an
       `alert()`→banner conversion in `PayersPage.tsx`) — fixed. Re-run this after any further
@@ -312,10 +320,11 @@ Roughly in order of bang-for-buck:
    no shared Input/Card/Button primitives, styles copy-pasted 100+ times across 44-66 files) is
    still open — genuinely large, design-decision-heavy work, not a mechanical extension.
 4. ~~**1 (JWT in localStorage)**~~ — done via a full plan-mode design pass (JWT moved to an httpOnly
-   cookie, CSRF protection added from scratch, CORS tightened as a side effect). **Unverified — see
-   Part 1**: this is the highest-risk unverified change in the tracker (no .NET SDK here to compile
-   or run the newly-discovered `src/KayCare.Tests/` suite), prioritize `dotnet build` + `dotnet
-   test` + the manual browser/Safari pass before anything else in Part 1.
+   cookie, CSRF protection added from scratch, CORS tightened as a side effect). **Now verified**:
+   `dotnet build` and `dotnet test` (32/32) both pass as of 2026-08-17 — see Part 1. Still
+   outstanding before Production: the Render config checks (`Cors:AllowedOrigins`,
+   `ASPNETCORE_ENVIRONMENT=Production`) and the manual browser/Safari pass, neither of which can be
+   done from this dev environment.
 5. **DB17 + M7** (PII/PHI encryption at rest, AI data handling) — compliance-shaped, worth doing before any real patient data goes into a production instance.
 6. **M3** (token revocation/logout) — natural follow-on to the JWT-cookie migration; today logout
    only stops the current browser, a stolen cookie/token is still valid until natural expiry.
