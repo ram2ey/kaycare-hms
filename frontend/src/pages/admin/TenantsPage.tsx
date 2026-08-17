@@ -3,8 +3,9 @@ import {
   getTenants, createTenant, updateTenant, activateTenant, deactivateTenant, deleteTenant,
 } from '../../api/tenants';
 import { useAuth } from '../../contexts/AuthContext';
-import type { TenantResponse, CreateTenantRequest, UpdateTenantRequest } from '../../types/tenants';
+import type { TenantResponse, CreateTenantRequest, CreateTenantResponse, UpdateTenantRequest } from '../../types/tenants';
 import { SUBSCRIPTION_PLANS } from '../../types/tenants';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 
 const DEFAULT_CREATE: CreateTenantRequest = {
   tenantCode: '', tenantName: '', subscriptionPlan: 'Standard',
@@ -18,6 +19,7 @@ export default function TenantsPage() {
   const [tenants, setTenants] = useState<TenantResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState<null | 'create' | TenantResponse>(null);
+  const [createdInfo, setCreatedInfo] = useState<CreateTenantResponse | null>(null);
   const [createForm, setCreateForm] = useState<CreateTenantRequest>(DEFAULT_CREATE);
   const [editForm, setEditForm] = useState<UpdateTenantRequest>({
     tenantName: '', subscriptionPlan: 'Standard', maxUsers: 50, storageQuotaGB: 100,
@@ -25,6 +27,7 @@ export default function TenantsPage() {
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [confirmAction, setConfirmAction] = useState<null | { message: string; run: () => void }>(null);
 
   async function load() {
     setLoading(true);
@@ -47,7 +50,9 @@ export default function TenantsPage() {
       isAiEnabled: t.isAiEnabled ?? true,
       aiMonthlyQuota: t.aiMonthlyQuota ?? 500,
       allowedAiTiers: t.allowedAiTiers ?? 'Standard',
-      customOpenRouterKey: t.customOpenRouterKey ?? '',
+      // Never pre-fill with the real key — the API no longer returns it. Leaving this blank
+      // means "keep the existing key"; a placeholder in the input explains that to the user.
+      customOpenRouterKey: '',
     });
     setError(''); setModal(t);
   }
@@ -58,8 +63,8 @@ export default function TenantsPage() {
     }
     setSaving(true);
     try {
-      await createTenant(createForm);
-      setModal(null); load();
+      const created = await createTenant(createForm);
+      setModal(null); setCreatedInfo(created); load();
     } catch (e: unknown) {
       const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
       setError(msg ?? 'Failed to create tenant.');
@@ -70,7 +75,11 @@ export default function TenantsPage() {
     if (!editForm.tenantName.trim()) { setError('Tenant name is required.'); return; }
     setSaving(true);
     try {
-      await updateTenant((modal as TenantResponse).tenantId, editForm);
+      // Omit the key entirely when left blank so an untouched field can never wipe the
+      // tenant's existing stored key.
+      const payload = { ...editForm };
+      if (!payload.customOpenRouterKey?.trim()) delete payload.customOpenRouterKey;
+      await updateTenant((modal as TenantResponse).tenantId, payload);
       setModal(null); load();
     } catch { setError('Failed to update tenant.'); }
     finally { setSaving(false); }
@@ -78,20 +87,36 @@ export default function TenantsPage() {
 
   async function handleToggle(t: TenantResponse) {
     const action = t.isActive ? 'deactivate' : 'activate';
-    if (!confirm(`${t.isActive ? 'Deactivate' : 'Activate'} ${t.tenantName}?`)) return;
     try {
       t.isActive ? await deactivateTenant(t.tenantId) : await activateTenant(t.tenantId);
       load();
-    } catch { alert(`Failed to ${action} tenant.`); }
+    } catch { setError(`Failed to ${action} tenant.`); }
+  }
+
+  function triggerToggle(t: TenantResponse) {
+    setError('');
+    setConfirmAction({
+      message: `${t.isActive ? 'Deactivate' : 'Activate'} ${t.tenantName}?`,
+      run: () => handleToggle(t),
+    });
   }
 
   async function handleDelete(t: TenantResponse) {
-    if (!confirm(`Permanently delete "${t.tenantName}" and ALL its data? This cannot be undone.`)) return;
-    if (!confirm(`Second confirmation: delete all patients, records, and users for "${t.tenantName}"?`)) return;
     try {
       await deleteTenant(t.tenantId);
       load();
-    } catch { alert('Failed to delete tenant.'); }
+    } catch { setError('Failed to delete tenant.'); }
+  }
+
+  function triggerDelete(t: TenantResponse) {
+    setError('');
+    setConfirmAction({
+      message: `Permanently delete "${t.tenantName}" and ALL its data? This cannot be undone.`,
+      run: () => setConfirmAction({
+        message: `Second confirmation: delete all patients, records, and users for "${t.tenantName}"?`,
+        run: () => handleDelete(t),
+      }),
+    });
   }
 
   const isOwnTenant = (t: TenantResponse) => t.tenantCode === user?.tenantCode;
@@ -108,6 +133,10 @@ export default function TenantsPage() {
           + New Tenant
         </button>
       </div>
+
+      {error && modal === null && (
+        <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">{error}</div>
+      )}
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         {loading ? <div className="p-8 text-center text-gray-400">Loading…</div> :
@@ -131,7 +160,7 @@ export default function TenantsPage() {
                         <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200">
                           🔒 AI Disabled
                         </span>
-                      ) : t.customOpenRouterKey ? (
+                      ) : t.hasCustomOpenRouterKey ? (
                         <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-200">
                           🟣 Enterprise BYOK
                         </span>
@@ -175,11 +204,11 @@ export default function TenantsPage() {
                         className="text-blue-600 hover:text-blue-800 text-xs font-medium">Edit AI & Plan</button>
                       {!isOwnTenant(t) && (
                         <>
-                          <button onClick={() => handleToggle(t)}
+                          <button onClick={() => triggerToggle(t)}
                             className={`text-xs font-medium ${t.isActive ? 'text-amber-600 hover:text-amber-800' : 'text-green-600 hover:text-green-800'}`}>
                             {t.isActive ? 'Deactivate' : 'Activate'}
                           </button>
-                          <button onClick={() => handleDelete(t)}
+                          <button onClick={() => triggerDelete(t)}
                             className="text-red-500 hover:text-red-700 text-xs font-medium">
                             Delete
                           </button>
@@ -376,7 +405,7 @@ export default function TenantsPage() {
                       <label className="block text-xs font-medium text-purple-900 mb-1">Custom OpenRouter Key (BYOK)</label>
                       <input type="password" value={editForm.customOpenRouterKey}
                         onChange={e => setEditForm(f => ({ ...f, customOpenRouterKey: e.target.value }))}
-                        placeholder="sk-or-v1-..."
+                        placeholder={(modal as TenantResponse).hasCustomOpenRouterKey ? 'Leave blank to keep existing key' : 'sk-or-v1-...'}
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-purple-500" />
                     </div>
                   )}
@@ -395,6 +424,51 @@ export default function TenantsPage() {
           </div>
         </div>
       )}
+
+      {/* One-time temporary password display, shown right after tenant creation */}
+      {createdInfo && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-lg w-full max-w-md p-6 space-y-4">
+            <h2 className="text-lg font-semibold text-gray-900">Tenant created</h2>
+            <p className="text-sm text-gray-600">
+              Share this temporary password with the admin for <strong>{createdInfo.tenantName}</strong>.
+              It is shown only once and cannot be retrieved again — if it's lost, use the password reset flow instead.
+            </p>
+            <div className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 flex items-center justify-between gap-3">
+              <code className="text-sm font-mono text-gray-900 break-all">{createdInfo.temporaryPassword}</code>
+              <button
+                onClick={() => navigator.clipboard.writeText(createdInfo.temporaryPassword)}
+                className="text-xs font-medium text-blue-600 hover:text-blue-800 shrink-0">
+                Copy
+              </button>
+            </div>
+            <div className="flex justify-end pt-1">
+              <button onClick={() => setCreatedInfo(null)}
+                className="px-5 py-2 bg-blue-700 hover:bg-blue-800 text-white text-sm font-medium rounded-lg transition-colors">
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={!!confirmAction}
+        title="Confirm"
+        message={confirmAction?.message ?? ''}
+        danger
+        onConfirm={() => {
+          // handleDelete's `run` chains into a second confirmAction (see triggerDelete above) by
+          // calling setConfirmAction itself — so we can't unconditionally clear the state after
+          // run() the way the single-step pages do, or the second dialog would never appear
+          // (both setConfirmAction calls get batched, and a trailing setConfirmAction(null) would
+          // win). Only clear if `run` didn't already replace the pending confirmation.
+          const current = confirmAction;
+          current?.run();
+          setConfirmAction(prev => (prev === current ? null : prev));
+        }}
+        onCancel={() => setConfirmAction(null)}
+      />
     </div>
   );
 }

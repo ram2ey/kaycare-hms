@@ -5,6 +5,7 @@ import type { DocumentResponse } from '../../types/documents';
 import type { PatientResponse } from '../../types/patients';
 import { DOCUMENT_CATEGORIES, formatBytes } from '../../types/documents';
 import { safeArray } from '../../utils/array';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 
 
 const ICON: Record<string, string> = {
@@ -23,6 +24,8 @@ export default function DocumentsPage() {
   const [loading, setLoading] = useState(false);
   const [downloading, setDownloading] = useState('');
   const [deleting, setDeleting] = useState('');
+  const [actionError, setActionError] = useState('');
+  const [confirmAction, setConfirmAction] = useState<null | { message: string; run: () => void }>(null);
 
   // Upload form
   const [showUpload, setShowUpload] = useState(false);
@@ -58,24 +61,25 @@ export default function DocumentsPage() {
 
   async function handleDownload(doc: DocumentResponse) {
     setDownloading(doc.documentId);
+    setActionError('');
     try {
       const { downloadUrl } = await getDownloadUrl(doc.documentId);
       window.open(downloadUrl, '_blank', 'noopener,noreferrer');
     } catch {
-      alert('Failed to get download URL.');
+      setActionError('Failed to get download URL.');
     } finally {
       setDownloading('');
     }
   }
 
   async function handleDelete(doc: DocumentResponse) {
-    if (!confirm(`Delete "${doc.fileName}"? This cannot be undone.`)) return;
     setDeleting(doc.documentId);
+    setActionError('');
     try {
       await deleteDocument(doc.documentId);
       setDocuments((prev) => prev.filter((d) => d.documentId !== doc.documentId));
     } catch {
-      alert('Failed to delete document.');
+      setActionError('Failed to delete document.');
     } finally {
       setDeleting('');
     }
@@ -109,6 +113,10 @@ export default function DocumentsPage() {
 
   return (
     <div className="p-6">
+      {actionError && (
+        <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">{actionError}</div>
+      )}
+
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-semibold text-gray-800">Documents</h2>
         {selectedPatient && (
@@ -245,7 +253,7 @@ export default function DocumentsPage() {
                       {downloading === doc.documentId ? '…' : 'Download'}
                     </button>
                     <button
-                      onClick={() => handleDelete(doc)}
+                      onClick={() => setConfirmAction({ message: `Delete "${doc.fileName}"? This cannot be undone.`, run: () => handleDelete(doc) })}
                       disabled={deleting === doc.documentId}
                       className="px-3 py-1.5 text-xs text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                     >
@@ -264,6 +272,16 @@ export default function DocumentsPage() {
           Search for a patient to view their documents.
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!confirmAction}
+        title="Confirm"
+        message={confirmAction?.message ?? ''}
+        danger
+        busy={!!deleting}
+        onConfirm={() => { confirmAction?.run(); setConfirmAction(null); }}
+        onCancel={() => setConfirmAction(null)}
+      />
     </div>
   );
 }

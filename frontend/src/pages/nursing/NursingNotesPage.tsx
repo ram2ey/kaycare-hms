@@ -4,6 +4,7 @@ import { getNursingNotesForPatient, addNursingNote, deleteNursingNote } from '..
 import type { NursingNoteResponse, AddNursingNoteRequest } from '../../types/nursing';
 import { NOTE_TYPES } from '../../types/nursing';
 import { useAuth } from '../../contexts/AuthContext';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 
 const NOTE_TYPE_COLORS: Record<string, string> = {
   General: 'bg-gray-100 text-gray-700',
@@ -20,6 +21,7 @@ export default function NursingNotesPage() {
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<AddNursingNoteRequest>({ noteType: 'General', note: '' });
+  const [confirmAction, setConfirmAction] = useState<null | { message: string; run: () => void }>(null);
 
   useEffect(() => { load(); }, [patientId]);
 
@@ -42,7 +44,6 @@ export default function NursingNotesPage() {
   };
 
   const handleDelete = async (noteId: string) => {
-    if (!confirm('Delete this nursing note?')) return;
     await deleteNursingNote(noteId);
     await load();
   };
@@ -75,7 +76,7 @@ export default function NursingNotesPage() {
                 </div>
                 {n.authorName === user?.fullName && (
                   <button
-                    onClick={() => handleDelete(n.nursingNoteId)}
+                    onClick={() => setConfirmAction({ message: 'Delete this nursing note?', run: () => handleDelete(n.nursingNoteId) })}
                     className="text-xs text-red-500 hover:text-red-700 flex-shrink-0"
                   >
                     Delete
@@ -134,6 +135,15 @@ export default function NursingNotesPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!confirmAction}
+        title="Confirm"
+        message={confirmAction?.message ?? ''}
+        danger
+        onConfirm={() => { confirmAction?.run(); setConfirmAction(null); }}
+        onCancel={() => setConfirmAction(null)}
+      />
     </div>
   );
 }

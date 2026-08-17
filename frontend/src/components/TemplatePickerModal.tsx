@@ -15,6 +15,7 @@ export default function TemplatePickerModal({ onSelect, onClose }: Props) {
   const [shared, setShared]     = useState<PrescriptionTemplateResponse[]>([]);
   const [loading, setLoading]   = useState(true);
   const [applying, setApplying] = useState<string | null>(null);
+  const [actionError, setActionError] = useState('');
 
   useEffect(() => {
     Promise.all([getMyTemplates(), getSharedTemplates()])
@@ -25,6 +26,7 @@ export default function TemplatePickerModal({ onSelect, onClose }: Props) {
 
   async function handleSelect(templateId: string, name: string) {
     setApplying(templateId);
+    setActionError('');
     try {
       const detail = await getTemplate(templateId);
       const items: PrescriptionItemRequest[] = safeArray(detail.items).map((i) => ({
@@ -41,7 +43,7 @@ export default function TemplatePickerModal({ onSelect, onClose }: Props) {
       }));
       onSelect(items, name);
     } catch {
-      alert('Failed to load template.');
+      setActionError('Failed to load template.');
     } finally {
       setApplying(null);
     }
@@ -56,6 +58,10 @@ export default function TemplatePickerModal({ onSelect, onClose }: Props) {
           <h3 className="text-lg font-semibold text-gray-800">Load Template</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
         </div>
+
+        {actionError && (
+          <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">{actionError}</div>
+        )}
 
         {loading ? (
           <p className="text-sm text-gray-400 py-8 text-center">Loading templates…</p>

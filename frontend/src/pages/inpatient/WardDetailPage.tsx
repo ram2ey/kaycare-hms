@@ -4,6 +4,7 @@ import { getWard, getBeds, addBed, updateBed, updateBedStatus, deleteBed } from 
 import type { WardResponse, BedResponse, SaveBedRequest, UpdateBedStatusRequest } from '../../types/inpatient';
 import { BED_STATUS_COLORS, BED_STATUS_OPTIONS } from '../../types/inpatient';
 import { useAuth } from '../../contexts/AuthContext';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 
 const inp = 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
 
@@ -35,6 +36,8 @@ export default function WardDetailPage() {
   const [statusForm, setStatusForm]     = useState<UpdateBedStatusRequest>({ status: '', notes: '' });
   const [statusSaving, setStatusSaving] = useState(false);
   const [statusError, setStatusError]   = useState('');
+
+  const [confirmAction, setConfirmAction] = useState<null | { message: string; run: () => void }>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -120,7 +123,6 @@ export default function WardDetailPage() {
   };
 
   const handleDeleteBed = async (bed: BedResponse) => {
-    if (!confirm(`Delete bed "${bed.bedNumber}"? This cannot be undone.`)) return;
     try {
       await deleteBed(bed.bedId);
       setBeds(prev => prev.filter(b => b.bedId !== bed.bedId));
@@ -209,7 +211,7 @@ export default function WardDetailPage() {
                       className="flex-1 text-xs py-1 text-gray-500 hover:bg-gray-50 rounded">
                       Edit
                     </button>
-                    <button onClick={() => handleDeleteBed(bed)}
+                    <button onClick={() => setConfirmAction({ message: `Delete bed "${bed.bedNumber}"? This cannot be undone.`, run: () => handleDeleteBed(bed) })}
                       className="text-xs py-1 px-2 text-red-400 hover:bg-red-50 rounded"
                       disabled={bed.status === 'Occupied'} title={bed.status === 'Occupied' ? 'Cannot delete occupied bed' : ''}>
                       ×
@@ -323,6 +325,15 @@ export default function WardDetailPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!confirmAction}
+        title="Confirm"
+        message={confirmAction?.message ?? ''}
+        danger
+        onConfirm={() => { confirmAction?.run(); setConfirmAction(null); }}
+        onCancel={() => setConfirmAction(null)}
+      />
     </div>
   );
 }

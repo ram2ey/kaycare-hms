@@ -2,12 +2,15 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getMyTemplates, getSharedTemplates, deleteTemplate } from '../../api/prescriptionTemplates';
 import type { PrescriptionTemplateResponse } from '../../types/prescriptionTemplates';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 
 export default function TemplatesPage() {
   const navigate = useNavigate();
   const [mine, setMine]       = useState<PrescriptionTemplateResponse[]>([]);
   const [shared, setShared]   = useState<PrescriptionTemplateResponse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [actionError, setActionError]     = useState('');
+  const [confirmAction, setConfirmAction] = useState<null | { message: string; run: () => void }>(null);
 
   function load() {
     setLoading(true);
@@ -19,13 +22,13 @@ export default function TemplatesPage() {
 
   useEffect(() => { load(); }, []);
 
-  async function handleDelete(id: string, name: string) {
-    if (!confirm(`Delete template "${name}"?`)) return;
+  async function handleDelete(id: string) {
+    setActionError('');
     try {
       await deleteTemplate(id);
       load();
     } catch {
-      alert('Failed to delete template.');
+      setActionError('Failed to delete template.');
     }
   }
 
@@ -51,18 +54,22 @@ export default function TemplatesPage() {
         </button>
       </div>
 
+      {actionError && (
+        <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">{actionError}</div>
+      )}
+
       <div className="space-y-6">
         <TemplateSection
           title="My Templates"
           templates={mine}
           editable
-          onDelete={handleDelete}
+          onDelete={(id, name) => setConfirmAction({ message: `Delete template "${name}"?`, run: () => handleDelete(id) })}
         />
         <TemplateSection
           title="Shared by Others"
           templates={sharedOthers}
           editable={false}
-          onDelete={handleDelete}
+          onDelete={(id, name) => setConfirmAction({ message: `Delete template "${name}"?`, run: () => handleDelete(id) })}
         />
         {mine.length === 0 && sharedOthers.length === 0 && (
           <div className="bg-white border border-gray-200 rounded-xl p-10 text-center">
@@ -70,6 +77,15 @@ export default function TemplatesPage() {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={!!confirmAction}
+        title="Confirm"
+        message={confirmAction?.message ?? ''}
+        danger
+        onConfirm={() => { confirmAction?.run(); setConfirmAction(null); }}
+        onCancel={() => setConfirmAction(null)}
+      />
     </div>
   );
 }

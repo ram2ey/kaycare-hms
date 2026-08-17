@@ -12,6 +12,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Roles } from '../../types';
 import { getDrugSafety } from '../../api/ai';
 import { safeArray } from '../../utils/array';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 
 
 export default function PrescriptionDetailPage() {
@@ -25,6 +26,8 @@ export default function PrescriptionDetailPage() {
   const [downloading, setDownloading]     = useState(false);
   const [showDispenseModal, setShowDispenseModal] = useState(false);
   const [showHistory, setShowHistory]     = useState(false);
+  const [actionError, setActionError]     = useState('');
+  const [confirmAction, setConfirmAction] = useState<null | { message: string; run: () => void }>(null);
 
   // AI Safety Checker state
   const [safetyOpen, setSafetyOpen] = useState(false);
@@ -42,6 +45,7 @@ export default function PrescriptionDetailPage() {
   async function handleDownload() {
     if (!id) return;
     setDownloading(true);
+    setActionError('');
     try {
       const blob = await downloadPrescriptionReport(id);
       const url = URL.createObjectURL(blob);
@@ -51,21 +55,22 @@ export default function PrescriptionDetailPage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      alert('Failed to download prescription PDF.');
+      setActionError('Failed to download prescription PDF.');
     } finally {
       setDownloading(false);
     }
   }
 
   async function handleCancel() {
-    if (!id || !confirm('Cancel this prescription?')) return;
+    if (!id) return;
     setCancelling(true);
+    setActionError('');
     try {
       const updated = await cancelPrescription(id);
       setRx(updated);
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      alert(msg || 'Cancel failed.');
+      setActionError(msg || 'Cancel failed.');
     } finally {
       setCancelling(false);
     }
@@ -149,7 +154,7 @@ export default function PrescriptionDetailPage() {
           )}
           {isDispensable && canCancel && (
             <button
-              onClick={handleCancel}
+              onClick={() => setConfirmAction({ message: 'Cancel this prescription?', run: handleCancel })}
               disabled={cancelling}
               className="px-4 py-2 border border-red-300 text-red-600 hover:bg-red-50 text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
             >
@@ -158,6 +163,10 @@ export default function PrescriptionDetailPage() {
           )}
         </div>
       </div>
+
+      {actionError && (
+        <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">{actionError}</div>
+      )}
 
       {expiringSoon && (
         <div className="mb-5 bg-orange-50 border border-orange-300 px-4 py-3 text-sm text-orange-800 font-medium">
@@ -352,6 +361,16 @@ export default function PrescriptionDetailPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!confirmAction}
+        title="Confirm"
+        message={confirmAction?.message ?? ''}
+        danger
+        busy={cancelling}
+        onConfirm={() => { confirmAction?.run(); setConfirmAction(null); }}
+        onCancel={() => setConfirmAction(null)}
+      />
     </div>
   );
 }
@@ -368,11 +387,13 @@ function PartialDispenseModal({
   );
   const [notes, setNotes]   = useState('');
   const [saving, setSaving] = useState(false);
+  const [dispenseError, setDispenseError] = useState('');
 
   const hasAny = Object.values(qtys).some((q) => q > 0);
 
   async function handleConfirm() {
     setSaving(true);
+    setDispenseError('');
     try {
       const items: PartialDispenseItemRequest[] = rx.items
         .map((i) => ({ prescriptionItemId: i.itemId, quantityToDispense: qtys[i.itemId] ?? 0 }));
@@ -380,7 +401,7 @@ function PartialDispenseModal({
       onDone(updated);
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      alert(msg || 'Dispense failed.');
+      setDispenseError(msg || 'Dispense failed.');
     } finally {
       setSaving(false);
     }
@@ -438,6 +459,8 @@ function PartialDispenseModal({
             placeholder="e.g. Partial stock — remaining 7 tablets to be collected next week"
           />
         </div>
+
+        {dispenseError && <p className="mb-3 text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{dispenseError}</p>}
 
         <div className="flex gap-3 justify-end">
           <button

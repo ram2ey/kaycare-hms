@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getSuppliers, createSupplier, updateSupplier, deactivateSupplier } from '../../api/pharmacy';
 import type { SupplierResponse, SaveSupplierRequest } from '../../types/pharmacy';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 
 const inp = 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
 
@@ -18,6 +19,8 @@ export default function SuppliersPage() {
   const [showForm, setShowForm]     = useState(false);
   const [form, setForm]             = useState<SaveSupplierRequest>(emptyForm());
   const [saving, setSaving]         = useState(false);
+  const [actionError, setActionError] = useState('');
+  const [confirmAction, setConfirmAction] = useState<null | { message: string; run: () => void }>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -52,6 +55,7 @@ export default function SuppliersPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
+    setActionError('');
     try {
       const payload: SaveSupplierRequest = {
         ...form,
@@ -70,19 +74,19 @@ export default function SuppliersPage() {
       await load();
     } catch (err) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Save failed.';
-      alert(msg);
+      setActionError(msg);
     } finally {
       setSaving(false);
     }
   }
 
   async function handleDeactivate(s: SupplierResponse) {
-    if (!confirm(`Deactivate "${s.name}"?`)) return;
+    setActionError('');
     try {
       await deactivateSupplier(s.supplierId);
       await load();
     } catch {
-      alert('Failed to deactivate supplier.');
+      setActionError('Failed to deactivate supplier.');
     }
   }
 
@@ -99,6 +103,10 @@ export default function SuppliersPage() {
           + Add Supplier
         </button>
       </div>
+
+      {actionError && (
+        <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">{actionError}</div>
+      )}
 
       {/* Filters */}
       <div className="flex items-center gap-4 mb-5">
@@ -149,7 +157,7 @@ export default function SuppliersPage() {
                   <td className="px-4 py-3 text-right space-x-3 whitespace-nowrap">
                     <button onClick={() => openEdit(s)} className="text-xs text-gray-500 hover:underline">Edit</button>
                     {s.isActive && (
-                      <button onClick={() => handleDeactivate(s)} className="text-xs text-red-500 hover:underline">Deactivate</button>
+                      <button onClick={() => setConfirmAction({ message: `Deactivate "${s.name}"?`, run: () => handleDeactivate(s) })} className="text-xs text-red-500 hover:underline">Deactivate</button>
                     )}
                   </td>
                 </tr>
@@ -215,6 +223,7 @@ export default function SuppliersPage() {
                   placeholder="Optional notes…"
                   className={inp + ' resize-none'} />
               </div>
+              {actionError && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{actionError}</p>}
               <div className="flex gap-3 justify-end pt-2">
                 <button type="button" onClick={() => setShowForm(false)}
                   className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
@@ -227,6 +236,15 @@ export default function SuppliersPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!confirmAction}
+        title="Confirm"
+        message={confirmAction?.message ?? ''}
+        danger
+        onConfirm={() => { confirmAction?.run(); setConfirmAction(null); }}
+        onCancel={() => setConfirmAction(null)}
+      />
     </div>
   );
 }

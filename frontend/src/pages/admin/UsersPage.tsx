@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { getUsers, createUser, updateUser, deactivateUser, reactivateUser, resetPassword, getDepartments } from '../../api/users';
 import type { UserResponse, CreateUserRequest, UpdateUserRequest } from '../../types/users';
 import { ROLE_OPTIONS, ROLE_COLORS } from '../../types/users';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 
 const EMPTY_CREATE: CreateUserRequest = {
   email: '', firstName: '', lastName: '', roleId: 2, password: '',
@@ -15,6 +16,9 @@ export default function UsersPage() {
   const [roleFilter, setRoleFilter] = useState('');
   const [acting, setActing]             = useState('');
   const [deptOptions, setDeptOptions]   = useState<string[]>([]);
+  const [actionError, setActionError]     = useState('');
+  const [actionSuccess, setActionSuccess] = useState('');
+  const [confirmAction, setConfirmAction] = useState<null | { message: string; run: () => void }>(null);
 
   // Create modal
   const [showCreate, setShowCreate] = useState(false);
@@ -52,13 +56,15 @@ export default function UsersPage() {
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     setActing('create');
+    setActionError('');
+    setActionSuccess('');
     try {
       await createUser(createForm);
       setShowCreate(false);
       setCreateForm(EMPTY_CREATE);
       await load();
     } catch (err) {
-      alert(errMsg(err));
+      setActionError(errMsg(err));
     } finally {
       setActing('');
     }
@@ -68,25 +74,28 @@ export default function UsersPage() {
     e.preventDefault();
     if (!editTarget) return;
     setActing('edit');
+    setActionError('');
+    setActionSuccess('');
     try {
       await updateUser(editTarget.userId, editForm);
       setEditTarget(null);
       await load();
     } catch (err) {
-      alert(errMsg(err));
+      setActionError(errMsg(err));
     } finally {
       setActing('');
     }
   }
 
   async function handleDeactivate(u: UserResponse) {
-    if (!confirm(`Deactivate ${u.fullName}? They will no longer be able to log in.`)) return;
     setActing(`deactivate-${u.userId}`);
+    setActionError('');
+    setActionSuccess('');
     try {
       await deactivateUser(u.userId);
       await load();
     } catch (err) {
-      alert(errMsg(err));
+      setActionError(errMsg(err));
     } finally {
       setActing('');
     }
@@ -94,11 +103,13 @@ export default function UsersPage() {
 
   async function handleReactivate(u: UserResponse) {
     setActing(`reactivate-${u.userId}`);
+    setActionError('');
+    setActionSuccess('');
     try {
       await reactivateUser(u.userId);
       await load();
     } catch (err) {
-      alert(errMsg(err));
+      setActionError(errMsg(err));
     } finally {
       setActing('');
     }
@@ -108,13 +119,15 @@ export default function UsersPage() {
     e.preventDefault();
     if (!resetTarget) return;
     setActing('reset');
+    setActionError('');
+    setActionSuccess('');
     try {
       await resetPassword(resetTarget.userId, { newPassword });
+      setActionSuccess(`Password reset for ${resetTarget.fullName}. They will be prompted to change it on next login.`);
       setResetTarget(null);
       setNewPassword('');
-      alert(`Password reset for ${resetTarget.fullName}. They will be prompted to change it on next login.`);
     } catch (err) {
-      alert(errMsg(err));
+      setActionError(errMsg(err));
     } finally {
       setActing('');
     }
@@ -133,6 +146,13 @@ export default function UsersPage() {
           + New User
         </button>
       </div>
+
+      {actionError && (
+        <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">{actionError}</div>
+      )}
+      {actionSuccess && (
+        <div className="mb-4 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-3">{actionSuccess}</div>
+      )}
 
       {/* Filters */}
       <div className="flex items-center gap-3 mb-5">
@@ -205,7 +225,7 @@ export default function UsersPage() {
                     <button onClick={() => { setResetTarget(u); setNewPassword(''); }}
                       className="text-xs text-orange-600 hover:underline">Reset Password</button>
                     {u.isActive ? (
-                      <button onClick={() => handleDeactivate(u)} disabled={acting === `deactivate-${u.userId}`}
+                      <button onClick={() => setConfirmAction({ message: `Deactivate ${u.fullName}? They will no longer be able to log in.`, run: () => handleDeactivate(u) })} disabled={acting === `deactivate-${u.userId}`}
                         className="text-xs text-red-500 hover:underline disabled:opacity-50">Deactivate</button>
                     ) : (
                       <button onClick={() => handleReactivate(u)} disabled={acting === `reactivate-${u.userId}`}
@@ -394,6 +414,16 @@ export default function UsersPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!confirmAction}
+        title="Confirm"
+        message={confirmAction?.message ?? ''}
+        danger
+        busy={!!acting}
+        onConfirm={() => { confirmAction?.run(); setConfirmAction(null); }}
+        onCancel={() => setConfirmAction(null)}
+      />
     </div>
   );
 }

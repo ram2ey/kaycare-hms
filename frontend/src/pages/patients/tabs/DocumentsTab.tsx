@@ -3,6 +3,7 @@ import { getPatientDocuments, getDownloadUrl, uploadDocument, deleteDocument } f
 import type { DocumentResponse } from '../../../types/documents';
 import { useAuth } from '../../../contexts/AuthContext';
 import { Roles } from '../../../types';
+import { ConfirmDialog } from '../../../components/ConfirmDialog';
 
 const CATEGORIES = ['Clinical Report', 'Lab Result', 'Imaging', 'Consent Form', 'Referral Letter', 'Discharge Summary', 'Other'];
 
@@ -14,6 +15,7 @@ export default function DocumentsTab({ patientId }: { patientId: string }) {
   const [uploadError, setUploadError] = useState('');
   const [category, setCategory]   = useState('Other');
   const [description, setDescription] = useState('');
+  const [confirmAction, setConfirmAction] = useState<null | { message: string; run: () => void }>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -48,7 +50,6 @@ export default function DocumentsTab({ patientId }: { patientId: string }) {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Delete this document permanently?')) return;
     await deleteDocument(id);
     setDocuments(prev => prev.filter(d => d.documentId !== id));
   }
@@ -103,7 +104,7 @@ export default function DocumentsTab({ patientId }: { patientId: string }) {
                   <td className="px-4 py-3 text-right flex items-center gap-3 justify-end">
                     <button onClick={() => handleDownload(d)} className="text-blue-600 hover:underline text-xs">Download</button>
                     {canDelete && (
-                      <button onClick={() => handleDelete(d.documentId)} className="text-red-500 hover:text-red-700 text-xs">Delete</button>
+                      <button onClick={() => setConfirmAction({ message: 'Delete this document permanently?', run: () => handleDelete(d.documentId) })} className="text-red-500 hover:text-red-700 text-xs">Delete</button>
                     )}
                   </td>
                 </tr>
@@ -112,6 +113,15 @@ export default function DocumentsTab({ patientId }: { patientId: string }) {
           </table>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!confirmAction}
+        title="Confirm"
+        message={confirmAction?.message ?? ''}
+        danger
+        onConfirm={() => { confirmAction?.run(); setConfirmAction(null); }}
+        onCancel={() => setConfirmAction(null)}
+      />
     </div>
   );
 }

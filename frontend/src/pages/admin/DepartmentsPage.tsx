@@ -11,6 +11,7 @@ export default function DepartmentsPage() {
   const [renameTarget, setRenameTarget] = useState<DepartmentSummary | null>(null);
   const [newName, setNewName]           = useState('');
   const [saving, setSaving]             = useState(false);
+  const [actionError, setActionError]   = useState('');
 
   async function load() {
     setLoading(true);
@@ -29,6 +30,7 @@ export default function DepartmentsPage() {
   function openRename(d: DepartmentSummary) {
     setRenameTarget(d);
     setNewName(d.name);
+    setActionError('');
   }
 
   async function handleRename(e: React.FormEvent) {
@@ -37,13 +39,14 @@ export default function DepartmentsPage() {
     const trimmed = newName.trim();
     if (!trimmed) return;
     setSaving(true);
+    setActionError('');
     try {
       await renameDepartment(renameTarget.name, trimmed);
       setRenameTarget(null);
       await load();
     } catch (err) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Rename failed.';
-      alert(msg);
+      setActionError(msg);
     } finally {
       setSaving(false);
     }
@@ -59,6 +62,10 @@ export default function DepartmentsPage() {
           </p>
         </div>
       </div>
+
+      {actionError && (
+        <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">{actionError}</div>
+      )}
 
       {loading ? (
         <div className="text-gray-400 py-8">Loading…</div>

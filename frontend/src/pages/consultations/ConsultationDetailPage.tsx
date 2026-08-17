@@ -5,6 +5,7 @@ import type { ConsultationDetailResponse, UpdateConsultationRequest, DiagnosisDt
 import { useAuth } from '../../contexts/AuthContext';
 import { Roles } from '../../types';
 import { getSoapCopilot, getPatientSummary } from '../../api/ai';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 
 const inputCls = 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500';
 const textareaCls = `${inputCls} resize-none`;
@@ -19,6 +20,7 @@ export default function ConsultationDetailPage() {
   const [signing, setSigning] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [error, setError] = useState('');
+  const [confirmAction, setConfirmAction] = useState<null | { message: string; run: () => void }>(null);
 
   // Edit state
   const [soap, setSoap] = useState({ s: '', o: '', a: '', p: '' });
@@ -105,7 +107,7 @@ export default function ConsultationDetailPage() {
   }
 
   async function handleSign() {
-    if (!id || !confirm('Sign off this consultation? This cannot be undone.')) return;
+    if (!id) return;
     setSigning(true);
     setError('');
     try {
@@ -138,7 +140,7 @@ export default function ConsultationDetailPage() {
   const startDictation = (field: 's' | 'o' | 'a' | 'p') => {
     const SpeechObj = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechObj) {
-      alert("Speech recognition is not supported in this browser. Please use Chrome or Edge.");
+      setError('Speech recognition is not supported in this browser. Please use Chrome or Edge.');
       return;
     }
     if (recordingField) {
@@ -272,7 +274,7 @@ export default function ConsultationDetailPage() {
           )}
           {!isSigned && canSign && (
             <button
-              onClick={handleSign}
+              onClick={() => setConfirmAction({ message: 'Sign off this consultation? This cannot be undone.', run: handleSign })}
               disabled={signing || saving}
               className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg disabled:opacity-50 transition-colors"
             >
@@ -534,6 +536,16 @@ export default function ConsultationDetailPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!confirmAction}
+        title="Confirm"
+        message={confirmAction?.message ?? ''}
+        danger
+        busy={signing}
+        onConfirm={() => { confirmAction?.run(); setConfirmAction(null); }}
+        onCancel={() => setConfirmAction(null)}
+      />
     </div>
   );
 }

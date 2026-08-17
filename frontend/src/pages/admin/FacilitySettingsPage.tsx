@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { getFacilitySettings, saveFacilitySettings, uploadLogo, deleteLogo } from '../../api/facilitySettings';
 import type { FacilitySettingsResponse, SaveFacilitySettingsRequest } from '../../types/facilitySettings';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 
 const EMPTY: SaveFacilitySettingsRequest = {
   facilityName: '', address: '', phone: '', email: '',
@@ -14,6 +15,7 @@ export default function FacilitySettingsPage() {
   const [logoUploading, setLogoUploading] = useState(false);
   const [success, setSuccess]     = useState('');
   const [error, setError]         = useState('');
+  const [confirmAction, setConfirmAction] = useState<null | { message: string; run: () => void }>(null);
   const fileRef                   = useRef<HTMLInputElement>(null);
 
   async function load() {
@@ -79,7 +81,6 @@ export default function FacilitySettingsPage() {
   }
 
   async function handleDeleteLogo() {
-    if (!confirm('Remove the facility logo?')) return;
     setLogoUploading(true);
     setSuccess('');
     setError('');
@@ -140,7 +141,7 @@ export default function FacilitySettingsPage() {
             </button>
             {settings?.hasLogo && (
               <button
-                onClick={handleDeleteLogo}
+                onClick={() => setConfirmAction({ message: 'Remove the facility logo?', run: handleDeleteLogo })}
                 disabled={logoUploading}
                 className="px-4 py-2 text-sm text-red-600 border border-red-200 rounded-lg hover:bg-red-50 disabled:opacity-50 transition-colors">
                 Remove Logo
@@ -223,6 +224,16 @@ export default function FacilitySettingsPage() {
           Last updated: {new Date(settings.updatedAt).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}
         </p>
       )}
+
+      <ConfirmDialog
+        open={!!confirmAction}
+        title="Confirm"
+        message={confirmAction?.message ?? ''}
+        danger
+        busy={logoUploading}
+        onConfirm={() => { confirmAction?.run(); setConfirmAction(null); }}
+        onCancel={() => setConfirmAction(null)}
+      />
     </div>
   );
 }

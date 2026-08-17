@@ -4,6 +4,7 @@ import { getWards, createWard, updateWard, deactivateWard } from '../../api/inpa
 import type { WardResponse, SaveWardRequest } from '../../types/inpatient';
 import { WARD_TYPES } from '../../types/inpatient';
 import { useAuth } from '../../contexts/AuthContext';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 
 const inp = 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
 
@@ -37,6 +38,7 @@ export default function WardsPage() {
   const [form, setForm]           = useState<SaveWardRequest>(emptyForm());
   const [saving, setSaving]       = useState(false);
   const [formError, setFormError] = useState('');
+  const [confirmAction, setConfirmAction] = useState<null | { message: string; run: () => void }>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -81,7 +83,6 @@ export default function WardsPage() {
   };
 
   const handleDeactivate = async (w: WardResponse) => {
-    if (!confirm(`Deactivate ward "${w.name}"?`)) return;
     try {
       const updated = await deactivateWard(w.wardId);
       setWards(prev => prev.map(x => x.wardId === updated.wardId ? updated : x));
@@ -162,7 +163,7 @@ export default function WardsPage() {
                     <div className="flex gap-1 ml-2">
                       <button onClick={() => openEdit(ward)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="Edit">✏️</button>
                       {ward.isActive && (
-                        <button onClick={() => handleDeactivate(ward)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded" title="Deactivate">🗑</button>
+                        <button onClick={() => setConfirmAction({ message: `Deactivate ward "${ward.name}"?`, run: () => handleDeactivate(ward) })} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded" title="Deactivate">🗑</button>
                       )}
                     </div>
                   )}
@@ -244,6 +245,15 @@ export default function WardsPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!confirmAction}
+        title="Confirm"
+        message={confirmAction?.message ?? ''}
+        danger
+        onConfirm={() => { confirmAction?.run(); setConfirmAction(null); }}
+        onCancel={() => setConfirmAction(null)}
+      />
     </div>
   );
 }

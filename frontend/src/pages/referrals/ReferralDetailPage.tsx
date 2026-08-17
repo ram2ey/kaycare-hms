@@ -13,6 +13,7 @@ import type { UserResponse } from '../../types/users';
 import { REFERRAL_STATUS_COLORS, REFERRAL_URGENCY_COLORS } from '../../types/referrals';
 import { useAuth } from '../../contexts/AuthContext';
 import { Roles } from '../../types';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 
 const inp = 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
 const fmtDT = (d: string) => new Date(d).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -36,6 +37,7 @@ export default function ReferralDetailPage() {
   const [respondSaving, setRespondSaving] = useState(false);
 
   const [actionError, setActionError]     = useState('');
+  const [confirmAction, setConfirmAction] = useState<null | { message: string; danger?: boolean; run: () => void }>(null);
 
   const canManage = user && [Roles.Doctor, Roles.Admin, Roles.SuperAdmin].includes(user.role as never);
 
@@ -75,7 +77,7 @@ export default function ReferralDetailPage() {
   };
 
   const handleSend = async () => {
-    if (!id || !confirm('Send this referral?')) return;
+    if (!id) return;
     setActionError('');
     try { setReferral(await sendReferral(id)); }
     catch (e: any) { setActionError(e?.response?.data?.message ?? 'Failed to send.'); }
@@ -94,7 +96,7 @@ export default function ReferralDetailPage() {
   };
 
   const handleCancel = async () => {
-    if (!id || !confirm('Cancel this referral?')) return;
+    if (!id) return;
     setActionError('');
     try { setReferral(await cancelReferral(id)); }
     catch (e: any) { setActionError(e?.response?.data?.message ?? 'Failed to cancel.'); }
@@ -139,7 +141,7 @@ export default function ReferralDetailPage() {
           {isDraft && canManage && (
             <>
               <button onClick={openEdit} className="px-3 py-1.5 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 text-sm font-medium">Edit</button>
-              <button onClick={handleSend} className="px-3 py-1.5 bg-blue-700 text-white rounded-lg hover:bg-blue-800 text-sm font-medium">Send Referral</button>
+              <button onClick={() => setConfirmAction({ message: 'Send this referral?', run: handleSend })} className="px-3 py-1.5 bg-blue-700 text-white rounded-lg hover:bg-blue-800 text-sm font-medium">Send Referral</button>
             </>
           )}
           {(isSent || isAccepted) && canManage && (
@@ -149,7 +151,7 @@ export default function ReferralDetailPage() {
             </button>
           )}
           {isOpen && canManage && (
-            <button onClick={handleCancel} className="px-3 py-1.5 border border-red-500 text-red-600 rounded-lg hover:bg-red-50 text-sm font-medium">Cancel</button>
+            <button onClick={() => setConfirmAction({ message: 'Cancel this referral?', danger: true, run: handleCancel })} className="px-3 py-1.5 border border-red-500 text-red-600 rounded-lg hover:bg-red-50 text-sm font-medium">Cancel</button>
           )}
         </div>
       </div>
@@ -307,6 +309,15 @@ export default function ReferralDetailPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!confirmAction}
+        title="Confirm"
+        message={confirmAction?.message ?? ''}
+        danger={!!confirmAction?.danger}
+        onConfirm={() => { confirmAction?.run(); setConfirmAction(null); }}
+        onCancel={() => setConfirmAction(null)}
+      />
     </div>
   );
 }

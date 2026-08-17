@@ -16,6 +16,7 @@ export default function ImagingCatalogPage() {
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState<ImagingProcedureItem | null>(null);
   const [saving, setSaving] = useState(false);
+  const [actionError, setActionError] = useState('');
 
   // Form states
   const [procedureCode, setProcedureCode] = useState('');
@@ -68,11 +69,12 @@ export default function ImagingCatalogPage() {
   }
 
   async function handleToggle(id: string) {
+    setActionError('');
     try {
       await toggleImagingProcedure(id);
       setCatalog(catalog.map(c => c.imagingProcedureId === id ? { ...c, isActive: !c.isActive } : c));
     } catch {
-      alert('Failed to toggle active status.');
+      setActionError('Failed to toggle active status.');
     }
   }
 
@@ -81,6 +83,7 @@ export default function ImagingCatalogPage() {
     if (!procedureCode.trim() || !procedureName.trim() || !bodyPart.trim()) return;
 
     setSaving(true);
+    setActionError('');
     const data: SaveImagingProcedureRequest = {
       procedureCode: procedureCode.trim(),
       procedureName: procedureName.trim(),
@@ -102,7 +105,7 @@ export default function ImagingCatalogPage() {
       setShowModal(false);
     } catch (err) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Save failed.';
-      alert(msg);
+      setActionError(msg);
     } finally {
       setSaving(false);
     }
@@ -141,6 +144,10 @@ export default function ImagingCatalogPage() {
           Add Imaging Procedure
         </button>
       </div>
+
+      {actionError && (
+        <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">{actionError}</div>
+      )}
 
       {/* Filter panel */}
       <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-wrap gap-4 items-center mb-6">

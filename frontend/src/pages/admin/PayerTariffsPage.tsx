@@ -5,6 +5,7 @@ import { getCatalog } from '../../api/serviceCatalog';
 import { getPayerTariffs, upsertPayerTariff, deletePayerTariff } from '../../api/payerTariffs';
 import type { PayerResponse, PayerTariffResponse, SavePayerTariffRequest } from '../../types/payers';
 import type { ServiceCatalogItem } from '../../types/serviceCatalog';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 
 function fmt(n: number) {
   return `GHS ${n.toFixed(2)}`;
@@ -22,6 +23,9 @@ export default function PayerTariffsPage() {
   const [loading, setLoading] = useState(true);
   const [loadingTariffs, setLoadingTariffs] = useState(false);
   const [error, setError] = useState('');
+  const [actionError, setActionError] = useState('');
+  const [confirmAction, setConfirmAction] = useState<null | { message: string; run: () => void }>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Filtering / Search
   const [searchQuery, setSearchQuery] = useState('');
@@ -71,11 +75,12 @@ export default function PayerTariffsPage() {
 
     async function loadTariffs() {
       setLoadingTariffs(true);
+      setActionError('');
       try {
         const data = await getPayerTariffs({ payerId: selectedPayerId });
         setTariffs(data);
       } catch {
-        alert('Failed to load tariffs for selected payer.');
+        setActionError('Failed to load tariffs for selected payer.');
       } finally {
         setLoadingTariffs(false);
       }
@@ -112,13 +117,15 @@ export default function PayerTariffsPage() {
   }
 
   async function handleDeleteTariff(t: PayerTariffResponse) {
-    if (!confirm(`Are you sure you want to remove the custom tariff override for "${t.serviceName}"?`)) return;
-
+    setActionError('');
+    setDeleting(true);
     try {
       await deletePayerTariff(t.payerTariffId);
       setTariffs(tariffs.filter(x => x.payerTariffId !== t.payerTariffId));
     } catch {
-      alert('Failed to delete custom tariff.');
+      setActionError('Failed to delete custom tariff.');
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -127,6 +134,7 @@ export default function PayerTariffsPage() {
     if (!selectedPayerId || !selectedService) return;
 
     setSaving(true);
+    setActionError('');
     const data: SavePayerTariffRequest = {
       payerId: selectedPayerId,
       serviceCatalogItemId: selectedService.serviceCatalogItemId,
@@ -147,7 +155,7 @@ export default function PayerTariffsPage() {
       setShowModal(false);
     } catch (err) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Save failed.';
-      alert(msg);
+      setActionError(msg);
     } finally {
       setSaving(false);
     }
@@ -257,6 +265,10 @@ export default function PayerTariffsPage() {
         </div>
       </div>
 
+      {actionError && (
+        <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">{actionError}</div>
+      )}
+
       {loadingTariffs ? (
         <div className="text-gray-400 py-12 text-center bg-white rounded-xl border border-gray-200">
           Loading tariffs for {selectedPayerName}...
@@ -328,7 +340,10 @@ export default function PayerTariffsPage() {
                       </button>
                       {tariff && (
                         <button
-                          onClick={() => handleDeleteTariff(tariff)}
+                          onClick={() => setConfirmAction({
+                            message: `Are you sure you want to remove the custom tariff override for "${tariff.serviceName}"?`,
+                            run: () => handleDeleteTariff(tariff),
+                          })}
                           className="text-xs text-red-600 hover:text-red-800 font-semibold hover:underline"
                         >
                           Reset
@@ -452,6 +467,16 @@ export default function PayerTariffsPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!confirmAction}
+        title="Confirm"
+        message={confirmAction?.message ?? ''}
+        danger
+        busy={deleting}
+        onConfirm={() => { confirmAction?.run(); setConfirmAction(null); }}
+        onCancel={() => setConfirmAction(null)}
+      />
     </div>
   );
 }

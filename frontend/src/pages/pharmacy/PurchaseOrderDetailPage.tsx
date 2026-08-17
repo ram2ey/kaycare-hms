@@ -19,6 +19,7 @@ import type {
 import type { DrugInventoryResponse } from '../../types/pharmacy';
 import { PO_STATUS_LABELS, PO_STATUS_COLORS } from '../../types/pharmacy';
 import { safeArray } from '../../utils/array';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 
 
 const inp = 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
@@ -39,6 +40,8 @@ export default function PurchaseOrderDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState('');
   const [acting, setActing]   = useState(false);
+  const [actionError, setActionError] = useState('');
+  const [confirmAction, setConfirmAction] = useState<null | { message: string; run: () => void }>(null);
 
   // Receive modal
   const [showReceive, setShowReceive]   = useState(false);
@@ -92,6 +95,7 @@ export default function PurchaseOrderDetailPage() {
     e.preventDefault();
     if (!po) return;
     setActing(true);
+    setActionError('');
     try {
       const payload: SavePurchaseOrderRequest = {
         supplierId:           editSupplierId || undefined,
@@ -106,35 +110,37 @@ export default function PurchaseOrderDetailPage() {
       await load();
     } catch (err) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Save failed.';
-      alert(msg);
+      setActionError(msg);
     } finally {
       setActing(false);
     }
   }
 
   async function handlePlace() {
-    if (!po || !confirm('Mark this order as Placed/Sent to supplier?')) return;
+    if (!po) return;
     setActing(true);
+    setActionError('');
     try {
       await placePurchaseOrder(po.purchaseOrderId);
       await load();
     } catch (err) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to place order.';
-      alert(msg);
+      setActionError(msg);
     } finally {
       setActing(false);
     }
   }
 
   async function handleCancel() {
-    if (!po || !confirm(`Cancel purchase order ${po.orderNumber}? This cannot be undone.`)) return;
+    if (!po) return;
     setActing(true);
+    setActionError('');
     try {
       await cancelPurchaseOrder(po.purchaseOrderId);
       await load();
     } catch (err) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to cancel.';
-      alert(msg);
+      setActionError(msg);
     } finally {
       setActing(false);
     }
@@ -153,26 +159,27 @@ export default function PurchaseOrderDetailPage() {
   async function handleReceive(e: React.FormEvent) {
     e.preventDefault();
     if (!po) return;
+    setActionError('');
+    const req: ReceiveGoodsRequest = {
+      items: po.items
+        .filter(i => (receiveQtys[i.purchaseOrderItemId] ?? 0) > 0)
+        .map(i => ({
+          purchaseOrderItemId: i.purchaseOrderItemId,
+          quantityReceived:    receiveQtys[i.purchaseOrderItemId] ?? 0,
+        })),
+    };
+    if (req.items.length === 0) {
+      setActionError('Enter quantity received for at least one item.');
+      return;
+    }
     setActing(true);
     try {
-      const req: ReceiveGoodsRequest = {
-        items: po.items
-          .filter(i => (receiveQtys[i.purchaseOrderItemId] ?? 0) > 0)
-          .map(i => ({
-            purchaseOrderItemId: i.purchaseOrderItemId,
-            quantityReceived:    receiveQtys[i.purchaseOrderItemId] ?? 0,
-          })),
-      };
-      if (req.items.length === 0) {
-        alert('Enter quantity received for at least one item.');
-        return;
-      }
       await receiveGoods(po.purchaseOrderId, req);
       setShowReceive(false);
       await load();
     } catch (err) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to receive goods.';
-      alert(msg);
+      setActionError(msg);
     } finally {
       setActing(false);
     }
@@ -212,11 +219,15 @@ export default function PurchaseOrderDetailPage() {
         </div>
         <div className="flex gap-2">
           {canEdit    && <button onClick={openEdit}    disabled={acting} className="px-3 py-1.5 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50">Edit</button>}
-          {canPlace   && <button onClick={handlePlace}  disabled={acting} className="px-3 py-1.5 text-sm text-blue-700 border border-blue-300 bg-blue-50 rounded-lg hover:bg-blue-100 disabled:opacity-50">Place Order</button>}
+          {canPlace   && <button onClick={() => setConfirmAction({ message: 'Mark this order as Placed/Sent to supplier?', run: handlePlace })}  disabled={acting} className="px-3 py-1.5 text-sm text-blue-700 border border-blue-300 bg-blue-50 rounded-lg hover:bg-blue-100 disabled:opacity-50">Place Order</button>}
           {canReceive && <button onClick={openReceive}  disabled={acting} className="px-3 py-1.5 text-sm text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50">Receive Goods</button>}
-          {canCancel  && <button onClick={handleCancel} disabled={acting} className="px-3 py-1.5 text-sm text-red-600 border border-red-200 rounded-lg hover:bg-red-50 disabled:opacity-50">Cancel</button>}
+          {canCancel  && <button onClick={() => setConfirmAction({ message: `Cancel purchase order ${po.orderNumber}? This cannot be undone.`, run: handleCancel })} disabled={acting} className="px-3 py-1.5 text-sm text-red-600 border border-red-200 rounded-lg hover:bg-red-50 disabled:opacity-50">Cancel</button>}
         </div>
       </div>
+
+      {actionError && (
+        <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">{actionError}</div>
+      )}
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 gap-4 mb-6">
@@ -387,6 +398,7 @@ export default function PurchaseOrderDetailPage() {
                   ))}
                 </div>
               </div>
+              {actionError && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{actionError}</p>}
               <div className="flex gap-3 justify-end pt-2">
                 <button type="button" onClick={() => setShowEdit(false)}
                   className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
@@ -431,6 +443,7 @@ export default function PurchaseOrderDetailPage() {
               {po.items.every(i => i.isFullyReceived) && (
                 <p className="text-green-600 text-sm">All items have been fully received.</p>
               )}
+              {actionError && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{actionError}</p>}
               <div className="flex gap-3 justify-end pt-2">
                 <button type="button" onClick={() => setShowReceive(false)}
                   className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
@@ -443,6 +456,16 @@ export default function PurchaseOrderDetailPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!confirmAction}
+        title="Confirm"
+        message={confirmAction?.message ?? ''}
+        danger
+        busy={acting}
+        onConfirm={() => { confirmAction?.run(); setConfirmAction(null); }}
+        onCancel={() => setConfirmAction(null)}
+      />
     </div>
   );
 }

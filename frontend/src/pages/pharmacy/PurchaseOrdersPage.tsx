@@ -34,6 +34,7 @@ export default function PurchaseOrdersPage() {
   const [notes, setNotes]           = useState('');
   const [items, setItems]           = useState<(SavePurchaseOrderItemRequest & { _key: number })[]>([emptyItem()]);
   const [saving, setSaving]         = useState(false);
+  const [actionError, setActionError] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -84,8 +85,9 @@ export default function PurchaseOrdersPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setActionError('');
     if (items.some(i => !i.drugInventoryId)) {
-      alert('All line items must have a drug selected.');
+      setActionError('All line items must have a drug selected.');
       return;
     }
     setSaving(true);
@@ -103,7 +105,7 @@ export default function PurchaseOrdersPage() {
       await load();
     } catch (err) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Save failed.';
-      alert(msg);
+      setActionError(msg);
     } finally {
       setSaving(false);
     }
@@ -124,6 +126,10 @@ export default function PurchaseOrdersPage() {
           + New Purchase Order
         </button>
       </div>
+
+      {actionError && (
+        <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">{actionError}</div>
+      )}
 
       {/* Filters */}
       <div className="flex items-center gap-4 mb-5">
@@ -268,6 +274,7 @@ export default function PurchaseOrdersPage() {
                 </div>
               </div>
 
+              {actionError && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{actionError}</p>}
               <div className="flex gap-3 justify-end pt-2">
                 <button type="button" onClick={() => setShowForm(false)}
                   className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>

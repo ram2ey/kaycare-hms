@@ -12,6 +12,7 @@ import {
 } from '../../api/inpatient';
 import type { WardResponse, BedResponse, SaveWardRequest, SaveBedRequest } from '../../types/inpatient';
 import { WARD_TYPES, BED_STATUS_COLORS, BED_STATUS_OPTIONS } from '../../types/inpatient';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 
 function fmt(n: number) {
   return `GHS ${n.toFixed(2)}`;
@@ -25,6 +26,9 @@ export default function WardSetupPage() {
   const [loadingBeds, setLoadingBeds] = useState(false);
   const [errorWards, setErrorWards] = useState('');
   const [errorBeds, setErrorBeds] = useState('');
+  const [actionError, setActionError] = useState('');
+  const [confirmAction, setConfirmAction] = useState<null | { message: string; run: () => void }>(null);
+  const [confirmBusy, setConfirmBusy] = useState(false);
 
   // Filtering wards
   const [searchQuery, setSearchQuery] = useState('');
@@ -129,18 +133,28 @@ export default function WardSetupPage() {
     setShowWardModal(true);
   }
 
-  async function handleDeactivateWard(w: WardResponse) {
+  function handleDeactivateWard(w: WardResponse) {
+    setActionError('');
     if (w.occupiedBeds > 0) {
-      alert('Cannot deactivate a ward with occupied beds.');
+      setActionError('Cannot deactivate a ward with occupied beds.');
       return;
     }
-    if (!confirm(`Are you sure you want to deactivate ward "${w.name}"?`)) return;
+    setConfirmAction({
+      message: `Are you sure you want to deactivate ward "${w.name}"?`,
+      run: () => doDeactivateWard(w),
+    });
+  }
 
+  async function doDeactivateWard(w: WardResponse) {
+    setConfirmBusy(true);
+    setActionError('');
     try {
       await deactivateWard(w.wardId);
       await loadWards();
     } catch {
-      alert('Failed to deactivate ward.');
+      setActionError('Failed to deactivate ward.');
+    } finally {
+      setConfirmBusy(false);
     }
   }
 
@@ -149,6 +163,7 @@ export default function WardSetupPage() {
     if (!wardName.trim()) return;
 
     setSavingWard(true);
+    setActionError('');
     const data: SaveWardRequest = {
       name: wardName.trim(),
       wardType,
@@ -172,7 +187,7 @@ export default function WardSetupPage() {
       setShowWardModal(false);
     } catch (err) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Save failed.';
-      alert(msg);
+      setActionError(msg);
     } finally {
       setSavingWard(false);
     }
@@ -199,6 +214,7 @@ export default function WardSetupPage() {
     if (!selectedWard || !bedNumber.trim()) return;
 
     setSavingBed(true);
+    setActionError('');
     const data: SaveBedRequest = {
       bedNumber: bedNumber.trim(),
       notes: bedNotes.trim() || undefined,
@@ -221,19 +237,27 @@ export default function WardSetupPage() {
       setShowBedModal(false);
     } catch (err) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Save failed.';
-      alert(msg);
+      setActionError(msg);
     } finally {
       setSavingBed(false);
     }
   }
 
-  async function handleDeleteBed(b: BedResponse) {
+  function handleDeleteBed(b: BedResponse) {
+    setActionError('');
     if (b.status === 'Occupied') {
-      alert('Cannot delete an occupied bed.');
+      setActionError('Cannot delete an occupied bed.');
       return;
     }
-    if (!confirm(`Are you sure you want to delete Bed "${b.bedNumber}"?`)) return;
+    setConfirmAction({
+      message: `Are you sure you want to delete Bed "${b.bedNumber}"?`,
+      run: () => doDeleteBed(b),
+    });
+  }
 
+  async function doDeleteBed(b: BedResponse) {
+    setConfirmBusy(true);
+    setActionError('');
     try {
       await deleteBed(b.bedId);
       setBeds(beds.filter(x => x.bedId !== b.bedId));
@@ -247,7 +271,9 @@ export default function WardSetupPage() {
       }
     } catch (err) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Delete failed.';
-      alert(msg);
+      setActionError(msg);
+    } finally {
+      setConfirmBusy(false);
     }
   }
 
@@ -264,6 +290,7 @@ export default function WardSetupPage() {
     if (!statusBed) return;
 
     setSavingStatus(true);
+    setActionError('');
     try {
       const updated = await updateBedStatus(statusBed.bedId, {
         status: bedStatus,
@@ -282,7 +309,7 @@ export default function WardSetupPage() {
       setShowStatusModal(false);
     } catch (err) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Status update failed.';
-      alert(msg);
+      setActionError(msg);
     } finally {
       setSavingStatus(false);
     }
@@ -317,6 +344,10 @@ export default function WardSetupPage() {
           Add Ward
         </button>
       </div>
+
+      {actionError && (
+        <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">{actionError}</div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Wards Section - Left Panel */}
@@ -592,6 +623,8 @@ export default function WardSetupPage() {
                 </label>
               </div>
 
+              {actionError && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{actionError}</p>}
+
               <div className="flex gap-3 justify-end pt-4 border-t border-gray-150">
                 <button
                   type="button"
@@ -657,6 +690,8 @@ export default function WardSetupPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
+
+              {actionError && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{actionError}</p>}
 
               <div className="flex gap-3 justify-end pt-4 border-t border-gray-150">
                 <button
@@ -736,6 +771,8 @@ export default function WardSetupPage() {
                 />
               </div>
 
+              {actionError && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{actionError}</p>}
+
               <div className="flex gap-3 justify-end pt-4 border-t border-gray-150">
                 <button
                   type="button"
@@ -762,6 +799,16 @@ export default function WardSetupPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!confirmAction}
+        title="Confirm"
+        message={confirmAction?.message ?? ''}
+        danger
+        busy={confirmBusy}
+        onConfirm={() => { confirmAction?.run(); setConfirmAction(null); }}
+        onCancel={() => setConfirmAction(null)}
+      />
     </div>
   );
 }

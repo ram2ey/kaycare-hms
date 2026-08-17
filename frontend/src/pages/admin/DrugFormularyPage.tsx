@@ -22,6 +22,7 @@ export default function DrugFormularyPage() {
   const [showModal, setShowModal] = useState(false);
   const [editingDrug, setEditingDrug] = useState<DrugInventoryResponse | null>(null);
   const [saving, setSaving] = useState(false);
+  const [actionError, setActionError] = useState('');
 
   // Form states
   const [name, setName] = useState('');
@@ -87,6 +88,7 @@ export default function DrugFormularyPage() {
   }
 
   async function handleToggleActive(d: DrugInventoryResponse) {
+    setActionError('');
     try {
       if (d.isActive) {
         const updated = await deactivateDrug(d.drugInventoryId);
@@ -109,7 +111,7 @@ export default function DrugFormularyPage() {
         setDrugs(drugs.map(x => x.drugInventoryId === d.drugInventoryId ? updated : x));
       }
     } catch {
-      alert('Failed to update active status.');
+      setActionError('Failed to update active status.');
     }
   }
 
@@ -118,6 +120,7 @@ export default function DrugFormularyPage() {
     if (!name.trim() || !unit.trim()) return;
 
     setSaving(true);
+    setActionError('');
     const data: SaveDrugRequest = {
       name: name.trim(),
       genericName: genericName.trim() || undefined,
@@ -143,7 +146,7 @@ export default function DrugFormularyPage() {
       setShowModal(false);
     } catch (err) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Save failed.';
-      alert(msg);
+      setActionError(msg);
     } finally {
       setSaving(false);
     }
@@ -185,6 +188,10 @@ export default function DrugFormularyPage() {
           Add Drug to Formulary
         </button>
       </div>
+
+      {actionError && (
+        <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">{actionError}</div>
+      )}
 
       {/* Filter panel */}
       <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-wrap gap-3 items-center mb-6">

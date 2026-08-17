@@ -12,6 +12,7 @@ import type { InsuranceClaimResponse } from '../../types/claims';
 import { CLAIM_STATUS_LABELS } from '../../types/claims';
 import { useAuth } from '../../contexts/AuthContext';
 import { Roles } from '../../types';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 
 const STATUS_COLORS: Record<string, string> = {
   Draft:             'bg-gray-100 text-gray-700',
@@ -38,6 +39,7 @@ export default function ClaimDetailPage() {
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState('');
   const [busy, setBusy]           = useState(false);
+  const [confirmAction, setConfirmAction] = useState<null | { message: string; run: () => void }>(null);
 
   // Approve modal
   const [showApprove, setShowApprove]           = useState(false);
@@ -99,7 +101,7 @@ export default function ClaimDetailPage() {
   }
 
   async function handleCancel() {
-    if (!id || !confirm('Cancel this claim?')) return;
+    if (!id) return;
     setBusy(true);
     try {
       setClaim(await cancelClaim(id));
@@ -170,7 +172,7 @@ export default function ClaimDetailPage() {
             </>
           )}
           {isAdmin && (claim.status === 'Draft' || claim.status === 'Submitted') && (
-            <button onClick={handleCancel} disabled={busy}
+            <button onClick={() => setConfirmAction({ message: 'Cancel this claim?', run: handleCancel })} disabled={busy}
               className={`${btn} bg-white border border-gray-300 text-gray-500 hover:bg-gray-50`}>
               Cancel Claim
             </button>
@@ -328,6 +330,16 @@ export default function ClaimDetailPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!confirmAction}
+        title="Confirm"
+        message={confirmAction?.message ?? ''}
+        danger
+        busy={busy}
+        onConfirm={() => { confirmAction?.run(); setConfirmAction(null); }}
+        onCancel={() => setConfirmAction(null)}
+      />
     </div>
   );
 }

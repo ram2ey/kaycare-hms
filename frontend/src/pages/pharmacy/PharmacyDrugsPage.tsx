@@ -24,6 +24,7 @@ export default function PharmacyDrugsPage() {
   const [moveQty, setMoveQty]             = useState(1);
   const [moveNotes, setMoveNotes]         = useState('');
   const [moveSaving, setMoveSaving]       = useState(false);
+  const [moveError, setMoveError]         = useState('');
 
   // Movement history panel
   const [historyDrug, setHistoryDrug]       = useState<DrugInventoryResponse | null>(null);
@@ -55,12 +56,14 @@ export default function PharmacyDrugsPage() {
     setMoveType('Receive');
     setMoveQty(1);
     setMoveNotes('');
+    setMoveError('');
   }
 
   async function handleMovementSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!moveDrug) return;
     setMoveSaving(true);
+    setMoveError('');
     try {
       await recordMovement(moveDrug.drugInventoryId, {
         movementType: moveType,
@@ -71,7 +74,7 @@ export default function PharmacyDrugsPage() {
       await load();
     } catch (err) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Movement failed.';
-      alert(msg);
+      setMoveError(msg);
     } finally {
       setMoveSaving(false);
     }
@@ -262,6 +265,7 @@ export default function PharmacyDrugsPage() {
                 <input value={moveNotes} onChange={e => setMoveNotes(e.target.value)}
                   placeholder="e.g. Monthly audit correction..." className={inp} />
               </div>
+              {moveError && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{moveError}</p>}
               <div className="flex gap-3 justify-end pt-4 border-t border-gray-150">
                 <button type="button" onClick={() => setMoveDrug(null)}
                   className="px-4 py-2 text-sm font-semibold text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">Cancel</button>

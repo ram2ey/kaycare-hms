@@ -5,6 +5,7 @@ import { getCatalog, createCatalogItem, updateCatalogItem, deleteCatalogItem } f
 import type { ServiceCatalogItem, SaveServiceCatalogItemRequest } from '../../types/serviceCatalog';
 import { BILL_CATEGORIES } from '../../types/billing';
 import { Roles } from '../../types';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 
 const inp = 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
 
@@ -34,6 +35,9 @@ export default function ServiceCatalogPage() {
   const [saving, setSaving]         = useState(false);
   const [error, setError]           = useState('');
   const [filterCategory, setFilterCategory] = useState('');
+  const [actionError, setActionError] = useState('');
+  const [confirmAction, setConfirmAction] = useState<null | { message: string; run: () => void }>(null);
+  const [deleting, setDeleting] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -78,12 +82,15 @@ export default function ServiceCatalogPage() {
   }
 
   async function handleDelete(item: ServiceCatalogItem) {
-    if (!confirm(`Delete "${item.name}"?`)) return;
+    setActionError('');
+    setDeleting(true);
     try {
       await deleteCatalogItem(item.serviceCatalogItemId);
       setItems((prev) => prev.filter((i) => i.serviceCatalogItemId !== item.serviceCatalogItemId));
     } catch {
-      alert('Failed to delete item.');
+      setActionError('Failed to delete item.');
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -103,6 +110,10 @@ export default function ServiceCatalogPage() {
         <span className="mx-2">/</span>
         <span className="text-gray-800">Price Catalog</span>
       </div>
+
+      {actionError && (
+        <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">{actionError}</div>
+      )}
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
@@ -197,7 +208,7 @@ export default function ServiceCatalogPage() {
                           {canEditItem(item.category) && (
                             <>
                               <button onClick={() => openEdit(item)} className="text-xs text-blue-650 hover:text-blue-800 font-semibold hover:underline">Edit</button>
-                              <button onClick={() => handleDelete(item)} className="text-xs text-red-600 hover:text-red-800 font-semibold hover:underline">Delete</button>
+                              <button onClick={() => setConfirmAction({ message: `Delete "${item.name}"?`, run: () => handleDelete(item) })} className="text-xs text-red-600 hover:text-red-800 font-semibold hover:underline">Delete</button>
                             </>
                           )}
                         </div>
@@ -268,6 +279,16 @@ export default function ServiceCatalogPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!confirmAction}
+        title="Confirm"
+        message={confirmAction?.message ?? ''}
+        danger
+        busy={deleting}
+        onConfirm={() => { confirmAction?.run(); setConfirmAction(null); }}
+        onCancel={() => setConfirmAction(null)}
+      />
     </div>
   );
 }

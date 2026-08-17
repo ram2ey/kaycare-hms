@@ -3,6 +3,7 @@ import { getNursingNotesForPatient, addNursingNote, deleteNursingNote } from '..
 import type { NursingNoteResponse, AddNursingNoteRequest } from '../../../types/nursing';
 import { useAuth } from '../../../contexts/AuthContext';
 import { Roles } from '../../../types';
+import { ConfirmDialog } from '../../../components/ConfirmDialog';
 
 const NOTE_TYPES = ['General', 'Observation', 'Medication', 'Procedure', 'Handover', 'Incident'];
 
@@ -14,6 +15,7 @@ export default function NursingNotesTab({ patientId }: { patientId: string }) {
   const [form, setForm]         = useState<AddNursingNoteRequest>({ noteType: 'General', note: '' });
   const [saving, setSaving]     = useState(false);
   const [saveError, setSaveError] = useState('');
+  const [confirmAction, setConfirmAction] = useState<null | { message: string; run: () => void }>(null);
 
   useEffect(() => {
     getNursingNotesForPatient(patientId)
@@ -42,7 +44,6 @@ export default function NursingNotesTab({ patientId }: { patientId: string }) {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Delete this note?')) return;
     await deleteNursingNote(id);
     setNotes(prev => prev.filter(n => n.nursingNoteId !== id));
   }
@@ -101,7 +102,7 @@ export default function NursingNotesTab({ patientId }: { patientId: string }) {
                   <span className="text-xs text-gray-500">{n.authorName} · {new Date(n.createdAt).toLocaleString()}</span>
                 </div>
                 {canDelete && (
-                  <button onClick={() => handleDelete(n.nursingNoteId)} className="text-xs text-red-500 hover:text-red-700">Delete</button>
+                  <button onClick={() => setConfirmAction({ message: 'Delete this note?', run: () => handleDelete(n.nursingNoteId) })} className="text-xs text-red-500 hover:text-red-700">Delete</button>
                 )}
               </div>
               <p className="text-sm text-gray-800 mt-2 whitespace-pre-wrap">{n.note}</p>
@@ -109,6 +110,15 @@ export default function NursingNotesTab({ patientId }: { patientId: string }) {
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!confirmAction}
+        title="Confirm"
+        message={confirmAction?.message ?? ''}
+        danger
+        onConfirm={() => { confirmAction?.run(); setConfirmAction(null); }}
+        onCancel={() => setConfirmAction(null)}
+      />
     </div>
   );
 }

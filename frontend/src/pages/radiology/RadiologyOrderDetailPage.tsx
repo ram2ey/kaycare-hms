@@ -12,6 +12,7 @@ import type { RadiologyOrderDetail, RadiologyOrderItemResponse } from '../../typ
 import { ORDER_STATUS_COLORS, ITEM_STATUS_COLORS } from '../../types/radiology'
 import { useAuth } from '../../contexts/AuthContext'
 import { PacsViewerModal } from '../../components/PacsViewerModal'
+import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { safeArray } from '../../utils/array';
 
 
@@ -25,6 +26,8 @@ export function RadiologyOrderDetailPage() {
   const [reportForm, setReportForm] = useState({ findings: '', impression: '', recommendations: '', pacsStudyUid: '', pacsViewerUrl: '' })
   const [submitting, setSubmitting] = useState(false)
   const [activePacsItem, setActivePacsItem] = useState<RadiologyOrderItemResponse | null>(null)
+  const [confirmAction, setConfirmAction] = useState<null | { message: string; run: () => void }>(null)
+  const [actionError, setActionError] = useState('')
 
   function load() {
     if (!id) return
@@ -35,18 +38,19 @@ export function RadiologyOrderDetailPage() {
   useEffect(() => { load() }, [id])
 
   async function handleMarkAcquired(itemId: string) {
-    if (!confirm('Mark images as acquired?')) return
+    setActionError('')
     await markAcquired(itemId)
     load()
   }
 
   async function handleUploadScan(itemId: string, file: File) {
     setSubmitting(true)
+    setActionError('')
     try {
       await uploadPacsStudy(itemId, file)
       load()
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to upload scan file.')
+      setActionError(err.response?.data?.message || 'Failed to upload scan file.')
     } finally {
       setSubmitting(false)
     }
@@ -73,7 +77,7 @@ export function RadiologyOrderDetailPage() {
   }
 
   async function handleSign(itemId: string) {
-    if (!confirm('Sign off this report?')) return
+    setActionError('')
     await signItem(itemId)
     load()
   }
@@ -101,6 +105,10 @@ export function RadiologyOrderDetailPage() {
   return (
     <div className="p-6 max-w-4xl">
       <button onClick={() => navigate(-1)} className="text-sm text-gray-500 hover:text-gray-700 mb-4">← Back</button>
+
+      {actionError && (
+        <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">{actionError}</div>
+      )}
 
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
@@ -208,7 +216,7 @@ export function RadiologyOrderDetailPage() {
                     {canAcquire && item.status === 'Ordered' && (
                       <div className="flex flex-col gap-1.5 border border-dashed border-gray-300 rounded-xl p-2 bg-gray-50/50 hover:bg-gray-100/50 transition-colors">
                         <button
-                          onClick={() => handleMarkAcquired(item.radiologyOrderItemId)}
+                          onClick={() => setConfirmAction({ message: 'Mark images as acquired?', run: () => handleMarkAcquired(item.radiologyOrderItemId) })}
                           className="text-yellow-600 hover:underline text-[10px] font-bold text-left self-start"
                         >
                           ⚡ Mark Acquired (No Scan)
@@ -250,7 +258,7 @@ export function RadiologyOrderDetailPage() {
                     )}
                     {canSign && item.status === 'Reported' && (
                       <button
-                        onClick={() => handleSign(item.radiologyOrderItemId)}
+                        onClick={() => setConfirmAction({ message: 'Sign off this report?', run: () => handleSign(item.radiologyOrderItemId) })}
                         className="text-green-600 hover:underline text-xs font-medium"
                       >
                         Sign
@@ -358,6 +366,14 @@ export function RadiologyOrderDetailPage() {
           imageUrl={activePacsItem.pacsViewerUrl ?? undefined}
         />
       )}
+
+      <ConfirmDialog
+        open={!!confirmAction}
+        title="Confirm"
+        message={confirmAction?.message ?? ''}
+        onConfirm={() => { confirmAction?.run(); setConfirmAction(null); }}
+        onCancel={() => setConfirmAction(null)}
+      />
     </div>
   )
 }

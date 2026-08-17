@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { getPayers, createPayer, updatePayer, deletePayer } from '../../api/payers';
 import type { PayerResponse, SavePayerRequest } from '../../types/payers';
 import { PAYER_TYPES, PAYER_TYPE_LABELS } from '../../types/payers';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 
 const inp = 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
 
@@ -26,6 +27,9 @@ export default function PayersPage() {
   const [form, setForm]             = useState<SavePayerRequest>(emptyForm());
   const [saving, setSaving]         = useState(false);
   const [formError, setFormError]   = useState('');
+  const [actionError, setActionError] = useState('');
+  const [deleting, setDeleting]     = useState(false);
+  const [confirmAction, setConfirmAction] = useState<null | { message: string; run: () => void }>(null);
 
   function load(activeOnly: boolean) {
     setLoading(true);
@@ -84,13 +88,16 @@ export default function PayersPage() {
     }
   }
 
-  async function handleDelete(id: string, name: string) {
-    if (!confirm(`Delete payer "${name}"? This cannot be undone.`)) return;
+  async function handleDelete(id: string) {
+    setActionError('');
+    setDeleting(true);
     try {
       await deletePayer(id);
       load(!showAll);
     } catch {
-      alert('Failed to delete payer.');
+      setActionError('Failed to delete payer.');
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -107,6 +114,10 @@ export default function PayersPage() {
         <span className="mx-2">/</span>
         <span className="text-gray-800">Payers</span>
       </div>
+
+      {actionError && (
+        <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">{actionError}</div>
+      )}
 
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -169,7 +180,7 @@ export default function PayersPage() {
                         <div className="flex items-center justify-end gap-3">
                           <button onClick={() => openEdit(p)}
                             className="text-xs text-blue-600 hover:underline">Edit</button>
-                          <button onClick={() => handleDelete(p.payerId, p.name)}
+                          <button onClick={() => setConfirmAction({ message: `Delete payer "${p.name}"? This cannot be undone.`, run: () => handleDelete(p.payerId) })}
                             className="text-xs text-red-400 hover:text-red-600 hover:underline">Delete</button>
                         </div>
                       </td>
@@ -240,6 +251,16 @@ export default function PayersPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!confirmAction}
+        title="Confirm"
+        message={confirmAction?.message ?? ''}
+        danger
+        busy={deleting}
+        onConfirm={() => { confirmAction?.run(); setConfirmAction(null); }}
+        onCancel={() => setConfirmAction(null)}
+      />
     </div>
   );
 }

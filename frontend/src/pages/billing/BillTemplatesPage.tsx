@@ -3,6 +3,7 @@ import { getBillTemplates, createBillTemplate, updateBillTemplate, deleteBillTem
 import type { BillTemplateResponse, SaveBillTemplateRequest, BillTemplateItemRequest } from '../../types/billTemplates';
 import { BILL_CATEGORIES } from '../../types/billing';
 import { safeArray } from '../../utils/array';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 
 
 const inp = 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
@@ -22,6 +23,9 @@ export default function BillTemplatesPage() {
   const [showForm, setShowForm]           = useState(false);
   const [form, setForm]                   = useState<SaveBillTemplateRequest>(emptyForm());
   const [saving, setSaving]               = useState(false);
+  const [actionError, setActionError]     = useState('');
+  const [deleting, setDeleting]           = useState(false);
+  const [confirmAction, setConfirmAction] = useState<null | { message: string; run: () => void }>(null);
 
   async function load() {
     setLoading(true);
@@ -61,7 +65,8 @@ export default function BillTemplatesPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (form.items.length === 0) { alert('Add at least one line item.'); return; }
+    setActionError('');
+    if (form.items.length === 0) { setActionError('Add at least one line item.'); return; }
     setSaving(true);
     try {
       const payload: SaveBillTemplateRequest = {
@@ -79,28 +84,32 @@ export default function BillTemplatesPage() {
       await load();
     } catch (err) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Save failed.';
-      alert(msg);
+      setActionError(msg);
     } finally {
       setSaving(false);
     }
   }
 
   async function handleDelete(t: BillTemplateResponse) {
-    if (!confirm(`Delete template "${t.name}"? This cannot be undone.`)) return;
+    setActionError('');
+    setDeleting(true);
     try {
       await deleteBillTemplate(t.billTemplateId);
       await load();
     } catch {
-      alert('Delete failed.');
+      setActionError('Delete failed.');
+    } finally {
+      setDeleting(false);
     }
   }
 
   async function handleToggle(t: BillTemplateResponse) {
+    setActionError('');
     try {
       await toggleBillTemplate(t.billTemplateId);
       await load();
     } catch {
-      alert('Failed to update template status.');
+      setActionError('Failed to update template status.');
     }
   }
 
@@ -123,6 +132,10 @@ export default function BillTemplatesPage() {
           + New Template
         </button>
       </div>
+
+      {actionError && (
+        <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">{actionError}</div>
+      )}
 
       <div className="flex items-center gap-3 mb-5">
         <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
@@ -175,7 +188,7 @@ export default function BillTemplatesPage() {
                           <button onClick={() => handleToggle(t)} className="text-xs text-gray-500 hover:underline">
                             {t.isActive ? 'Deactivate' : 'Activate'}
                           </button>
-                          <button onClick={() => handleDelete(t)} className="text-xs text-red-500 hover:underline">Delete</button>
+                          <button onClick={() => setConfirmAction({ message: `Delete template "${t.name}"? This cannot be undone.`, run: () => handleDelete(t) })} className="text-xs text-red-500 hover:underline">Delete</button>
                         </td>
                       </tr>
                     ))}
@@ -286,6 +299,8 @@ export default function BillTemplatesPage() {
                 </div>
               </div>
 
+              {actionError && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{actionError}</p>}
+
               <div className="flex gap-3 justify-end pt-2">
                 <button type="button" onClick={() => setShowForm(false)}
                   className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
@@ -298,6 +313,16 @@ export default function BillTemplatesPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!confirmAction}
+        title="Confirm"
+        message={confirmAction?.message ?? ''}
+        danger
+        busy={deleting}
+        onConfirm={() => { confirmAction?.run(); setConfirmAction(null); }}
+        onCancel={() => setConfirmAction(null)}
+      />
     </div>
   );
 }

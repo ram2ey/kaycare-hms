@@ -12,6 +12,7 @@ import type { BillResponse } from '../../../types/billing';
 import type { VitalSignsResponse } from '../../../types/nursing';
 import { useAuth } from '../../../contexts/AuthContext';
 import { Roles } from '../../../types';
+import { ConfirmDialog } from '../../../components/ConfirmDialog';
 
 const SEVERITY_COLORS: Record<string, string> = {
   Mild: 'bg-yellow-100 text-yellow-700',
@@ -39,6 +40,8 @@ export default function OverviewTab({ patient, allergies, onAllergyChange }: Pro
   const [allergyForm, setAllergyForm]       = useState<AddAllergyRequest>(emptyAllergy);
   const [savingAllergy, setSavingAllergy]   = useState(false);
   const [allergyError, setAllergyError]     = useState('');
+  const [removingAllergy, setRemovingAllergy] = useState(false);
+  const [confirmAction, setConfirmAction]   = useState<null | { message: string; run: () => void }>(null);
 
   useEffect(() => {
     const pid = patient.patientId;
@@ -64,9 +67,13 @@ export default function OverviewTab({ patient, allergies, onAllergyChange }: Pro
   }
 
   async function handleRemoveAllergy(allergyId: string) {
-    if (!confirm('Remove this allergy?')) return;
-    await removeAllergy(patient.patientId, allergyId);
-    onAllergyChange(allergies.filter(a => a.allergyId !== allergyId));
+    setRemovingAllergy(true);
+    try {
+      await removeAllergy(patient.patientId, allergyId);
+      onAllergyChange(allergies.filter(a => a.allergyId !== allergyId));
+    } finally {
+      setRemovingAllergy(false);
+    }
   }
 
   const canManageAllergies = [Roles.SuperAdmin, Roles.Admin, Roles.Doctor, Roles.Nurse].includes(user?.role as never);
@@ -228,7 +235,7 @@ export default function OverviewTab({ patient, allergies, onAllergyChange }: Pro
                     <td className="py-2 text-gray-400 text-xs">{new Date(a.recordedAt).toLocaleDateString()}</td>
                     {canRemoveAllergy && (
                       <td className="py-2 text-right">
-                        <button onClick={() => handleRemoveAllergy(a.allergyId)} className="text-xs text-red-500 hover:text-red-700">Remove</button>
+                        <button onClick={() => setConfirmAction({ message: 'Remove this allergy?', run: () => handleRemoveAllergy(a.allergyId) })} className="text-xs text-red-500 hover:text-red-700">Remove</button>
                       </td>
                     )}
                   </tr>
@@ -238,6 +245,16 @@ export default function OverviewTab({ patient, allergies, onAllergyChange }: Pro
           )}
         </section>
       </div>
+
+      <ConfirmDialog
+        open={!!confirmAction}
+        title="Confirm"
+        message={confirmAction?.message ?? ''}
+        danger
+        busy={removingAllergy}
+        onConfirm={() => { confirmAction?.run(); setConfirmAction(null); }}
+        onCancel={() => setConfirmAction(null)}
+      />
     </div>
   );
 }
