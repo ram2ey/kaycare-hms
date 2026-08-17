@@ -239,18 +239,7 @@ public class RefundService : IRefundService
         UpdatedAt        = r.UpdatedAt
     };
 
-    private async Task<string> GenerateNumberAsync(CancellationToken ct)
-    {
-        var year   = DateTime.UtcNow.Year;
-        var prefix = $"REF-{year}-";
-        var last = await _db.Refunds
-            .Where(r => r.RefundNumber.StartsWith(prefix))
-            .OrderByDescending(r => r.RefundNumber)
-            .Select(r => r.RefundNumber)
-            .FirstOrDefaultAsync(ct);
-        var seq = 1;
-        if (last is not null && int.TryParse(last[prefix.Length..], out var lastNum))
-            seq = lastNum + 1;
-        return $"{prefix}{seq:D5}";
-    }
+    private Task<string> GenerateNumberAsync(CancellationToken ct) =>
+        _db.GenerateSequenceNumberAsync(
+            _db.Refunds.Select(r => r.RefundNumber), $"REF-{DateTime.UtcNow.Year}-", ct);
 }

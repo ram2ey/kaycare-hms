@@ -586,18 +586,7 @@ public class InsuranceClaimService : IInsuranceClaimService
         UpdatedAt       = c.UpdatedAt
     };
 
-    private async Task<string> GenerateClaimNumberAsync(CancellationToken ct)
-    {
-        var year   = DateTime.UtcNow.Year;
-        var prefix = $"CLM-{year}-";
-        var last = await _db.InsuranceClaims
-            .Where(c => c.ClaimNumber.StartsWith(prefix))
-            .OrderByDescending(c => c.ClaimNumber)
-            .Select(c => c.ClaimNumber)
-            .FirstOrDefaultAsync(ct);
-        var seq = 1;
-        if (last is not null && int.TryParse(last[prefix.Length..], out var lastNum))
-            seq = lastNum + 1;
-        return $"{prefix}{seq:D5}";
-    }
+    private Task<string> GenerateClaimNumberAsync(CancellationToken ct) =>
+        _db.GenerateSequenceNumberAsync(
+            _db.InsuranceClaims.Select(c => c.ClaimNumber), $"CLM-{DateTime.UtcNow.Year}-", ct);
 }

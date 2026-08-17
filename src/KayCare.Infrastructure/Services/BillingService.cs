@@ -399,26 +399,9 @@ public class BillingService : IBillingService
 
     // ── INV Number Generation ─────────────────────────────────────────────────
 
-    private async Task<string> GenerateBillNumberAsync(CancellationToken ct)
-    {
-        var year   = DateTime.UtcNow.Year;
-        var prefix = $"INV-{year}-";
-
-        var lastNumber = await _db.Bills
-            .Where(b => b.BillNumber.StartsWith(prefix))
-            .OrderByDescending(b => b.BillNumber)
-            .Select(b => b.BillNumber)
-            .FirstOrDefaultAsync(ct);
-
-        var seq = 1;
-        if (lastNumber is not null &&
-            int.TryParse(lastNumber[prefix.Length..], out var last))
-        {
-            seq = last + 1;
-        }
-
-        return $"{prefix}{seq:D5}";
-    }
+    private Task<string> GenerateBillNumberAsync(CancellationToken ct) =>
+        _db.GenerateSequenceNumberAsync(
+            _db.Bills.Select(b => b.BillNumber), $"INV-{DateTime.UtcNow.Year}-", ct);
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 

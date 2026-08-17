@@ -352,17 +352,10 @@ public class RadiologyOrderService : IRadiologyOrderService
         => await _db.RadiologyOrderItems.FirstOrDefaultAsync(i => i.RadiologyOrderItemId == itemId, ct)
             ?? throw new NotFoundException("RadiologyOrderItem", itemId);
 
-    private async Task<int> GetNextAccessionSequenceAsync(string prefix, CancellationToken ct)
-    {
-        var last = await _db.RadiologyOrderItems
-            .Where(i => i.AccessionNumber != null && i.AccessionNumber.StartsWith(prefix))
-            .OrderByDescending(i => i.AccessionNumber)
-            .Select(i => i.AccessionNumber!)
-            .FirstOrDefaultAsync(ct);
-        if (last is not null && int.TryParse(last[prefix.Length..], out var lastNum))
-            return lastNum + 1;
-        return 1;
-    }
+    private Task<int> GetNextAccessionSequenceAsync(string prefix, CancellationToken ct) =>
+        _db.GetNextSequenceAsync(
+            _db.RadiologyOrderItems.Where(i => i.AccessionNumber != null).Select(i => i.AccessionNumber!),
+            prefix, ct);
 
     private static RadiologyOrderResponse MapSummary(RadiologyOrder o)
     {

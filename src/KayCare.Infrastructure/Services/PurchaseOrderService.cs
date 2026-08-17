@@ -280,26 +280,9 @@ public class PurchaseOrderService : IPurchaseOrderService
 
     // ── Order Number Generation ───────────────────────────────────────────────
 
-    private async Task<string> GenerateOrderNumberAsync(CancellationToken ct)
-    {
-        var year   = DateTime.UtcNow.Year;
-        var prefix = $"PO-{year}-";
-
-        var lastNumber = await _db.PurchaseOrders
-            .Where(po => po.OrderNumber.StartsWith(prefix))
-            .OrderByDescending(po => po.OrderNumber)
-            .Select(po => po.OrderNumber)
-            .FirstOrDefaultAsync(ct);
-
-        var seq = 1;
-        if (lastNumber is not null &&
-            int.TryParse(lastNumber[prefix.Length..], out var last))
-        {
-            seq = last + 1;
-        }
-
-        return $"{prefix}{seq:D5}";
-    }
+    private Task<string> GenerateOrderNumberAsync(CancellationToken ct) =>
+        _db.GenerateSequenceNumberAsync(
+            _db.PurchaseOrders.Select(po => po.OrderNumber), $"PO-{DateTime.UtcNow.Year}-", ct);
 
     // ── Projection ────────────────────────────────────────────────────────────
 

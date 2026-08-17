@@ -367,26 +367,14 @@ public class LabOrderService : ILabOrderService
     }
 
     /// <summary>Generates ACC-{YEAR}-{NNNNN} sequential per tenant per year.</summary>
-    private async Task<string> GenerateAccessionNumberAsync(CancellationToken ct)
+    private Task<string> GenerateAccessionNumberAsync(CancellationToken ct)
     {
-        var year   = DateTime.UtcNow.Year;
-        var prefix = $"ACC-{year}-";
-
-        var last = await _db.LabOrderItems
-            .Where(i => i.TenantId == _currentUser.TenantId
-                     && i.AccessionNumber != null
-                     && i.AccessionNumber.StartsWith(prefix))
-            .Select(i => i.AccessionNumber!)
-            .OrderByDescending(n => n)
-            .FirstOrDefaultAsync(ct);
-
-        var next = 1;
-        if (last is not null && int.TryParse(last[prefix.Length..], out var lastSeq))
-        {
-            next = lastSeq + 1;
-        }
-
-        return $"{prefix}{next:D5}";
+        var prefix = $"ACC-{DateTime.UtcNow.Year}-";
+        return _db.GenerateSequenceNumberAsync(
+            _db.LabOrderItems
+                .Where(i => i.TenantId == _currentUser.TenantId && i.AccessionNumber != null)
+                .Select(i => i.AccessionNumber!),
+            prefix, ct);
     }
 
     // ── Mapping ───────────────────────────────────────────────────────────────

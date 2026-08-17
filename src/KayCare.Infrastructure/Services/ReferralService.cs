@@ -70,9 +70,16 @@ public class ReferralService : IReferralService
 
     public async Task<ReferralDetailResponse> CreateAsync(CreateReferralRequest req, CancellationToken ct)
     {
-        var year = DateTime.UtcNow.Year;
-        var count = await _db.Referrals.CountAsync(r => r.CreatedAt.Year == year, ct);
-        var number = $"REF-{year}-{(count + 1):D5}";
+        // Previously used a CountAsync(...year) + 1 approach with no lookback and no locking —
+        // collision-prone under concurrency (two simultaneous referrals in the same tenant/year
+        // could compute the same count and the same number) unlike every other sequence-number
+        // generator in this codebase, all of which use a lookback-highest-number query wrapped in
+        // an advisory lock. Brought in line with that pattern.
+        using var transaction = await _db.Database.BeginTransactionAsync(ct);
+        await _db.AcquireAdvisoryLockAsync(_currentUser.TenantId, "ReferralNumber", ct);
+
+        var number = await _db.GenerateSequenceNumberAsync(
+            _db.Referrals.Select(r => r.ReferralNumber), $"REF-{DateTime.UtcNow.Year}-", ct);
 
         var referral = new Referral
         {
@@ -92,6 +99,7 @@ public class ReferralService : IReferralService
 
         _db.Referrals.Add(referral);
         await _db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
 
         return ToDetail(await LoadOrThrow(referral.ReferralId, ct));
     }

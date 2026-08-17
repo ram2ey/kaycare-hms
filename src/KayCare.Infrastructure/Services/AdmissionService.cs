@@ -320,20 +320,9 @@ public class AdmissionService : IAdmissionService
             .AsNoTracking()
             .FirstOrDefaultAsync(a => a.AdmissionId == admissionId, ct);
 
-    private async Task<string> GenerateAdmissionNumberAsync(CancellationToken ct)
-    {
-        var year   = DateTime.UtcNow.Year;
-        var prefix = $"ADM-{year}-";
-        var last = await _db.Admissions
-            .Where(a => a.AdmissionNumber.StartsWith(prefix))
-            .OrderByDescending(a => a.AdmissionNumber)
-            .Select(a => a.AdmissionNumber)
-            .FirstOrDefaultAsync(ct);
-        var seq = 1;
-        if (last is not null && int.TryParse(last[prefix.Length..], out var lastNum))
-            seq = lastNum + 1;
-        return $"{prefix}{seq:D5}";
-    }
+    private Task<string> GenerateAdmissionNumberAsync(CancellationToken ct) =>
+        _db.GenerateSequenceNumberAsync(
+            _db.Admissions.Select(a => a.AdmissionNumber), $"ADM-{DateTime.UtcNow.Year}-", ct);
 
     private static AdmissionSummaryResponse ToSummary(Admission a) => new()
     {

@@ -222,26 +222,9 @@ public class PatientService : IPatientService
 
     // ── MRN Generation ────────────────────────────────────────────────────────
 
-    private async Task<string> GenerateMrnAsync(CancellationToken ct)
-    {
-        var year   = DateTime.UtcNow.Year;
-        var prefix = $"MRN-{year}-";
-
-        var lastMrn = await _db.Patients
-            .Where(p => p.MedicalRecordNumber.StartsWith(prefix))
-            .OrderByDescending(p => p.MedicalRecordNumber)
-            .Select(p => p.MedicalRecordNumber)
-            .FirstOrDefaultAsync(ct);
-
-        var seq = 1;
-        if (lastMrn is not null &&
-            int.TryParse(lastMrn[prefix.Length..], out var last))
-        {
-            seq = last + 1;
-        }
-
-        return $"{prefix}{seq:D5}";
-    }
+    private Task<string> GenerateMrnAsync(CancellationToken ct) =>
+        _db.GenerateSequenceNumberAsync(
+            _db.Patients.Select(p => p.MedicalRecordNumber), $"MRN-{DateTime.UtcNow.Year}-", ct);
 
     // ── Mapping helpers ───────────────────────────────────────────────────────
 

@@ -227,18 +227,7 @@ public class CreditNoteService : ICreditNoteService
         UpdatedAt        = c.UpdatedAt
     };
 
-    private async Task<string> GenerateNumberAsync(CancellationToken ct)
-    {
-        var year   = DateTime.UtcNow.Year;
-        var prefix = $"CN-{year}-";
-        var last = await _db.CreditNotes
-            .Where(c => c.CreditNoteNumber.StartsWith(prefix))
-            .OrderByDescending(c => c.CreditNoteNumber)
-            .Select(c => c.CreditNoteNumber)
-            .FirstOrDefaultAsync(ct);
-        var seq = 1;
-        if (last is not null && int.TryParse(last[prefix.Length..], out var lastNum))
-            seq = lastNum + 1;
-        return $"{prefix}{seq:D5}";
-    }
+    private Task<string> GenerateNumberAsync(CancellationToken ct) =>
+        _db.GenerateSequenceNumberAsync(
+            _db.CreditNotes.Select(c => c.CreditNoteNumber), $"CN-{DateTime.UtcNow.Year}-", ct);
 }
