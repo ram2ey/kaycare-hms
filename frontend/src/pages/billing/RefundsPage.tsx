@@ -20,18 +20,24 @@ export default function RefundsPage() {
   const [refunds, setRefunds] = useState<RefundResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus]   = useState('');
+  const [error, setError]     = useState('');
 
   useEffect(() => {
     setLoading(true);
+    setError('');
     getRefunds({ status: status || undefined })
       .then(setRefunds)
-      .catch(() => {})
+      .catch(() => setError('Failed to load refunds. Please try again.'))
       .finally(() => setLoading(false));
   }, [status]);
 
   return (
     <div className="max-w-7xl mx-auto p-6">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Refunds</h1>
+
+      {error && (
+        <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">{error}</div>
+      )}
 
       <div className="bg-white border border-gray-200 rounded-lg p-4 mb-6 flex gap-4">
         <div>

@@ -23,9 +23,11 @@ export default function TimelineTab({
   const [labOrders, setLabOrders] = useState<LabOrder[]>([])
   const [radiologyOrders, setRadiologyOrders] = useState<RadiologyOrderSummary[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     setLoading(true)
+    setError('')
     Promise.all([
       getPatientAppointments(patientId),
       getPatientBills(patientId),
@@ -40,6 +42,7 @@ export default function TimelineTab({
       })
       .catch((err) => {
         console.error('Failed to load patient history timeline data', err)
+        setError('Failed to load the patient timeline. Please try again.')
       })
       .finally(() => {
         setLoading(false)
@@ -56,6 +59,10 @@ export default function TimelineTab({
         <h3 className="text-sm font-semibold text-gray-700">Patient Clinical Timeline</h3>
         <p className="text-xs text-gray-400 mt-0.5">Chronological record of encounters, billing, labs, and imaging studies</p>
       </div>
+
+      {error && (
+        <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">{error}</div>
+      )}
 
       <PatientTimeline
         patientName={patientName}

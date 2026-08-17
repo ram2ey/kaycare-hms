@@ -31,9 +31,9 @@ export default function CreateReferralPage() {
   const [error, setError]       = useState('');
 
   useEffect(() => {
-    getUsers({ role: 'Doctor' }).then(setDoctors).catch(() => {});
+    getUsers({ role: 'Doctor' }).then(setDoctors).catch(() => setError('Failed to load doctors list. Please try again.'));
     if (!prefillPatient) {
-      searchPatients({ page: 1, pageSize: 200 }).then(r => setPatients(safeArray(r.items))).catch(() => {});
+      searchPatients({ page: 1, pageSize: 200 }).then(r => setPatients(safeArray(r.items))).catch(() => setError('Failed to load patients list. Please try again.'));
     }
   }, [prefillPatient]);
 

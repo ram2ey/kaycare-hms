@@ -20,7 +20,7 @@ export default function TemplatePickerModal({ onSelect, onClose }: Props) {
   useEffect(() => {
     Promise.all([getMyTemplates(), getSharedTemplates()])
       .then(([m, s]) => { setMine(m); setShared(s); })
-      .catch(() => {})
+      .catch(() => setActionError('Failed to load templates. Please try again.'))
       .finally(() => setLoading(false));
   }, []);
 

@@ -33,9 +33,10 @@ export default function PayersPage() {
 
   function load(activeOnly: boolean) {
     setLoading(true);
+    setActionError('');
     getPayers(activeOnly)
       .then(setPayers)
-      .catch(() => {})
+      .catch(() => setActionError('Failed to load payers. Please try again.'))
       .finally(() => setLoading(false));
   }
 

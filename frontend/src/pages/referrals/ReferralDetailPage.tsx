@@ -48,7 +48,7 @@ export default function ReferralDetailPage() {
       .then(r => { setReferral(r); })
       .catch(() => setError('Failed to load referral.'))
       .finally(() => setLoading(false));
-    getUsers({ role: 'Doctor' }).then(setDoctors).catch(() => {});
+    getUsers({ role: 'Doctor' }).then(setDoctors).catch(() => setActionError('Failed to load doctors list. Please try again.'));
   }, [id]);
 
   const openEdit = () => {

@@ -30,9 +30,10 @@ export default function InsuranceClaimsPage() {
   const [loading, setLoading] = useState(true);
   const [status, setStatus]   = useState('');
   const [payerId, setPayerId] = useState('');
+  const [error, setError]     = useState('');
 
   useEffect(() => {
-    getPayers(false).then(setPayers).catch(() => {});
+    getPayers(false).then(setPayers).catch(() => setError('Failed to load payers filter. Please try again.'));
   }, []);
 
   useEffect(() => {
@@ -42,7 +43,7 @@ export default function InsuranceClaimsPage() {
       payerId: payerId || undefined,
     })
       .then(setClaims)
-      .catch(() => {})
+      .catch(() => setError('Failed to load insurance claims. Please try again.'))
       .finally(() => setLoading(false));
   }, [status, payerId]);
 
@@ -51,6 +52,10 @@ export default function InsuranceClaimsPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Insurance Claims</h1>
       </div>
+
+      {error && (
+        <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">{error}</div>
+      )}
 
       {/* Filters */}
       <div className="bg-white border border-gray-200 rounded-lg p-4 mb-6 flex flex-wrap gap-4">

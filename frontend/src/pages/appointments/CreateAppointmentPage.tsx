@@ -37,7 +37,7 @@ export default function CreateAppointmentPage() {
   useEffect(() => {
     listDoctors()
       .then((d: any) => setDoctors(Array.isArray(d) ? d : (d?.items || d?.data || [])))
-      .catch(() => {});
+      .catch(() => setError('Failed to load doctors list. Please try again.'));
   }, []);
 
   // Pre-fill patient if passed via query param
@@ -49,7 +49,7 @@ export default function CreateAppointmentPage() {
         .then((p) => {
           setSelectedPatient(p);
         })
-        .catch(() => {});
+        .catch(() => setError('Failed to load the selected patient. Please search for the patient manually.'));
     }
   }, [searchParams]);
 

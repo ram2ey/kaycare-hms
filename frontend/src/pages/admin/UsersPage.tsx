@@ -46,7 +46,7 @@ export default function UsersPage() {
   useEffect(() => { load(); }, [includeInactive, roleFilter]);
 
   useEffect(() => {
-    getDepartments().then(list => setDeptOptions(list.map(d => d.name))).catch(() => {});
+    getDepartments().then(list => setDeptOptions(list.map(d => d.name))).catch(() => setActionError('Failed to load departments list. Department autocomplete may be incomplete.'));
   }, []);
 
   function errMsg(err: unknown) {

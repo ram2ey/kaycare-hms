@@ -39,11 +39,12 @@ export default function AppointmentsPage() {
   const [doctors, setDoctors] = useState<UserSummary[]>([]);
   const [appointments, setAppointments] = useState<AppointmentResponse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     listDoctors()
       .then((d: any) => setDoctors(Array.isArray(d) ? d : (d?.items || d?.data || [])))
-      .catch(() => {});
+      .catch(() => setError('Failed to load doctors list. Please try again.'));
   }, []);
 
   const load = useCallback(async () => {
@@ -96,6 +97,10 @@ export default function AppointmentsPage() {
           )}
         </div>
       </div>
+
+      {error && (
+        <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">{error}</div>
+      )}
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-5">

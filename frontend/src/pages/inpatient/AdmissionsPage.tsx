@@ -48,7 +48,7 @@ export default function AdmissionsPage() {
   useEffect(() => { load(); }, [load]);
 
   useEffect(() => {
-    getWards({ activeOnly: true }).then(setWards).catch(() => {});
+    getWards({ activeOnly: true }).then(setWards).catch(() => setError('Failed to load wards. Ward filter may be incomplete.'));
   }, []);
 
   const openAdmit = async () => {
@@ -66,7 +66,7 @@ export default function AdmissionsPage() {
         .filter((u: any) => u.role === 'Doctor' || u.role === 'Admin' || u.role === 'SuperAdmin')
         .map((u: any) => ({ userId: u.userId, fullName: u.fullName })));
       setAvailableBeds(beds);
-    } catch { /* non-blocking */ }
+    } catch { setAdmitError('Failed to load patients, doctors, and beds. Please try again.'); }
   };
 
   const handleWardChange = async (wardId: string) => {

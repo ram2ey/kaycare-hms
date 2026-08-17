@@ -13,16 +13,17 @@ function pct(part: number, total: number) {
 export default function RevenueDashboardPage() {
   const [data, setData] = useState<RevenueDashboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     getRevenueDashboard()
       .then(setData)
-      .catch(() => {})
+      .catch(() => setError('Failed to load revenue dashboard. Please try again.'))
       .finally(() => setLoading(false));
   }, []);
 
   if (loading) return <div className="p-8 text-gray-400 text-sm">Loading…</div>;
-  if (!data)   return <div className="p-8 text-red-500 text-sm">Failed to load dashboard.</div>;
+  if (!data)   return <div className="p-8 text-red-500 text-sm">{error || 'Failed to load dashboard.'}</div>;
 
   const collectionRate = pct(data.totalCollected, data.totalInvoiced);
   const maxBar = Math.max(...data.monthlyRevenue.map(m => Math.max(m.invoiced, m.collected)), 1);

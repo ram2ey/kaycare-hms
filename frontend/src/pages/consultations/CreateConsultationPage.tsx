@@ -25,7 +25,7 @@ export default function CreateConsultationPage() {
         setAppointments(eligible);
         if (eligible.length === 1) setSelectedAppointmentId(eligible[0].appointmentId);
       })
-      .catch(() => {});
+      .catch(() => setError('Failed to load appointments for this patient. Please try again.'));
   }, [patientId]);
 
   async function handleSubmit(e: React.FormEvent) {

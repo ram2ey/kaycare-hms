@@ -89,10 +89,10 @@ export default function CreatePrescriptionPage() {
         setConsultations(data);
         if (!consultationId && data.length === 1) setConsultationId(data[0].consultationId);
       })
-      .catch(() => {});
+      .catch(() => setError('Failed to load consultations for this patient. Please try again.'));
     getAllergies(patientId)
       .then((data) => setDrugAllergies(data.filter((a) => a.allergyType === 'Drug')))
-      .catch(() => {});
+      .catch(() => setError('Failed to load drug allergy information for this patient. Verify allergies manually before prescribing.'));
   }, [patientId, consultationId]);
 
   function getAllergyMatch(medicationName: string, genericName: string): AllergyResponse | undefined {

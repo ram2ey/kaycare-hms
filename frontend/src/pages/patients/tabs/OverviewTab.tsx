@@ -42,13 +42,15 @@ export default function OverviewTab({ patient, allergies, onAllergyChange }: Pro
   const [allergyError, setAllergyError]     = useState('');
   const [removingAllergy, setRemovingAllergy] = useState(false);
   const [confirmAction, setConfirmAction]   = useState<null | { message: string; run: () => void }>(null);
+  const [loadError, setLoadError]           = useState('');
 
   useEffect(() => {
     const pid = patient.patientId;
-    getPatientConsultations(pid).then(c => setLastConsult(Array.isArray(c) ? (c[0] ?? null) : null)).catch(() => {});
-    getPatientPrescriptions(pid).then(p => setActivePrescriptions(Array.isArray(p) ? p.filter(x => x.status === 'Active' || x.status === 'PartiallyDispensed') : [])).catch(() => {});
-    getPatientBills(pid).then(b => setOutstandingBill(Array.isArray(b) ? (b.find(x => x.status === 'Issued' || x.status === 'PartiallyPaid') ?? null) : null)).catch(() => {});
-    getLatestVitals(pid).then(setLatestVitals).catch(() => {});
+    setLoadError('');
+    getPatientConsultations(pid).then(c => setLastConsult(Array.isArray(c) ? (c[0] ?? null) : null)).catch(() => setLoadError('Failed to load last consultation.'));
+    getPatientPrescriptions(pid).then(p => setActivePrescriptions(Array.isArray(p) ? p.filter(x => x.status === 'Active' || x.status === 'PartiallyDispensed') : [])).catch(() => setLoadError('Failed to load active prescriptions.'));
+    getPatientBills(pid).then(b => setOutstandingBill(Array.isArray(b) ? (b.find(x => x.status === 'Issued' || x.status === 'PartiallyPaid') ?? null) : null)).catch(() => setLoadError('Failed to load billing summary.'));
+    getLatestVitals(pid).then(setLatestVitals).catch(() => setLoadError('Failed to load latest vitals.'));
   }, [patient.patientId]);
 
   async function handleAddAllergy(e: React.FormEvent) {
@@ -81,6 +83,10 @@ export default function OverviewTab({ patient, allergies, onAllergyChange }: Pro
 
   return (
     <div className="space-y-5 max-w-5xl">
+      {loadError && (
+        <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">{loadError}</div>
+      )}
+
       {/* ── Summary Cards ── */}
       <div className="grid grid-cols-4 gap-4">
         <SummaryCard
