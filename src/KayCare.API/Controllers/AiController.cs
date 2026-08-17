@@ -3,6 +3,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using KayCare.Core.Entities;
 using KayCare.Core.Interfaces;
 using KayCare.Infrastructure.Data;
@@ -17,6 +18,7 @@ public class AiController : ControllerBase
     private readonly IConfiguration _config;
     private readonly AppDbContext _db;
     private readonly ITenantContext _tenantContext;
+    private readonly ILogger<AiController> _logger;
     private static readonly HttpClient _httpClient = new();
 
     private static readonly string[] FreeModelsFallback = new[]
@@ -53,11 +55,12 @@ public class AiController : ControllerBase
         "google/gemini-2.0-flash"
     };
 
-    public AiController(IConfiguration config, AppDbContext db, ITenantContext tenantContext)
+    public AiController(IConfiguration config, AppDbContext db, ITenantContext tenantContext, ILogger<AiController> logger)
     {
         _config = config;
         _db = db;
         _tenantContext = tenantContext;
+        _logger = logger;
     }
 
     [HttpPost("soap-copilot")]
@@ -147,9 +150,12 @@ Format the output clearly as a patient leaflet.";
         var (allowed, errorResult, tenant) = await ValidateAiAccessAsync(ct);
         if (!allowed) return errorResult!;
 
+        // M7 (partial de-identification): the patient's real name never leaves this server —
+        // the model only ever sees PatientPlaceholder, and the real name is substituted back
+        // into the response afterward so the interpretation still reads naturally.
         string resultsJson = JsonSerializer.Serialize(request.Results);
         string prompt = $@"You are an expert Clinical Pathologist. Review the following laboratory results for this patient and provide a concise, structured interpretation for the requesting doctor.
-Patient Name: {request.PatientName}
+Patient Name: {PatientPlaceholder}
 Test Panel: {request.TestName}
 
 Results:
@@ -162,11 +168,13 @@ Format your response in Markdown with these sections:
 4. **Recommended Next Steps**: Recommended follow-up tests, monitoring, or clinical interventions.
 5. **Medical Disclaimer**: Standard AI clinical guidance disclaimer.
 
+Refer to the patient only as {PatientPlaceholder} throughout your response — do not use any other name.
 Be concise, technical, and professional.";
 
         string? result = await CallOpenRouterAsync(prompt, tenant, jsonMode: false);
         if (result != null)
         {
+            result = Reidentify(result, (PatientPlaceholder, request.PatientName));
             await TrackAiUsageAsync(tenant, ct);
             return Ok(new { interpretation = result });
         }
@@ -256,8 +264,9 @@ Return ONLY a raw JSON array matching this schema without any markdown backticks
         var (allowed, errorResult, tenant) = await ValidateAiAccessAsync(ct);
         if (!allowed) return errorResult!;
 
+        // M7 (partial de-identification): real name/MRN never leave this server — see LabInterpreter.
         string prompt = $@"You are a Chief Medical Officer drafting a formal Hospital Discharge Summary & Transfer Note.
-Patient Name: {request.PatientName} | Age/Gender: {request.AgeGender} | MRN: {request.Mrn}
+Patient Name: {PatientPlaceholder} | Age/Gender: {request.AgeGender} | MRN: {MrnPlaceholder}
 Admission Date: {request.AdmissionDate} | Discharge Date: {request.DischargeDate}
 
 Hospitalization Context:
@@ -277,11 +286,13 @@ Generate a comprehensive Markdown report structured with these exact headers:
 ### 6. Post-Discharge Care & Red Flag Warning Signs
 ### 7. Follow-Up Appointments & Referrals
 
+Refer to the patient only as {PatientPlaceholder} and their record number only as {MrnPlaceholder} throughout — do not use any other identifying name or number.
 Be professional, thorough, and precise.";
 
         string? result = await CallOpenRouterAsync(prompt, tenant, jsonMode: false);
         if (result != null)
         {
+            result = Reidentify(result, (PatientPlaceholder, request.PatientName), (MrnPlaceholder, request.Mrn));
             await TrackAiUsageAsync(tenant, ct);
             return Ok(new { summary = result });
         }
@@ -295,8 +306,11 @@ Be professional, thorough, and precise.";
         var (allowed, errorResult, tenant) = await ValidateAiAccessAsync(ct);
         if (!allowed) return errorResult!;
 
+        // M7 (partial de-identification): real name never leaves this server — see LabInterpreter.
+        // ClaimNumber/PayerName are billing/administrative references, not patient identifiers, and
+        // the letter needs the real claim number to be a usable document — left as-is.
         string prompt = $@"You are a Medical Billing Specialist & Physician Appeals Officer. Write a formal, convincing Insurance Clinical Pre-Authorization & Claim Appeal Letter for this patient.
-Patient Name: {request.PatientName} | Claim / Pre-Auth Number: {request.ClaimNumber}
+Patient Name: {PatientPlaceholder} | Claim / Pre-Auth Number: {request.ClaimNumber}
 Insurer: {request.PayerName} | Total Amount: {request.TotalAmount}
 Primary Diagnosis: {request.PrimaryDiagnosis} (ICD-10: {request.IcdCode})
 Service / Procedure Billed: {request.ProcedureName}
@@ -304,11 +318,13 @@ Reason Billed / Medical Necessity Notes: {request.MedicalNecessityNotes}
 Rejection Reason (if appeal): {request.RejectionReason}
 
 Write a complete, formal appeal letter in Markdown addressed to the Medical Director of the insurance company.
+Refer to the patient only as {PatientPlaceholder} throughout the letter — do not use any other name.
 Include clinical justifications, medical necessity guidelines, ICD-10 correlation, and formal request for approval/reimbursement.";
 
         string? result = await CallOpenRouterAsync(prompt, tenant, jsonMode: false);
         if (result != null)
         {
+            result = Reidentify(result, (PatientPlaceholder, request.PatientName));
             await TrackAiUsageAsync(tenant, ct);
             return Ok(new { letter = result });
         }
@@ -322,8 +338,9 @@ Include clinical justifications, medical necessity guidelines, ICD-10 correlatio
         var (allowed, errorResult, tenant) = await ValidateAiAccessAsync(ct);
         if (!allowed) return errorResult!;
 
+        // M7 (partial de-identification): real name never leaves this server — see LabInterpreter.
         string prompt = $@"You are an Emergency Triage Nurse & Acute Care Specialist. Evaluate the following emergency patient intake:
-Patient: {request.PatientName} | Age: {request.Age}
+Patient: {PatientPlaceholder} | Age: {request.Age}
 Chief Complaint: ""{request.ChiefComplaint}""
 Vitals:
 - Heart Rate: {request.HeartRate} bpm
@@ -336,7 +353,7 @@ Evaluate the patient and return a JSON object with:
 - esiScore: Integer (1 for Resuscitation/Immediate, 2 for Emergent, 3 for Urgent, 4 for Less Urgent, 5 for Non-Urgent)
 - category: ESI Category name (e.g. ""ESI Level 2 - Emergent"")
 - priorityLevel: High, Medium, or Low
-- rationale: Explanation of the score based on vitals and symptoms
+- rationale: Explanation of the score based on vitals and symptoms (refer to the patient only as ""{PatientPlaceholder}"", never by any other name)
 - immediateActions: List of string nursing/medical actions to take immediately
 - redFlags: List of warning signs to monitor continuously
 
@@ -345,6 +362,7 @@ Return ONLY a raw JSON object matching this schema without markdown backticks.";
         string? result = await CallOpenRouterAsync(prompt, tenant, jsonMode: true);
         if (result != null)
         {
+            result = Reidentify(result, (PatientPlaceholder, request.PatientName));
             try
             {
                 var cleaned = result.Trim();
@@ -365,6 +383,28 @@ Return ONLY a raw JSON object matching this schema without markdown backticks.";
         }
 
         return StatusCode(503, new { error = "AI Assistant is temporarily unavailable." });
+    }
+
+    // M7 (partial de-identification): structured identifier fields (patient name, MRN) are
+    // interpolated into prompts as one of these placeholders instead of their real value, and
+    // Reidentify() substitutes the real value back into the model's response afterward — the
+    // third-party AI provider never sees the real identifier, but the document returned to the
+    // clinician still reads naturally. This only covers structured fields; free-text clinical
+    // narrative (SOAP notes, consultation notes, etc.) may still incidentally mention identifying
+    // details inline, and PrescriptionOcr's image payload isn't covered at all — both would need
+    // NLP/image redaction respectively, out of scope here. Endpoints with no structured identifier
+    // field in their request (SoapCopilot, PatientSummary, DrugSafety) have nothing to redact.
+    private const string PatientPlaceholder = "[PATIENT]";
+    private const string MrnPlaceholder     = "[MRN]";
+
+    private static string Reidentify(string text, params (string Placeholder, string? Value)[] identifiers)
+    {
+        foreach (var (placeholder, value) in identifiers)
+        {
+            if (string.IsNullOrWhiteSpace(value)) continue;
+            text = text.Replace(placeholder, value, StringComparison.OrdinalIgnoreCase);
+        }
+        return text;
     }
 
     private async Task<(bool Allowed, IActionResult? ErrorResult, Tenant? Tenant)> ValidateAiAccessAsync(CancellationToken ct)
@@ -404,28 +444,36 @@ Return ONLY a raw JSON object matching this schema without markdown backticks.";
         }
     }
 
-    private async Task<string?> CallOpenRouterAsync(string prompt, Tenant? tenant, bool jsonMode = false)
+    // L5 — single shared resolution logic (was duplicated verbatim in both Call* methods below).
+    // Dropped the old Gemini:ApiKey/GEMINI_API_KEY fallback entirely: a Gemini key is not a valid
+    // OpenRouter bearer token, so that branch could never actually authenticate a request — it
+    // only turned a clear "no key configured" signal into an opaque generic 503.
+    private string? ResolveApiKey(Tenant? tenant)
     {
-        // Check custom BYOK key first, then system key
-        var apiKey = !string.IsNullOrWhiteSpace(tenant?.CustomOpenRouterKey)
-            ? tenant.CustomOpenRouterKey
-            : (_config["OpenRouter:ApiKey"]
-                  ?? _config["OPENROUTER_API_KEY"]
-                  ?? Environment.GetEnvironmentVariable("OPENROUTER_API_KEY")
-                  ?? _config["Gemini:ApiKey"]
-                  ?? Environment.GetEnvironmentVariable("GEMINI_API_KEY"));
+        if (!string.IsNullOrWhiteSpace(tenant?.CustomOpenRouterKey))
+            return tenant.CustomOpenRouterKey;
 
-        if (string.IsNullOrEmpty(apiKey)) return null;
+        var key = _config["OpenRouter:ApiKey"]
+               ?? _config["OPENROUTER_API_KEY"]
+               ?? Environment.GetEnvironmentVariable("OPENROUTER_API_KEY");
 
-        string[] modelsToUse;
+        if (string.IsNullOrEmpty(key))
+        {
+            _logger.LogWarning(
+                "No OpenRouter API key configured for tenant {TenantId} — no tenant BYOK key, and OpenRouter:ApiKey/OPENROUTER_API_KEY are both unset.",
+                tenant?.TenantId);
+        }
+
+        return key;
+    }
+
+    private string[] ResolveModels(Tenant? tenant, string[] freeModels, string[] proModels, string[] enterpriseModels)
+    {
         var tier = tenant?.AllowedAiTiers ?? tenant?.SubscriptionPlan ?? "Standard";
-        
-        if (tier.Equals("Enterprise", StringComparison.OrdinalIgnoreCase))
-            modelsToUse = EnterpriseModelsFallback;
-        else if (tier.Equals("Pro", StringComparison.OrdinalIgnoreCase))
-            modelsToUse = ProModelsFallback;
-        else
-            modelsToUse = FreeModelsFallback;
+
+        var modelsToUse = tier.Equals("Enterprise", StringComparison.OrdinalIgnoreCase) ? enterpriseModels
+            : tier.Equals("Pro", StringComparison.OrdinalIgnoreCase) ? proModels
+            : freeModels;
 
         var customModel = _config["OpenRouter:Model"]
                        ?? _config["OPENROUTER_MODEL"]
@@ -435,6 +483,16 @@ Return ONLY a raw JSON object matching this schema without markdown backticks.";
         {
             modelsToUse = new[] { customModel };
         }
+
+        return modelsToUse;
+    }
+
+    private async Task<string?> CallOpenRouterAsync(string prompt, Tenant? tenant, bool jsonMode = false)
+    {
+        var apiKey = ResolveApiKey(tenant);
+        if (string.IsNullOrEmpty(apiKey)) return null;
+
+        var modelsToUse = ResolveModels(tenant, FreeModelsFallback, ProModelsFallback, EnterpriseModelsFallback);
 
         object requestBody = jsonMode ? new
         {
@@ -482,34 +540,14 @@ Return ONLY a raw JSON object matching this schema without markdown backticks.";
 
     private async Task<string?> CallOpenRouterMultimodalAsync(string prompt, string base64Data, string mimeType, Tenant? tenant)
     {
-        var apiKey = !string.IsNullOrWhiteSpace(tenant?.CustomOpenRouterKey)
-            ? tenant.CustomOpenRouterKey
-            : (_config["OpenRouter:ApiKey"]
-                  ?? _config["OPENROUTER_API_KEY"]
-                  ?? Environment.GetEnvironmentVariable("OPENROUTER_API_KEY")
-                  ?? _config["Gemini:ApiKey"]
-                  ?? Environment.GetEnvironmentVariable("GEMINI_API_KEY"));
-
+        var apiKey = ResolveApiKey(tenant);
         if (string.IsNullOrEmpty(apiKey)) return null;
 
         var imageUrl = base64Data.StartsWith("data:") ? base64Data : $"data:{mimeType};base64,{base64Data}";
 
-        string[] modelsToUse;
-        var tier = tenant?.AllowedAiTiers ?? tenant?.SubscriptionPlan ?? "Standard";
-
-        if (tier.Equals("Enterprise", StringComparison.OrdinalIgnoreCase) || tier.Equals("Pro", StringComparison.OrdinalIgnoreCase))
-            modelsToUse = ProVisionModelsFallback;
-        else
-            modelsToUse = FreeVisionModelsFallback;
-
-        var customModel = _config["OpenRouter:Model"]
-                       ?? _config["OPENROUTER_MODEL"]
-                       ?? Environment.GetEnvironmentVariable("OPENROUTER_MODEL");
-
-        if (!string.IsNullOrWhiteSpace(customModel) && customModel != "openrouter/auto")
-        {
-            modelsToUse = new[] { customModel };
-        }
+        // Vision has only two tiers (no separate Enterprise model list) — passing the same array
+        // for both the pro and enterprise slots reproduces the original Enterprise-or-Pro grouping.
+        var modelsToUse = ResolveModels(tenant, FreeVisionModelsFallback, ProVisionModelsFallback, ProVisionModelsFallback);
 
         var requestBody = new
         {
