@@ -11,9 +11,11 @@ public class RefundConfiguration : IEntityTypeConfiguration<Refund>
         builder.HasKey(r => r.RefundId);
         builder.Property(r => r.RefundId).HasDefaultValueSql("NEWSEQUENTIALID()");
 
-        builder.ToTable(t => t
-            .HasCheckConstraint("CK_Refunds_Amount_Positive", "\"Amount\" > 0")
-            .HasCheckConstraint("CK_Refunds_Status", "\"Status\" IN ('Pending','Processed','Cancelled')"));
+        builder.ToTable(t =>
+        {
+            t.HasCheckConstraint("CK_Refunds_Amount_Positive", "\"Amount\" > 0");
+            t.HasCheckConstraint("CK_Refunds_Status", "\"Status\" IN ('Pending','Processed','Cancelled')");
+        });
 
         builder.Property(r => r.RefundNumber).HasMaxLength(20).IsRequired();
         builder.Property(r => r.Reason).HasMaxLength(1000).IsRequired();

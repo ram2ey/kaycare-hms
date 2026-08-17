@@ -11,9 +11,11 @@ public class CreditNoteConfiguration : IEntityTypeConfiguration<CreditNote>
         builder.HasKey(c => c.CreditNoteId);
         builder.Property(c => c.CreditNoteId).HasDefaultValueSql("NEWSEQUENTIALID()");
 
-        builder.ToTable(t => t
-            .HasCheckConstraint("CK_CreditNotes_Amount_Positive", "\"Amount\" > 0")
-            .HasCheckConstraint("CK_CreditNotes_Status", "\"Status\" IN ('Draft','Approved','Applied','Voided')"));
+        builder.ToTable(t =>
+        {
+            t.HasCheckConstraint("CK_CreditNotes_Amount_Positive", "\"Amount\" > 0");
+            t.HasCheckConstraint("CK_CreditNotes_Status", "\"Status\" IN ('Draft','Approved','Applied','Voided')");
+        });
 
         builder.Property(c => c.CreditNoteNumber).HasMaxLength(20).IsRequired();
         builder.Property(c => c.Reason).HasMaxLength(1000).IsRequired();

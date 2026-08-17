@@ -11,10 +11,12 @@ public class InsuranceClaimConfiguration : IEntityTypeConfiguration<InsuranceCla
         builder.HasKey(c => c.ClaimId);
         builder.Property(c => c.ClaimId).HasDefaultValueSql("NEWSEQUENTIALID()");
 
-        builder.ToTable(t => t
-            .HasCheckConstraint("CK_InsuranceClaims_Amounts_NonNegative", "\"ClaimAmount\" >= 0 AND \"ApprovedAmount\" >= 0")
-            .HasCheckConstraint("CK_InsuranceClaims_Status",
-                "\"Status\" IN ('Draft','Submitted','Approved','PartiallyApproved','Rejected','Cancelled')"));
+        builder.ToTable(t =>
+        {
+            t.HasCheckConstraint("CK_InsuranceClaims_Amounts_NonNegative", "\"ClaimAmount\" >= 0 AND \"ApprovedAmount\" >= 0");
+            t.HasCheckConstraint("CK_InsuranceClaims_Status",
+                "\"Status\" IN ('Draft','Submitted','Approved','PartiallyApproved','Rejected','Cancelled')");
+        });
 
         builder.Property(c => c.ClaimNumber).HasMaxLength(20).IsRequired();
         builder.Property(c => c.Status).HasMaxLength(50).IsRequired().HasDefaultValue("Draft");

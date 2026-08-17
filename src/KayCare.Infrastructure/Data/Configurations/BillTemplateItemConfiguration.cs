@@ -11,9 +11,11 @@ public class BillTemplateItemConfiguration : IEntityTypeConfiguration<BillTempla
         builder.HasKey(i => i.BillTemplateItemId);
         builder.Property(i => i.BillTemplateItemId).HasDefaultValueSql("NEWSEQUENTIALID()");
 
-        builder.ToTable(t => t
-            .HasCheckConstraint("CK_BillTemplateItems_Quantity_Positive", "\"Quantity\" > 0")
-            .HasCheckConstraint("CK_BillTemplateItems_UnitPrice_NonNegative", "\"UnitPrice\" >= 0"));
+        builder.ToTable(t =>
+        {
+            t.HasCheckConstraint("CK_BillTemplateItems_Quantity_Positive", "\"Quantity\" > 0");
+            t.HasCheckConstraint("CK_BillTemplateItems_UnitPrice_NonNegative", "\"UnitPrice\" >= 0");
+        });
 
         builder.Property(i => i.Description).HasMaxLength(500).IsRequired();
         builder.Property(i => i.Category).HasMaxLength(100);

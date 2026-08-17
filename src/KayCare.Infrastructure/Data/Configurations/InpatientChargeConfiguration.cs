@@ -11,9 +11,11 @@ public class InpatientChargeConfiguration : IEntityTypeConfiguration<InpatientCh
         builder.HasKey(c => c.InpatientChargeId);
         builder.Property(c => c.InpatientChargeId).HasDefaultValueSql("NEWSEQUENTIALID()");
 
-        builder.ToTable(t => t
-            .HasCheckConstraint("CK_InpatientCharges_Quantity_Positive", "\"Quantity\" > 0")
-            .HasCheckConstraint("CK_InpatientCharges_UnitPrice_NonNegative", "\"UnitPrice\" >= 0"));
+        builder.ToTable(t =>
+        {
+            t.HasCheckConstraint("CK_InpatientCharges_Quantity_Positive", "\"Quantity\" > 0");
+            t.HasCheckConstraint("CK_InpatientCharges_UnitPrice_NonNegative", "\"UnitPrice\" >= 0");
+        });
 
         builder.Property(c => c.Category).HasMaxLength(50).IsRequired();
         builder.Property(c => c.Description).HasMaxLength(500).IsRequired();
