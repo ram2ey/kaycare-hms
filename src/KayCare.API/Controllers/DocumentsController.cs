@@ -48,6 +48,7 @@ public class DocumentsController : ControllerBase
     [HttpPost]
     [Authorize(Roles = $"{Roles.Doctor},{Roles.Nurse},{Roles.Admin},{Roles.SuperAdmin},{Roles.Receptionist}")]
     [Consumes("multipart/form-data")]
+    [RequestSizeLimit(DocumentConstants.MaxFileSizeBytes)]
     [ProducesResponseType(typeof(DocumentResponse), 201)]
     [ProducesResponseType(400)]
     [ProducesResponseType(404)]
@@ -61,6 +62,12 @@ public class DocumentsController : ControllerBase
     {
         if (file is null || file.Length == 0)
             return BadRequest(new { error = "A non-empty file is required." });
+
+        if (file.Length > DocumentConstants.MaxFileSizeBytes)
+            return BadRequest(new { error = $"File exceeds the {DocumentConstants.MaxFileSizeBytes / (1024 * 1024)}MB limit." });
+
+        if (!DocumentConstants.AllowedContentTypes.Contains(file.ContentType))
+            return BadRequest(new { error = $"File type '{file.ContentType}' is not allowed." });
 
         var request = new UploadDocumentRequest
         {

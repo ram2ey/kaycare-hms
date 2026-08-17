@@ -5,6 +5,7 @@ using KayCare.Core.Interfaces;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace KayCare.API.Controllers;
 
@@ -32,6 +33,7 @@ public class AuthController : ControllerBase
     /// </summary>
     [HttpPost("login")]
     [AllowAnonymous]
+    [EnableRateLimiting("login")]
     [ProducesResponseType(typeof(LoginResponse), 200)]
     [ProducesResponseType(401)]
     [ProducesResponseType(423)]

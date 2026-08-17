@@ -7,9 +7,11 @@ using KayCare.Infrastructure.Middleware;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,7 +28,7 @@ builder.Host.ConfigureAppConfiguration((_, configBuilder) =>
 });
 
 // ── Infrastructure (DbContext, services, tenant context) ──────────────────────
-builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
 
 builder.Services.AddControllers();
 
@@ -111,6 +113,51 @@ builder.Services.AddCors(options =>
     });
 });
 
+// ── Rate limiting ────────────────────────────────────────────────────────────
+// Partitioned by client IP. Relies on app.UseForwardedHeaders() running before
+// app.UseRateLimiter() in the pipeline below so RemoteIpAddress is the real client IP
+// (Render terminates TLS/HTTP at its edge and forwards the original IP via X-Forwarded-For),
+// not Render's edge proxy IP for every request.
+//
+// The "Testing" environment (used only by the integration test suite's WebApplicationFactory)
+// runs dozens of logins from one process/IP within seconds — a legitimate high-volume single
+// client, not the credential-stuffing pattern this limiter exists to catch. Effectively disabled
+// there rather than loosening Development/Production, matching how the test factory already
+// disables the MLLP listener for the same "this only applies to real deployed traffic" reason.
+var isTesting = builder.Environment.IsEnvironment("Testing");
+var globalPermitLimit = isTesting ? int.MaxValue : 100;
+var loginPermitLimit  = isTesting ? int.MaxValue : 10;
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+    {
+        var ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return RateLimitPartition.GetFixedWindowLimiter(ip, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = globalPermitLimit,
+            Window      = TimeSpan.FromMinutes(1),
+            QueueLimit  = 0
+        });
+    });
+
+    // Stricter policy for login — credential-stuffing/brute-force protection. Layered on top of
+    // the existing per-account lockout (AuthService's FailedLoginCount/LockedUntil), which only
+    // protects one account at a time and does nothing against a spray across many accounts.
+    options.AddPolicy("login", context =>
+    {
+        var ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return RateLimitPartition.GetFixedWindowLimiter(ip, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = loginPermitLimit,
+            Window      = TimeSpan.FromMinutes(1),
+            QueueLimit  = 0
+        });
+    });
+});
+
 // ── Swagger with Bearer token support ────────────────────────────────────────
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -147,7 +194,8 @@ var app = builder.Build();
 // rather than silently running with a publicly-known key.
 static void RequireRealSecret(string configKey, string? value)
 {
-    if (string.IsNullOrWhiteSpace(value) || value == "PLACEHOLDER-change-in-production")
+    if (string.IsNullOrWhiteSpace(value) ||
+        value.StartsWith("PLACEHOLDER", StringComparison.OrdinalIgnoreCase))
     {
         throw new InvalidOperationException(
             $"{configKey} is missing or is still the placeholder value. Set a real secret before starting.");
@@ -155,6 +203,16 @@ static void RequireRealSecret(string configKey, string? value)
 }
 RequireRealSecret("Hl7:WebhookApiKey", app.Configuration["Hl7:WebhookApiKey"]);
 RequireRealSecret("Hl7:MllpSharedSecret", app.Configuration["Hl7:MllpSharedSecret"]);
+RequireRealSecret("Jwt:Key", app.Configuration["Jwt:Key"]);
+
+// HS256 (used above for JWT signing) wants a key of at least 256 bits per RFC 7518 §3.2 — a
+// short key is brute-forceable regardless of whether it's the documented placeholder.
+var jwtKeyBytes = Encoding.UTF8.GetByteCount(app.Configuration["Jwt:Key"]!);
+if (jwtKeyBytes < 32)
+{
+    throw new InvalidOperationException(
+        $"Jwt:Key is only {jwtKeyBytes} bytes; HS256 requires at least 32 (256 bits).");
+}
 
 // ── Global exception handler ──────────────────────────────────────────────────
 app.UseExceptionHandler(errApp =>
@@ -200,6 +258,15 @@ if (app.Environment.IsDevelopment())
 app.MapGet("/health", () => Results.Ok(new { status = "ok" })).AllowAnonymous();
 
 app.UseForwardedHeaders();
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHsts();
+}
+
+// Must run after UseForwardedHeaders so RemoteIpAddress reflects the real client IP.
+app.UseRateLimiter();
+
 app.UseHttpsRedirection();
 app.UseCors();
 

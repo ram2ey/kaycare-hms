@@ -4,6 +4,7 @@ using KayCare.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using QuestPDF.Infrastructure;
 
 
@@ -11,7 +12,8 @@ namespace KayCare.Infrastructure;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration config)
+    public static IServiceCollection AddInfrastructure(
+        this IServiceCollection services, IConfiguration config, IHostEnvironment environment)
     {
         // QuestPDF community license (revenue < $1M USD)
         QuestPDF.Settings.License = LicenseType.Community;
@@ -24,7 +26,7 @@ public static class DependencyInjection
             var rawConn = config.GetConnectionString("DefaultConnection")
                           ?? config["ConnectionStrings:DefaultConnection"]
                           ?? config["DATABASE_URL"];
-            var connStr = ParseConnectionString(rawConn);
+            var connStr = ParseConnectionString(rawConn, environment.IsDevelopment());
             options.UseNpgsql(
                 connStr,
                 b => b.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName)
@@ -96,7 +98,7 @@ public static class DependencyInjection
         return services;
     }
 
-    private static string ParseConnectionString(string? rawConn)
+    private static string ParseConnectionString(string? rawConn, bool isDevelopment)
     {
         if (string.IsNullOrWhiteSpace(rawConn)) return string.Empty;
 
@@ -113,7 +115,16 @@ public static class DependencyInjection
                 var port = uri.Port > 0 ? uri.Port : 5432;
                 var database = uri.AbsolutePath.TrimStart('/');
 
-                return $"Host={host};Port={port};Database={database};Username={username};Password={password};SSL Mode=Prefer;Trust Server Certificate=true;";
+                // Outside Development, require an encrypted connection with real certificate
+                // validation — a hosted Postgres (e.g. Render) that ever accepted plaintext or an
+                // unvalidated cert would let a network-position attacker read every query in
+                // transit, patient data included. Local dev Postgres typically isn't configured
+                // for SSL at all, so keep the previous permissive behavior there.
+                var sslClause = isDevelopment
+                    ? "SSL Mode=Prefer;Trust Server Certificate=true;"
+                    : "SSL Mode=Require;Trust Server Certificate=false;";
+
+                return $"Host={host};Port={port};Database={database};Username={username};Password={password};{sslClause}";
             }
             catch
             {

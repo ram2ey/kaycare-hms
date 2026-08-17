@@ -12,6 +12,12 @@ public class AuthService : IAuthService
     private readonly ITokenService _tokenService;
     private readonly ITenantContext _tenantContext;
 
+    // Computed once at process startup. Verified against on the not-found/inactive-user path below
+    // so that path pays the same ~250-300ms BCrypt cost as a real user's wrong-password path —
+    // otherwise a client could distinguish "no such account" from "wrong password" by timing alone.
+    private static readonly string DummyPasswordHash =
+        BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString(), workFactor: 12);
+
     public AuthService(AppDbContext db, ITokenService tokenService, ITenantContext tenantContext)
     {
         _db = db;
@@ -30,7 +36,10 @@ public class AuthService : IAuthService
             .FirstOrDefaultAsync(u => u.TenantId == _tenantContext.TenantId && u.Email == email, ct);
 
         if (user is null || !user.IsActive)
+        {
+            BCrypt.Net.BCrypt.Verify(request.Password, DummyPasswordHash);
             throw new UnauthorizedException();
+        }
 
         // Account lockout check (HIPAA: 5 failed attempts = 30 min lock)
         if (user.LockedUntil.HasValue && user.LockedUntil > DateTime.UtcNow)

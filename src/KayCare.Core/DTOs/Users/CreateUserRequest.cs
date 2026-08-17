@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using KayCare.Core.Validation;
 
 namespace KayCare.Core.DTOs.Users;
 
@@ -16,7 +17,7 @@ public class CreateUserRequest
     [Required]
     public int RoleId { get; set; }
 
-    [Required, MinLength(8)]
+    [Required, MinLength(8), StrongPassword]
     public string Password { get; set; } = string.Empty;
 
     [MaxLength(20)]
