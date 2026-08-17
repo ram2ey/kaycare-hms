@@ -11,6 +11,8 @@ public class ServiceCatalogItemConfiguration : IEntityTypeConfiguration<ServiceC
         builder.HasKey(s => s.ServiceCatalogItemId);
         builder.Property(s => s.ServiceCatalogItemId).HasDefaultValueSql("NEWSEQUENTIALID()");
 
+        builder.ToTable(t => t.HasCheckConstraint("CK_ServiceCatalogItems_UnitPrice_NonNegative", "\"UnitPrice\" >= 0"));
+
         builder.Property(s => s.Name).HasMaxLength(200).IsRequired();
         builder.Property(s => s.Description).HasMaxLength(500);
         builder.Property(s => s.Category).HasMaxLength(100).IsRequired();

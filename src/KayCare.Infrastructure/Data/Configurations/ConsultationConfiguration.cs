@@ -11,6 +11,8 @@ public class ConsultationConfiguration : IEntityTypeConfiguration<Consultation>
         builder.HasKey(c => c.ConsultationId);
         builder.Property(c => c.ConsultationId).HasDefaultValueSql("NEWSEQUENTIALID()");
 
+        builder.ToTable(t => t.HasCheckConstraint("CK_Consultations_Status", "\"Status\" IN ('Draft','Signed')"));
+
         builder.Property(c => c.SubjectiveNotes).HasColumnType("nvarchar(max)");
         builder.Property(c => c.ObjectiveNotes).HasColumnType("nvarchar(max)");
         builder.Property(c => c.AssessmentNotes).HasColumnType("nvarchar(max)");

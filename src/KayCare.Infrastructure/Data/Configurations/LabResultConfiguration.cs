@@ -12,6 +12,8 @@ public class LabResultConfiguration : IEntityTypeConfiguration<LabResult>
         builder.HasKey(r => r.LabResultId);
         builder.Property(r => r.LabResultId).HasDefaultValueSql("NEWSEQUENTIALID()");
 
+        builder.ToTable(t => t.HasCheckConstraint("CK_LabResults_Status", "\"Status\" IN ('Received','Verified')"));
+
         builder.Property(r => r.AccessionNumber).HasMaxLength(100).IsRequired();
         builder.Property(r => r.OrderCode).HasMaxLength(50);
         builder.Property(r => r.OrderName).HasMaxLength(200);

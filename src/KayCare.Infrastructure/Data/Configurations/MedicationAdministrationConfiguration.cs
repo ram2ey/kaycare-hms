@@ -11,6 +11,9 @@ public class MedicationAdministrationConfiguration : IEntityTypeConfiguration<Me
         b.HasKey(m => m.MedicationAdministrationId);
         b.Property(m => m.MedicationAdministrationId).HasDefaultValueSql("NEWSEQUENTIALID()");
 
+        b.ToTable(t => t.HasCheckConstraint("CK_MedicationAdministrations_Status",
+            "\"Status\" IN ('Given','Held','Refused','NotAvailable')"));
+
         b.Property(m => m.Status).HasMaxLength(20).IsRequired();
         b.Property(m => m.DoseGiven).HasMaxLength(100);
         b.Property(m => m.Route).HasMaxLength(50);

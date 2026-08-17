@@ -11,6 +11,9 @@ public class DrugInventoryConfiguration : IEntityTypeConfiguration<DrugInventory
         builder.HasKey(d => d.DrugInventoryId);
         builder.Property(d => d.DrugInventoryId).HasDefaultValueSql("NEWSEQUENTIALID()");
 
+        builder.ToTable(t => t.HasCheckConstraint("CK_DrugInventory_Stock_NonNegative",
+            "\"CurrentStock\" >= 0 AND \"ReorderThreshold\" >= 0 AND \"UnitCost\" >= 0 AND \"SellingPrice\" >= 0"));
+
         builder.Property(d => d.Name).HasMaxLength(200).IsRequired();
         builder.Property(d => d.GenericName).HasMaxLength(200);
         builder.Property(d => d.DosageForm).HasMaxLength(100);

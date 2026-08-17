@@ -11,6 +11,9 @@ public class ReferralConfiguration : IEntityTypeConfiguration<Referral>
         builder.HasKey(r => r.ReferralId);
         builder.Property(r => r.ReferralId).HasDefaultValueSql("NEWSEQUENTIALID()");
 
+        builder.ToTable(t => t.HasCheckConstraint("CK_Referrals_Status",
+            "\"Status\" IN ('Draft','Sent','Accepted','Completed','Declined','Cancelled')"));
+
         builder.Property(r => r.ReferralNumber).HasMaxLength(20).IsRequired();
         builder.Property(r => r.ReferralType).HasMaxLength(20).IsRequired();
         builder.Property(r => r.Urgency).HasMaxLength(20).IsRequired();

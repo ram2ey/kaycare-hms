@@ -11,6 +11,8 @@ public class WardConfiguration : IEntityTypeConfiguration<Ward>
         builder.HasKey(w => w.WardId);
         builder.Property(w => w.WardId).HasDefaultValueSql("NEWSEQUENTIALID()");
 
+        builder.ToTable(t => t.HasCheckConstraint("CK_Wards_DailyRate_NonNegative", "\"DailyRate\" >= 0"));
+
         builder.Property(w => w.Name).HasMaxLength(200).IsRequired();
         builder.Property(w => w.WardType).HasMaxLength(50).IsRequired();
         builder.Property(w => w.Description).HasMaxLength(500);

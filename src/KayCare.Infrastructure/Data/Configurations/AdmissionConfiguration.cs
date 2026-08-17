@@ -11,6 +11,8 @@ public class AdmissionConfiguration : IEntityTypeConfiguration<Admission>
         builder.HasKey(a => a.AdmissionId);
         builder.Property(a => a.AdmissionId).HasDefaultValueSql("NEWSEQUENTIALID()");
 
+        builder.ToTable(t => t.HasCheckConstraint("CK_Admissions_Status", "\"Status\" IN ('Active','Discharged')"));
+
         builder.Property(a => a.AdmissionNumber).HasMaxLength(20).IsRequired();
         builder.Property(a => a.Status).HasMaxLength(20).IsRequired();
         builder.Property(a => a.AdmissionReason).HasMaxLength(1000).IsRequired();

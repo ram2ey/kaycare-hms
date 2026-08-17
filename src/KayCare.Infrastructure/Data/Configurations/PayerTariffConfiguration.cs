@@ -8,7 +8,7 @@ public class PayerTariffConfiguration : IEntityTypeConfiguration<PayerTariff>
 {
     public void Configure(EntityTypeBuilder<PayerTariff> builder)
     {
-        builder.ToTable("PayerTariffs");
+        builder.ToTable("PayerTariffs", t => t.HasCheckConstraint("CK_PayerTariffs_TariffPrice_NonNegative", "\"TariffPrice\" >= 0"));
         builder.HasKey(t => t.PayerTariffId);
 
         builder.Property(t => t.TariffCode).HasMaxLength(100);

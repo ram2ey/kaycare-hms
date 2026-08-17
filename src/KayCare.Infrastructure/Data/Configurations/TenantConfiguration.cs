@@ -10,6 +10,9 @@ public class TenantConfiguration : IEntityTypeConfiguration<Tenant>
     {
         builder.HasKey(t => t.TenantId);
         builder.Property(t => t.TenantId).HasDefaultValueSql("gen_random_uuid()");
+
+        builder.ToTable(t => t.HasCheckConstraint("CK_Tenants_Quotas_Positive",
+            "\"MaxUsers\" > 0 AND \"StorageQuotaGB\" > 0 AND \"AiMonthlyQuota\" >= 0 AND \"AiRequestsThisMonth\" >= 0"));
         builder.Property(t => t.TenantCode).HasMaxLength(50).IsRequired();
         builder.Property(t => t.TenantName).HasMaxLength(200).IsRequired();
         builder.Property(t => t.Subdomain).HasMaxLength(100).IsRequired();

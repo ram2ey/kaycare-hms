@@ -11,6 +11,9 @@ public class PrescriptionTemplateItemConfiguration : IEntityTypeConfiguration<Pr
         builder.HasKey(i => i.TemplateItemId);
         builder.Property(i => i.TemplateItemId).HasDefaultValueSql("NEWSEQUENTIALID()");
 
+        builder.ToTable(t => t.HasCheckConstraint("CK_PrescriptionTemplateItems_Quantities_NonNegative",
+            "\"Quantity\" > 0 AND \"DurationDays\" > 0 AND \"Refills\" >= 0"));
+
         builder.Property(i => i.MedicationName).HasMaxLength(200).IsRequired();
         builder.Property(i => i.GenericName).HasMaxLength(200);
         builder.Property(i => i.Strength).HasMaxLength(100).IsRequired();

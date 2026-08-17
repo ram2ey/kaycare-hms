@@ -11,6 +11,9 @@ public class PurchaseOrderConfiguration : IEntityTypeConfiguration<PurchaseOrder
         builder.HasKey(po => po.PurchaseOrderId);
         builder.Property(po => po.PurchaseOrderId).HasDefaultValueSql("NEWSEQUENTIALID()");
 
+        builder.ToTable(t => t.HasCheckConstraint("CK_PurchaseOrders_Status",
+            "\"Status\" IN ('Draft','Ordered','PartiallyReceived','Received','Cancelled')"));
+
         builder.Property(po => po.OrderNumber).HasMaxLength(30).IsRequired();
         builder.Property(po => po.Status).HasMaxLength(30).IsRequired();
         builder.Property(po => po.Notes).HasMaxLength(1000);
@@ -37,6 +40,9 @@ public class PurchaseOrderItemConfiguration : IEntityTypeConfiguration<PurchaseO
     {
         builder.HasKey(i => i.PurchaseOrderItemId);
         builder.Property(i => i.PurchaseOrderItemId).HasDefaultValueSql("NEWSEQUENTIALID()");
+
+        builder.ToTable(t => t.HasCheckConstraint("CK_PurchaseOrderItems_Quantities_NonNegative",
+            "\"Quantity\" > 0 AND \"QuantityReceived\" >= 0 AND \"UnitCost\" >= 0"));
 
         builder.Property(i => i.UnitCost).HasColumnType("decimal(12,2)");
 

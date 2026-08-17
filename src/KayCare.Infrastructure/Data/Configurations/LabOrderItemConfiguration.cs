@@ -11,6 +11,9 @@ public class LabOrderItemConfiguration : IEntityTypeConfiguration<LabOrderItem>
         builder.HasKey(i => i.LabOrderItemId);
         builder.Property(i => i.LabOrderItemId).HasDefaultValueSql("NEWSEQUENTIALID()");
 
+        builder.ToTable(t => t.HasCheckConstraint("CK_LabOrderItems_Status",
+            "\"Status\" IN ('Ordered','SampleReceived','Resulted','Signed')"));
+
         builder.Property(i => i.TestName).HasMaxLength(200).IsRequired();
         builder.Property(i => i.Department).HasMaxLength(100).IsRequired();
         builder.Property(i => i.InstrumentType).HasMaxLength(50);
@@ -37,9 +40,12 @@ public class LabOrderItemConfiguration : IEntityTypeConfiguration<LabOrderItem>
                .HasForeignKey<LabResult>(r => r.LabOrderItemId)
                .OnDelete(DeleteBehavior.SetNull);
 
+        // CriticalCallLog documents that a critical/panic lab value was called in to a
+        // clinician — a patient-safety compliance record that must never silently disappear
+        // if the parent order item is deleted.
         builder.HasOne(i => i.CriticalCallLog)
                .WithOne(c => c.LabOrderItem)
                .HasForeignKey<CriticalCallLog>(c => c.LabOrderItemId)
-               .OnDelete(DeleteBehavior.Cascade);
+               .OnDelete(DeleteBehavior.Restrict);
     }
 }

@@ -10,6 +10,9 @@ public class RadiologyOrderConfiguration : IEntityTypeConfiguration<RadiologyOrd
     {
         builder.HasKey(o => o.RadiologyOrderId);
         builder.Property(o => o.RadiologyOrderId).HasDefaultValueSql("NEWSEQUENTIALID()");
+
+        builder.ToTable(t => t.HasCheckConstraint("CK_RadiologyOrders_Status",
+            "\"Status\" IN ('Pending','Scheduled','InProgress','Completed','Signed','Cancelled')"));
         builder.Property(o => o.Priority).HasMaxLength(20).IsRequired();
         builder.Property(o => o.Status).HasMaxLength(30).IsRequired();
         builder.Property(o => o.ClinicalIndication).HasMaxLength(1000);

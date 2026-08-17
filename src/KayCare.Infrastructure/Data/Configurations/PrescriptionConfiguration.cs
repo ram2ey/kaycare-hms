@@ -11,6 +11,9 @@ public class PrescriptionConfiguration : IEntityTypeConfiguration<Prescription>
         builder.HasKey(p => p.PrescriptionId);
         builder.Property(p => p.PrescriptionId).HasDefaultValueSql("NEWSEQUENTIALID()");
 
+        builder.ToTable(t => t.HasCheckConstraint("CK_Prescriptions_Status",
+            "\"Status\" IN ('Active','Dispensed','Cancelled','Expired','PartiallyDispensed')"));
+
         builder.Property(p => p.Status).HasMaxLength(50).IsRequired().HasDefaultValue("Active");
         builder.Property(p => p.Notes).HasMaxLength(1000);
         builder.Property(p => p.PrescriptionDate).HasColumnType("date");

@@ -11,6 +11,12 @@ public class BillConfiguration : IEntityTypeConfiguration<Bill>
         builder.HasKey(b => b.BillId);
         builder.Property(b => b.BillId).HasDefaultValueSql("NEWSEQUENTIALID()");
 
+        builder.ToTable(t => t
+            .HasCheckConstraint("CK_Bills_Amounts_NonNegative",
+                "\"TotalAmount\" >= 0 AND \"DiscountAmount\" >= 0 AND \"WriteOffAmount\" >= 0 AND \"PaidAmount\" >= 0 AND \"CreditNoteTotal\" >= 0")
+            .HasCheckConstraint("CK_Bills_Status",
+                "\"Status\" IN ('Draft','Issued','PartiallyPaid','Paid','Cancelled','Void','WrittenOff')"));
+
         builder.Property(b => b.BillNumber).HasMaxLength(20).IsRequired();
         builder.Property(b => b.Status).HasMaxLength(50).IsRequired().HasDefaultValue("Draft");
         builder.Property(b => b.Notes).HasMaxLength(1000);

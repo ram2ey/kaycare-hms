@@ -11,6 +11,8 @@ public class BedConfiguration : IEntityTypeConfiguration<Bed>
         builder.HasKey(b => b.BedId);
         builder.Property(b => b.BedId).HasDefaultValueSql("NEWSEQUENTIALID()");
 
+        builder.ToTable(t => t.HasCheckConstraint("CK_Beds_Status", "\"Status\" IN ('Available','Occupied','Maintenance')"));
+
         builder.Property(b => b.BedNumber).HasMaxLength(20).IsRequired();
         builder.Property(b => b.Status).HasMaxLength(20).IsRequired();
         builder.Property(b => b.Notes).HasMaxLength(500);

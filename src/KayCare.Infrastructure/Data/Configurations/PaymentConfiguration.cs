@@ -11,6 +11,8 @@ public class PaymentConfiguration : IEntityTypeConfiguration<Payment>
         builder.HasKey(p => p.PaymentId);
         builder.Property(p => p.PaymentId).HasDefaultValueSql("NEWSEQUENTIALID()");
 
+        builder.ToTable(t => t.HasCheckConstraint("CK_Payments_Amount_Positive", "\"Amount\" > 0"));
+
         builder.Property(p => p.Amount).HasColumnType("decimal(12,2)");
         builder.Property(p => p.PaymentMethod).HasMaxLength(50).IsRequired();
         builder.Property(p => p.Reference).HasMaxLength(200);

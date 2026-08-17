@@ -11,6 +11,9 @@ public class AppointmentConfiguration : IEntityTypeConfiguration<Appointment>
         builder.HasKey(a => a.AppointmentId);
         builder.Property(a => a.AppointmentId).HasDefaultValueSql("NEWSEQUENTIALID()");
 
+        builder.ToTable(t => t.HasCheckConstraint("CK_Appointments_Status",
+            "\"Status\" IN ('Scheduled','Confirmed','CheckedIn','InProgress','Completed','Cancelled','NoShow')"));
+
         builder.Property(a => a.AppointmentType).HasMaxLength(50).IsRequired();
         builder.Property(a => a.Status).HasMaxLength(50).IsRequired().HasDefaultValue("Scheduled");
         builder.Property(a => a.ChiefComplaint).HasMaxLength(1000);

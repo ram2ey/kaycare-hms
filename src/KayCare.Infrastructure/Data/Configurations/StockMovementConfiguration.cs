@@ -11,6 +11,9 @@ public class StockMovementConfiguration : IEntityTypeConfiguration<StockMovement
         builder.HasKey(m => m.StockMovementId);
         builder.Property(m => m.StockMovementId).HasDefaultValueSql("NEWSEQUENTIALID()");
 
+        builder.ToTable(t => t.HasCheckConstraint("CK_StockMovements_Quantities_NonNegative",
+            "\"Quantity\" > 0 AND \"PreviousStock\" >= 0 AND \"NewStock\" >= 0"));
+
         builder.Property(m => m.MovementType).HasMaxLength(50).IsRequired();
         builder.Property(m => m.ReferenceType).HasMaxLength(100);
         builder.Property(m => m.Notes).HasMaxLength(500);

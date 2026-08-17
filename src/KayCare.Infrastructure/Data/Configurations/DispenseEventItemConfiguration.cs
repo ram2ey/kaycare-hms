@@ -11,6 +11,8 @@ public class DispenseEventItemConfiguration : IEntityTypeConfiguration<DispenseE
         builder.HasKey(i => i.DispenseEventItemId);
         builder.Property(i => i.DispenseEventItemId).HasDefaultValueSql("NEWSEQUENTIALID()");
 
+        builder.ToTable(t => t.HasCheckConstraint("CK_DispenseEventItems_QuantityDispensed_Positive", "\"QuantityDispensed\" > 0"));
+
         builder.HasOne(i => i.Event)
             .WithMany(e => e.Items)
             .HasForeignKey(i => i.DispenseEventId)

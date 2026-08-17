@@ -11,6 +11,9 @@ public class LabOrderConfiguration : IEntityTypeConfiguration<LabOrder>
         builder.HasKey(o => o.LabOrderId);
         builder.Property(o => o.LabOrderId).HasDefaultValueSql("NEWSEQUENTIALID()");
 
+        builder.ToTable(t => t.HasCheckConstraint("CK_LabOrders_Status",
+            "\"Status\" IN ('Pending','Active','PartiallyCompleted','Completed','Signed')"));
+
         builder.Property(o => o.Organisation).HasMaxLength(200).IsRequired();
         builder.Property(o => o.Status).HasMaxLength(30).IsRequired();
         builder.Property(o => o.Notes).HasMaxLength(1000);
