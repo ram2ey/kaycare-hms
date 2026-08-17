@@ -1,19 +1,25 @@
+using KayCare.Core.Constants;
 using KayCare.Core.DTOs.Billing;
 using KayCare.Core.Entities;
 using KayCare.Core.Exceptions;
 using KayCare.Core.Interfaces;
 using KayCare.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace KayCare.Infrastructure.Services;
 
 public class PayerService : IPayerService
 {
     private readonly AppDbContext _db;
+    private readonly IAuditService _audit;
+    private readonly ILogger<PayerService> _logger;
 
-    public PayerService(AppDbContext db)
+    public PayerService(AppDbContext db, IAuditService audit, ILogger<PayerService> logger)
     {
         _db = db;
+        _audit = audit;
+        _logger = logger;
     }
 
     public async Task<List<PayerResponse>> GetAllAsync(bool activeOnly, CancellationToken ct = default)
@@ -49,6 +55,10 @@ public class PayerService : IPayerService
 
         _db.Payers.Add(payer);
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.PayerCreate, nameof(Payer), payer.PayerId, null, details: $"Name={payer.Name}", ct: ct);
+        _logger.LogInformation("Payer {PayerId} ({Name}) created", payer.PayerId, payer.Name);
+
         return ToResponse(payer);
     }
 
@@ -65,6 +75,10 @@ public class PayerService : IPayerService
         payer.IsActive     = request.IsActive;
 
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.PayerUpdate, nameof(Payer), payer.PayerId, null, ct: ct);
+        _logger.LogInformation("Payer {PayerId} updated", payer.PayerId);
+
         return ToResponse(payer);
     }
 
@@ -75,6 +89,9 @@ public class PayerService : IPayerService
 
         _db.Payers.Remove(payer);
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.PayerDelete, nameof(Payer), payer.PayerId, null, details: $"Name={payer.Name}", ct: ct);
+        _logger.LogWarning("Payer {PayerId} ({Name}) deleted", payer.PayerId, payer.Name);
     }
 
     private static PayerResponse ToResponse(Payer p) => new()

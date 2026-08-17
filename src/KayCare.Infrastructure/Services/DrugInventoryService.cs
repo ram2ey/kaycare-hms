@@ -1,19 +1,25 @@
+using KayCare.Core.Constants;
 using KayCare.Core.DTOs.Pharmacy;
 using KayCare.Core.Entities;
 using KayCare.Core.Exceptions;
 using KayCare.Core.Interfaces;
 using KayCare.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace KayCare.Infrastructure.Services;
 
 public class DrugInventoryService : IDrugInventoryService
 {
     private readonly AppDbContext _db;
+    private readonly IAuditService _audit;
+    private readonly ILogger<DrugInventoryService> _logger;
 
-    public DrugInventoryService(AppDbContext db)
+    public DrugInventoryService(AppDbContext db, IAuditService audit, ILogger<DrugInventoryService> logger)
     {
         _db = db;
+        _audit = audit;
+        _logger = logger;
     }
 
     public async Task<List<DrugInventoryResponse>> GetAllAsync(bool? activeOnly, bool? lowStockOnly, string? category, CancellationToken ct = default)
@@ -63,6 +69,11 @@ public class DrugInventoryService : IDrugInventoryService
 
         _db.DrugInventory.Add(drug);
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.DrugInventoryCreate, nameof(DrugInventory), drug.DrugInventoryId, null,
+            details: $"Name={drug.Name}", ct: ct);
+        _logger.LogInformation("DrugInventory {DrugInventoryId} ({Name}) created", drug.DrugInventoryId, drug.Name);
+
         return ToResponse(drug);
     }
 
@@ -85,6 +96,10 @@ public class DrugInventoryService : IDrugInventoryService
         drug.IsActive              = request.IsActive;
 
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.DrugInventoryUpdate, nameof(DrugInventory), drug.DrugInventoryId, null, ct: ct);
+        _logger.LogInformation("DrugInventory {DrugInventoryId} updated", drug.DrugInventoryId);
+
         return ToResponse(drug);
     }
 
@@ -96,6 +111,10 @@ public class DrugInventoryService : IDrugInventoryService
 
         drug.IsActive = false;
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.DrugInventoryDeactivate, nameof(DrugInventory), drug.DrugInventoryId, null, ct: ct);
+        _logger.LogWarning("DrugInventory {DrugInventoryId} ({Name}) deactivated", drug.DrugInventoryId, drug.Name);
+
         return ToResponse(drug);
     }
 

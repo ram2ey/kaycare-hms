@@ -5,14 +5,22 @@ using KayCare.Core.Exceptions;
 using KayCare.Core.Interfaces;
 using KayCare.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace KayCare.Infrastructure.Services;
 
 public class WardService : IWardService
 {
     private readonly AppDbContext _db;
+    private readonly IAuditService _audit;
+    private readonly ILogger<WardService> _logger;
 
-    public WardService(AppDbContext db) => _db = db;
+    public WardService(AppDbContext db, IAuditService audit, ILogger<WardService> logger)
+    {
+        _db = db;
+        _audit = audit;
+        _logger = logger;
+    }
 
     public async Task<List<WardResponse>> GetAllAsync(bool? activeOnly = true, CancellationToken ct = default)
     {
@@ -44,6 +52,10 @@ public class WardService : IWardService
         };
         _db.Wards.Add(ward);
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.WardCreate, nameof(Ward), ward.WardId, null, details: $"Name={ward.Name}", ct: ct);
+        _logger.LogInformation("Ward {WardId} ({Name}) created", ward.WardId, ward.Name);
+
         return ToResponse(ward);
     }
 
@@ -62,6 +74,10 @@ public class WardService : IWardService
         ward.DailyRate   = request.DailyRate;
         ward.IsActive    = request.IsActive;
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.WardUpdate, nameof(Ward), ward.WardId, null, ct: ct);
+        _logger.LogInformation("Ward {WardId} updated", ward.WardId);
+
         return ToResponse(ward);
     }
 
@@ -73,6 +89,10 @@ public class WardService : IWardService
 
         ward.IsActive = false;
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.WardDeactivate, nameof(Ward), ward.WardId, null, ct: ct);
+        _logger.LogWarning("Ward {WardId} ({Name}) deactivated", ward.WardId, ward.Name);
+
         return ToResponse(ward);
     }
 
@@ -104,6 +124,10 @@ public class WardService : IWardService
         _db.Beds.Add(bed);
         await _db.SaveChangesAsync(ct);
 
+        await _audit.LogAsync(AuditActions.BedAdd, nameof(Bed), bed.BedId, null,
+            details: $"WardId={wardId}; BedNumber={bed.BedNumber}", ct: ct);
+        _logger.LogInformation("Bed {BedId} ({BedNumber}) added to ward {WardId}", bed.BedId, bed.BedNumber, wardId);
+
         bed.Ward = ward;
         return ToBedResponse(bed);
     }
@@ -120,6 +144,11 @@ public class WardService : IWardService
         bed.Status = request.Status;
         if (request.Notes != null) bed.Notes = request.Notes.Trim();
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.BedStatusUpdate, nameof(Bed), bed.BedId, null,
+            details: $"Status={bed.Status}", ct: ct);
+        _logger.LogInformation("Bed {BedId} status changed to {Status}", bed.BedId, bed.Status);
+
         return ToBedResponse(bed);
     }
 
@@ -132,6 +161,10 @@ public class WardService : IWardService
         bed.BedNumber = request.BedNumber.Trim();
         bed.Notes     = request.Notes?.Trim();
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.BedUpdate, nameof(Bed), bed.BedId, null, ct: ct);
+        _logger.LogInformation("Bed {BedId} updated", bed.BedId);
+
         return ToBedResponse(bed);
     }
 
@@ -145,6 +178,10 @@ public class WardService : IWardService
 
         _db.Beds.Remove(bed);
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.BedDelete, nameof(Bed), bed.BedId, null,
+            details: $"BedNumber={bed.BedNumber}", ct: ct);
+        _logger.LogWarning("Bed {BedId} ({BedNumber}) deleted", bed.BedId, bed.BedNumber);
     }
 
     private static WardResponse ToResponse(Ward w) => new()

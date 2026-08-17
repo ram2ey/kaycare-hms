@@ -1,9 +1,11 @@
+using KayCare.Core.Constants;
 using KayCare.Core.DTOs.Billing;
 using KayCare.Core.Entities;
 using KayCare.Core.Exceptions;
 using KayCare.Core.Interfaces;
 using KayCare.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,10 +17,14 @@ namespace KayCare.Infrastructure.Services;
 public class PayerTariffService : IPayerTariffService
 {
     private readonly AppDbContext _db;
+    private readonly IAuditService _audit;
+    private readonly ILogger<PayerTariffService> _logger;
 
-    public PayerTariffService(AppDbContext db)
+    public PayerTariffService(AppDbContext db, IAuditService audit, ILogger<PayerTariffService> logger)
     {
         _db = db;
+        _audit = audit;
+        _logger = logger;
     }
 
     public async Task<List<PayerTariffResponse>> GetByPayerAsync(Guid payerId, CancellationToken ct = default)
@@ -80,6 +86,8 @@ public class PayerTariffService : IPayerTariffService
             .Include(t => t.ServiceCatalogItem)
             .FirstOrDefaultAsync(t => t.PayerId == request.PayerId && t.ServiceCatalogItemId == request.ServiceCatalogItemId, ct);
 
+        var isNew = tariff == null;
+
         if (tariff == null)
         {
             tariff = new PayerTariff
@@ -96,6 +104,12 @@ public class PayerTariffService : IPayerTariffService
         }
 
         await _db.SaveChangesAsync(ct);
+
+        var action = isNew ? AuditActions.PayerTariffCreate : AuditActions.PayerTariffUpdate;
+        await _audit.LogAsync(action, nameof(PayerTariff), tariff.PayerTariffId, null,
+            details: $"PayerId={tariff.PayerId}; ServiceCatalogItemId={tariff.ServiceCatalogItemId}", ct: ct);
+        _logger.LogInformation("PayerTariff {PayerTariffId} {Action} for payer {PayerId} / service {ServiceCatalogItemId}",
+            tariff.PayerTariffId, isNew ? "created" : "updated", tariff.PayerId, tariff.ServiceCatalogItemId);
 
         var updatedTariff = await _db.PayerTariffs
             .Include(t => t.Payer)
@@ -116,6 +130,10 @@ public class PayerTariffService : IPayerTariffService
         ApplyFields(tariff, request);
 
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.PayerTariffUpdate, nameof(PayerTariff), tariff.PayerTariffId, null, ct: ct);
+        _logger.LogInformation("PayerTariff {PayerTariffId} updated", tariff.PayerTariffId);
+
         return ToResponse(tariff);
     }
 
@@ -135,6 +153,9 @@ public class PayerTariffService : IPayerTariffService
 
         _db.PayerTariffs.Remove(tariff);
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.PayerTariffDelete, nameof(PayerTariff), tariff.PayerTariffId, null, ct: ct);
+        _logger.LogWarning("PayerTariff {PayerTariffId} deleted", tariff.PayerTariffId);
     }
 
     private static PayerTariffResponse ToResponse(PayerTariff t) => new()

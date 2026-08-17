@@ -1,9 +1,11 @@
+using KayCare.Core.Constants;
 using KayCare.Core.DTOs.Billing;
 using KayCare.Core.Entities;
 using KayCare.Core.Exceptions;
 using KayCare.Core.Interfaces;
 using KayCare.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace KayCare.Infrastructure.Services;
 
@@ -11,11 +13,15 @@ public class BillTemplateService : IBillTemplateService
 {
     private readonly AppDbContext   _db;
     private readonly ITenantContext _tenantContext;
+    private readonly IAuditService  _audit;
+    private readonly ILogger<BillTemplateService> _logger;
 
-    public BillTemplateService(AppDbContext db, ITenantContext tenantContext)
+    public BillTemplateService(AppDbContext db, ITenantContext tenantContext, IAuditService audit, ILogger<BillTemplateService> logger)
     {
         _db            = db;
         _tenantContext = tenantContext;
+        _audit         = audit;
+        _logger        = logger;
     }
 
     public async Task<List<BillTemplateResponse>> GetAllAsync(
@@ -60,6 +66,10 @@ public class BillTemplateService : IBillTemplateService
         _db.BillTemplates.Add(template);
         await _db.SaveChangesAsync(ct);
 
+        await _audit.LogAsync(AuditActions.BillTemplateCreate, nameof(BillTemplate), template.BillTemplateId, null,
+            details: $"Name={template.Name}", ct: ct);
+        _logger.LogInformation("BillTemplate {BillTemplateId} ({Name}) created", template.BillTemplateId, template.Name);
+
         return Map(template);
     }
 
@@ -83,6 +93,10 @@ public class BillTemplateService : IBillTemplateService
         template.Items = MapItems(request.Items, _tenantContext.TenantId);
 
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.BillTemplateUpdate, nameof(BillTemplate), template.BillTemplateId, null, ct: ct);
+        _logger.LogInformation("BillTemplate {BillTemplateId} updated", template.BillTemplateId);
+
         return Map(template);
     }
 
@@ -91,6 +105,10 @@ public class BillTemplateService : IBillTemplateService
         var template = await FindAsync(id, ct);
         _db.BillTemplates.Remove(template);
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.BillTemplateDelete, nameof(BillTemplate), template.BillTemplateId, null,
+            details: $"Name={template.Name}", ct: ct);
+        _logger.LogWarning("BillTemplate {BillTemplateId} ({Name}) deleted", template.BillTemplateId, template.Name);
     }
 
     public async Task<BillTemplateResponse> ToggleActiveAsync(Guid id, CancellationToken ct = default)
@@ -99,6 +117,14 @@ public class BillTemplateService : IBillTemplateService
         template.IsActive  = !template.IsActive;
         template.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.BillTemplateToggleActive, nameof(BillTemplate), template.BillTemplateId, null,
+            details: $"IsActive={template.IsActive}", ct: ct);
+        if (template.IsActive)
+            _logger.LogInformation("BillTemplate {BillTemplateId} activated", template.BillTemplateId);
+        else
+            _logger.LogWarning("BillTemplate {BillTemplateId} deactivated", template.BillTemplateId);
+
         return Map(template);
     }
 

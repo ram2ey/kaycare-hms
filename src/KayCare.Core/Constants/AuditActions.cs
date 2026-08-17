@@ -89,4 +89,52 @@ public static class AuditActions
     public const string ReferralComplete = "Referral.Complete";
     public const string ReferralDecline  = "Referral.Decline";
     public const string ReferralCancel   = "Referral.Cancel";
+
+    public const string PayerCreate = "Payer.Create";
+    public const string PayerUpdate = "Payer.Update";
+    public const string PayerDelete = "Payer.Delete";
+
+    public const string PayerTariffCreate = "PayerTariff.Create";
+    public const string PayerTariffUpdate = "PayerTariff.Update";
+    public const string PayerTariffDelete = "PayerTariff.Delete";
+
+    public const string ServiceCatalogItemCreate = "ServiceCatalogItem.Create";
+    public const string ServiceCatalogItemUpdate = "ServiceCatalogItem.Update";
+    public const string ServiceCatalogItemDelete = "ServiceCatalogItem.Delete";
+
+    public const string SupplierCreate     = "Supplier.Create";
+    public const string SupplierUpdate     = "Supplier.Update";
+    public const string SupplierDeactivate = "Supplier.Deactivate";
+
+    public const string DrugInventoryCreate     = "DrugInventory.Create";
+    public const string DrugInventoryUpdate     = "DrugInventory.Update";
+    public const string DrugInventoryDeactivate = "DrugInventory.Deactivate";
+
+    public const string PurchaseOrderCreate       = "PurchaseOrder.Create";
+    public const string PurchaseOrderUpdate       = "PurchaseOrder.Update";
+    public const string PurchaseOrderPlace        = "PurchaseOrder.Place";
+    public const string PurchaseOrderReceiveGoods = "PurchaseOrder.ReceiveGoods";
+    public const string PurchaseOrderCancel       = "PurchaseOrder.Cancel";
+
+    public const string PrescriptionTemplateCreate = "PrescriptionTemplate.Create";
+    public const string PrescriptionTemplateUpdate = "PrescriptionTemplate.Update";
+    public const string PrescriptionTemplateDelete = "PrescriptionTemplate.Delete";
+
+    public const string BillTemplateCreate       = "BillTemplate.Create";
+    public const string BillTemplateUpdate       = "BillTemplate.Update";
+    public const string BillTemplateDelete       = "BillTemplate.Delete";
+    public const string BillTemplateToggleActive = "BillTemplate.ToggleActive";
+
+    public const string FacilitySettingsUpsert     = "FacilitySettings.Upsert";
+    public const string FacilitySettingsLogoUpload = "FacilitySettings.LogoUpload";
+    public const string FacilitySettingsLogoDelete = "FacilitySettings.LogoDelete";
+
+    public const string WardCreate     = "Ward.Create";
+    public const string WardUpdate     = "Ward.Update";
+    public const string WardDeactivate = "Ward.Deactivate";
+
+    public const string BedAdd          = "Bed.Add";
+    public const string BedStatusUpdate = "Bed.StatusUpdate";
+    public const string BedUpdate       = "Bed.Update";
+    public const string BedDelete       = "Bed.Delete";
 }

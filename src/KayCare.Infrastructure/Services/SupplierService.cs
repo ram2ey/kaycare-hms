@@ -1,19 +1,25 @@
+using KayCare.Core.Constants;
 using KayCare.Core.DTOs.Pharmacy;
 using KayCare.Core.Entities;
 using KayCare.Core.Exceptions;
 using KayCare.Core.Interfaces;
 using KayCare.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace KayCare.Infrastructure.Services;
 
 public class SupplierService : ISupplierService
 {
     private readonly AppDbContext _db;
+    private readonly IAuditService _audit;
+    private readonly ILogger<SupplierService> _logger;
 
-    public SupplierService(AppDbContext db)
+    public SupplierService(AppDbContext db, IAuditService audit, ILogger<SupplierService> logger)
     {
         _db = db;
+        _audit = audit;
+        _logger = logger;
     }
 
     public async Task<List<SupplierResponse>> GetAllAsync(bool? activeOnly = null, CancellationToken ct = default)
@@ -51,6 +57,11 @@ public class SupplierService : ISupplierService
 
         _db.Suppliers.Add(supplier);
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.SupplierCreate, nameof(Supplier), supplier.SupplierId, null,
+            details: $"Name={supplier.Name}", ct: ct);
+        _logger.LogInformation("Supplier {SupplierId} ({Name}) created", supplier.SupplierId, supplier.Name);
+
         return ToResponse(supplier);
     }
 
@@ -69,6 +80,10 @@ public class SupplierService : ISupplierService
         supplier.IsActive    = request.IsActive;
 
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.SupplierUpdate, nameof(Supplier), supplier.SupplierId, null, ct: ct);
+        _logger.LogInformation("Supplier {SupplierId} updated", supplier.SupplierId);
+
         return ToResponse(supplier);
     }
 
@@ -80,6 +95,10 @@ public class SupplierService : ISupplierService
 
         supplier.IsActive = false;
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.SupplierDeactivate, nameof(Supplier), supplier.SupplierId, null, ct: ct);
+        _logger.LogWarning("Supplier {SupplierId} ({Name}) deactivated", supplier.SupplierId, supplier.Name);
+
         return ToResponse(supplier);
     }
 

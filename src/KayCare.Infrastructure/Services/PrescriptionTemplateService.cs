@@ -1,9 +1,11 @@
+using KayCare.Core.Constants;
 using KayCare.Core.DTOs.PrescriptionTemplates;
 using KayCare.Core.Entities;
 using KayCare.Core.Exceptions;
 using KayCare.Core.Interfaces;
 using KayCare.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace KayCare.Infrastructure.Services;
 
@@ -12,12 +14,21 @@ public class PrescriptionTemplateService : IPrescriptionTemplateService
     private readonly AppDbContext        _db;
     private readonly ICurrentUserService _currentUser;
     private readonly ITenantContext      _tenantContext;
+    private readonly IAuditService       _audit;
+    private readonly ILogger<PrescriptionTemplateService> _logger;
 
-    public PrescriptionTemplateService(AppDbContext db, ICurrentUserService currentUser, ITenantContext tenantContext)
+    public PrescriptionTemplateService(
+        AppDbContext db,
+        ICurrentUserService currentUser,
+        ITenantContext tenantContext,
+        IAuditService audit,
+        ILogger<PrescriptionTemplateService> logger)
     {
         _db            = db;
         _currentUser   = currentUser;
         _tenantContext = tenantContext;
+        _audit         = audit;
+        _logger        = logger;
     }
 
     public async Task<PrescriptionTemplateDetailResponse> CreateAsync(CreatePrescriptionTemplateRequest req, CancellationToken ct = default)
@@ -54,6 +65,11 @@ public class PrescriptionTemplateService : IPrescriptionTemplateService
 
         _db.PrescriptionTemplateItems.AddRange(items);
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.PrescriptionTemplateCreate, nameof(PrescriptionTemplate), template.TemplateId, null,
+            details: $"Name={template.Name}; ItemCount={items.Count}", ct: ct);
+        _logger.LogInformation("PrescriptionTemplate {TemplateId} ({Name}) created with {ItemCount} item(s)",
+            template.TemplateId, template.Name, items.Count);
 
         return await LoadDetailAsync(template.TemplateId, ct);
     }
@@ -96,6 +112,10 @@ public class PrescriptionTemplateService : IPrescriptionTemplateService
         _db.PrescriptionTemplateItems.AddRange(newItems);
         await _db.SaveChangesAsync(ct);
 
+        await _audit.LogAsync(AuditActions.PrescriptionTemplateUpdate, nameof(PrescriptionTemplate), templateId, null,
+            details: $"Name={template.Name}; ItemCount={newItems.Count}", ct: ct);
+        _logger.LogInformation("PrescriptionTemplate {TemplateId} updated with {ItemCount} item(s)", templateId, newItems.Count);
+
         return await LoadDetailAsync(templateId, ct);
     }
 
@@ -110,6 +130,10 @@ public class PrescriptionTemplateService : IPrescriptionTemplateService
 
         _db.PrescriptionTemplates.Remove(template);
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.PrescriptionTemplateDelete, nameof(PrescriptionTemplate), templateId, null,
+            details: $"Name={template.Name}", ct: ct);
+        _logger.LogWarning("PrescriptionTemplate {TemplateId} ({Name}) deleted", templateId, template.Name);
     }
 
     public async Task<PrescriptionTemplateDetailResponse> GetByIdAsync(Guid templateId, CancellationToken ct = default)

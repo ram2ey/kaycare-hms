@@ -5,6 +5,7 @@ using KayCare.Core.Exceptions;
 using KayCare.Core.Interfaces;
 using KayCare.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace KayCare.Infrastructure.Services;
 
@@ -13,12 +14,21 @@ public class PurchaseOrderService : IPurchaseOrderService
     private readonly AppDbContext        _db;
     private readonly ITenantContext      _tenantContext;
     private readonly ICurrentUserService _currentUser;
+    private readonly IAuditService       _audit;
+    private readonly ILogger<PurchaseOrderService> _logger;
 
-    public PurchaseOrderService(AppDbContext db, ITenantContext tenantContext, ICurrentUserService currentUser)
+    public PurchaseOrderService(
+        AppDbContext db,
+        ITenantContext tenantContext,
+        ICurrentUserService currentUser,
+        IAuditService audit,
+        ILogger<PurchaseOrderService> logger)
     {
         _db            = db;
         _tenantContext = tenantContext;
         _currentUser   = currentUser;
+        _audit         = audit;
+        _logger        = logger;
     }
 
     public async Task<List<PurchaseOrderSummaryResponse>> GetAllAsync(
@@ -111,6 +121,11 @@ public class PurchaseOrderService : IPurchaseOrderService
         _db.PurchaseOrders.Add(po);
         await _db.SaveChangesAsync(ct);
 
+        await _audit.LogAsync(AuditActions.PurchaseOrderCreate, nameof(PurchaseOrder), po.PurchaseOrderId, null,
+            details: $"OrderNumber={po.OrderNumber}; SupplierId={po.SupplierId}; ItemCount={po.Items.Count}", ct: ct);
+        _logger.LogInformation("PurchaseOrder {PurchaseOrderId} ({OrderNumber}) created for supplier {SupplierId}",
+            po.PurchaseOrderId, po.OrderNumber, po.SupplierId);
+
         await transaction.CommitAsync(ct);
 
         return (await GetByIdAsync(po.PurchaseOrderId, ct))!;
@@ -150,6 +165,11 @@ public class PurchaseOrderService : IPurchaseOrderService
         }
 
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.PurchaseOrderUpdate, nameof(PurchaseOrder), po.PurchaseOrderId, null,
+            details: $"OrderNumber={po.OrderNumber}; ItemCount={po.Items.Count}", ct: ct);
+        _logger.LogInformation("PurchaseOrder {PurchaseOrderId} ({OrderNumber}) updated", po.PurchaseOrderId, po.OrderNumber);
+
         return (await GetByIdAsync(po.PurchaseOrderId, ct))!;
     }
 
@@ -164,6 +184,11 @@ public class PurchaseOrderService : IPurchaseOrderService
 
         po.Status = PurchaseOrderStatus.Ordered;
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.PurchaseOrderPlace, nameof(PurchaseOrder), po.PurchaseOrderId, null,
+            details: $"OrderNumber={po.OrderNumber}", ct: ct);
+        _logger.LogInformation("PurchaseOrder {PurchaseOrderId} ({OrderNumber}) placed", po.PurchaseOrderId, po.OrderNumber);
+
         return (await GetByIdAsync(po.PurchaseOrderId, ct))!;
     }
 
@@ -254,6 +279,12 @@ public class PurchaseOrderService : IPurchaseOrderService
                                        po.Status;
 
             await _db.SaveChangesAsync(ct);
+
+            await _audit.LogAsync(AuditActions.PurchaseOrderReceiveGoods, nameof(PurchaseOrder), po.PurchaseOrderId, null,
+                details: $"OrderNumber={po.OrderNumber}; NewStatus={po.Status}", ct: ct);
+            _logger.LogInformation("PurchaseOrder {PurchaseOrderId} ({OrderNumber}) received goods, new status {Status}",
+                po.PurchaseOrderId, po.OrderNumber, po.Status);
+
             await transaction.CommitAsync(ct);
             return (await GetByIdAsync(po.PurchaseOrderId, ct))!;
         }
@@ -275,6 +306,11 @@ public class PurchaseOrderService : IPurchaseOrderService
 
         po.Status = PurchaseOrderStatus.Cancelled;
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.PurchaseOrderCancel, nameof(PurchaseOrder), po.PurchaseOrderId, null,
+            details: $"OrderNumber={po.OrderNumber}", ct: ct);
+        _logger.LogWarning("PurchaseOrder {PurchaseOrderId} ({OrderNumber}) cancelled", po.PurchaseOrderId, po.OrderNumber);
+
         return (await GetByIdAsync(po.PurchaseOrderId, ct))!;
     }
 

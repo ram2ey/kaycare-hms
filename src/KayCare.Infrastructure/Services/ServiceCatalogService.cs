@@ -1,19 +1,25 @@
+using KayCare.Core.Constants;
 using KayCare.Core.DTOs.Billing;
 using KayCare.Core.Entities;
 using KayCare.Core.Exceptions;
 using KayCare.Core.Interfaces;
 using KayCare.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace KayCare.Infrastructure.Services;
 
 public class ServiceCatalogService : IServiceCatalogService
 {
     private readonly AppDbContext _db;
+    private readonly IAuditService _audit;
+    private readonly ILogger<ServiceCatalogService> _logger;
 
-    public ServiceCatalogService(AppDbContext db)
+    public ServiceCatalogService(AppDbContext db, IAuditService audit, ILogger<ServiceCatalogService> logger)
     {
         _db = db;
+        _audit = audit;
+        _logger = logger;
     }
 
     public async Task<List<ServiceCatalogItemResponse>> GetAllAsync(bool activeOnly, CancellationToken ct)
@@ -48,6 +54,11 @@ public class ServiceCatalogService : IServiceCatalogService
 
         _db.ServiceCatalogItems.Add(item);
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.ServiceCatalogItemCreate, nameof(ServiceCatalogItem), item.ServiceCatalogItemId, null,
+            details: $"Name={item.Name}", ct: ct);
+        _logger.LogInformation("ServiceCatalogItem {ServiceCatalogItemId} ({Name}) created", item.ServiceCatalogItemId, item.Name);
+
         return ToResponse(item);
     }
 
@@ -64,6 +75,10 @@ public class ServiceCatalogService : IServiceCatalogService
         item.IsActive    = request.IsActive;
 
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.ServiceCatalogItemUpdate, nameof(ServiceCatalogItem), item.ServiceCatalogItemId, null, ct: ct);
+        _logger.LogInformation("ServiceCatalogItem {ServiceCatalogItemId} updated", item.ServiceCatalogItemId);
+
         return ToResponse(item);
     }
 
@@ -75,6 +90,10 @@ public class ServiceCatalogService : IServiceCatalogService
 
         _db.ServiceCatalogItems.Remove(item);
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.ServiceCatalogItemDelete, nameof(ServiceCatalogItem), item.ServiceCatalogItemId, null,
+            details: $"Name={item.Name}", ct: ct);
+        _logger.LogWarning("ServiceCatalogItem {ServiceCatalogItemId} ({Name}) deleted", item.ServiceCatalogItemId, item.Name);
     }
 
     private static ServiceCatalogItemResponse ToResponse(ServiceCatalogItem s) => new()

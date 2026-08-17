@@ -1,8 +1,10 @@
+using KayCare.Core.Constants;
 using KayCare.Core.DTOs.Facility;
 using KayCare.Core.Entities;
 using KayCare.Core.Interfaces;
 using KayCare.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace KayCare.Infrastructure.Services;
 
@@ -14,12 +16,21 @@ public class FacilitySettingsService : IFacilitySettingsService
     private readonly AppDbContext        _db;
     private readonly ITenantContext      _tenantContext;
     private readonly IBlobStorageService _blob;
+    private readonly IAuditService       _audit;
+    private readonly ILogger<FacilitySettingsService> _logger;
 
-    public FacilitySettingsService(AppDbContext db, ITenantContext tenantContext, IBlobStorageService blob)
+    public FacilitySettingsService(
+        AppDbContext db,
+        ITenantContext tenantContext,
+        IBlobStorageService blob,
+        IAuditService audit,
+        ILogger<FacilitySettingsService> logger)
     {
         _db            = db;
         _tenantContext = tenantContext;
         _blob          = blob;
+        _audit         = audit;
+        _logger        = logger;
     }
 
     public async Task<FacilitySettingsResponse?> GetAsync(CancellationToken ct = default)
@@ -56,6 +67,12 @@ public class FacilitySettingsService : IFacilitySettingsService
         }
 
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.FacilitySettingsUpsert, nameof(FacilitySettings), settings.FacilitySettingsId, null,
+            details: $"FacilityName={settings.FacilityName}", ct: ct);
+        _logger.LogInformation("FacilitySettings {FacilitySettingsId} upserted ({FacilityName})",
+            settings.FacilitySettingsId, settings.FacilityName);
+
         return await MapAsync(settings, ct);
     }
 
@@ -74,6 +91,11 @@ public class FacilitySettingsService : IFacilitySettingsService
         settings.LogoBlobName = blobName;
         await _db.SaveChangesAsync(ct);
 
+        await _audit.LogAsync(AuditActions.FacilitySettingsLogoUpload, nameof(FacilitySettings), settings.FacilitySettingsId, null,
+            details: $"BlobName={blobName}", ct: ct);
+        _logger.LogInformation("FacilitySettings {FacilitySettingsId} logo uploaded ({BlobName})",
+            settings.FacilitySettingsId, blobName);
+
         return await MapAsync(settings, ct);
     }
 
@@ -86,6 +108,9 @@ public class FacilitySettingsService : IFacilitySettingsService
             await _blob.DeleteAsync(ContainerName(), settings.LogoBlobName, ct);
             settings.LogoBlobName = null;
             await _db.SaveChangesAsync(ct);
+
+            await _audit.LogAsync(AuditActions.FacilitySettingsLogoDelete, nameof(FacilitySettings), settings.FacilitySettingsId, null, ct: ct);
+            _logger.LogWarning("FacilitySettings {FacilitySettingsId} logo deleted", settings.FacilitySettingsId);
         }
 
         return await MapAsync(settings, ct);
