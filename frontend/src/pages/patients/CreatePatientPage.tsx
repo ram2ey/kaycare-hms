@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { cloneElement, isValidElement, useId, useState } from 'react';
+import type { ReactElement } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { createPatient } from '../../api/patients';
 import type { CreatePatientRequest } from '../../types/patients';
@@ -198,10 +199,14 @@ export default function CreatePatientPage() {
 const input = 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
 
 function Field({ label, children, className = '' }: { label: string; children: React.ReactNode; className?: string }) {
+  const id = useId();
+  const field = isValidElement(children)
+    ? cloneElement(children as ReactElement<{ id?: string }>, { id })
+    : children;
   return (
     <div className={className}>
-      <label className="block text-xs text-gray-600 mb-1">{label}</label>
-      {children}
+      <label htmlFor={id} className="block text-xs text-gray-600 mb-1">{label}</label>
+      {field}
     </div>
   );
 }

@@ -125,12 +125,12 @@ export default function MARPage() {
                 <h2 className="font-semibold text-gray-900">Record Administration</h2>
                 <p className="text-sm text-gray-500">{selected.medicationName} {selected.dosage}</p>
               </div>
-              <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
+              <button onClick={() => setSelected(null)} aria-label="Close" className="text-gray-400 hover:text-gray-600 text-xl">×</button>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-2">Status</label>
-                <div className="flex flex-wrap gap-2">
+                <span id="mar-status-label" className="block text-xs font-medium text-gray-600 mb-2">Status</span>
+                <div role="group" aria-labelledby="mar-status-label" className="flex flex-wrap gap-2">
                   {MAR_STATUSES.map(s => (
                     <button
                       key={s}
@@ -148,8 +148,9 @@ export default function MARPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Dose Given</label>
+                  <label htmlFor="mar-dose-given" className="block text-xs font-medium text-gray-600 mb-1">Dose Given</label>
                   <input
+                    id="mar-dose-given"
                     type="text"
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                     placeholder="e.g. 500mg"
@@ -158,8 +159,9 @@ export default function MARPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Route</label>
+                  <label htmlFor="mar-route" className="block text-xs font-medium text-gray-600 mb-1">Route</label>
                   <select
+                    id="mar-route"
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                     value={form.route ?? ''}
                     onChange={e => setForm(f => ({ ...f, route: e.target.value || null }))}
@@ -170,8 +172,9 @@ export default function MARPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
+                <label htmlFor="mar-notes" className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
                 <textarea
+                  id="mar-notes"
                   rows={2}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"
                   value={form.notes ?? ''}

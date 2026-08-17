@@ -221,8 +221,8 @@ export default function CreateBillPage() {
           <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4">Payer & Discount</h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Payer / Insurance</label>
-              <select value={payerId} onChange={(e) => setPayerId(e.target.value)} className={inp}>
+              <label htmlFor="bill-payer" className="block text-xs text-gray-500 mb-1">Payer / Insurance</label>
+              <select id="bill-payer" value={payerId} onChange={(e) => setPayerId(e.target.value)} className={inp}>
                 <option value="">— Self-pay —</option>
                 {payers.map((p) => (
                   <option key={p.payerId} value={p.payerId}>{p.name}</option>
@@ -230,16 +230,16 @@ export default function CreateBillPage() {
               </select>
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Discount Amount (GHS)</label>
-              <input type="number" step="0.01" min={0} value={discountAmount || ''}
+              <label htmlFor="bill-discount-amount" className="block text-xs text-gray-500 mb-1">Discount Amount (GHS)</label>
+              <input id="bill-discount-amount" type="number" step="0.01" min={0} value={discountAmount || ''}
                 onChange={(e) => setDiscountAmount(Number(e.target.value))}
                 placeholder="0.00" className={inp} />
             </div>
           </div>
           {discountAmount > 0 && (
             <div className="mt-3">
-              <label className="block text-xs text-gray-500 mb-1">Discount Reason</label>
-              <input value={discountReason} onChange={(e) => setDiscountReason(e.target.value)}
+              <label htmlFor="bill-discount-reason" className="block text-xs text-gray-500 mb-1">Discount Reason</label>
+              <input id="bill-discount-reason" value={discountReason} onChange={(e) => setDiscountReason(e.target.value)}
                 placeholder="e.g. Staff discount, NHIS waiver…" className={inp} />
             </div>
           )}
@@ -279,27 +279,27 @@ export default function CreateBillPage() {
             {items.map((item, i) => (
               <div key={i} className="grid grid-cols-12 gap-2 items-start">
                 <div className="col-span-4">
-                  {i === 0 && <label className="block text-xs text-gray-500 mb-1">Description *</label>}
-                  <input required value={item.description}
+                  {i === 0 && <label htmlFor="bill-item-description-0" className="block text-xs text-gray-500 mb-1">Description *</label>}
+                  <input id={i === 0 ? 'bill-item-description-0' : undefined} required value={item.description}
                     onChange={(e) => updateItem(i, 'description', e.target.value)}
                     placeholder="e.g. Consultation fee" className={inp} />
                 </div>
                 <div className="col-span-3">
-                  {i === 0 && <label className="block text-xs text-gray-500 mb-1">Category</label>}
-                  <select value={item.category ?? ''}
+                  {i === 0 && <label htmlFor="bill-item-category-0" className="block text-xs text-gray-500 mb-1">Category</label>}
+                  <select id={i === 0 ? 'bill-item-category-0' : undefined} value={item.category ?? ''}
                     onChange={(e) => updateItem(i, 'category', e.target.value)} className={inp}>
                     <option value="">—</option>
                     {BILL_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
                   </select>
                 </div>
                 <div className="col-span-2">
-                  {i === 0 && <label className="block text-xs text-gray-500 mb-1">Qty</label>}
-                  <input required type="number" min={1} value={item.quantity}
+                  {i === 0 && <label htmlFor="bill-item-qty-0" className="block text-xs text-gray-500 mb-1">Qty</label>}
+                  <input id={i === 0 ? 'bill-item-qty-0' : undefined} required type="number" min={1} value={item.quantity}
                     onChange={(e) => updateItem(i, 'quantity', Number(e.target.value))} className={inp} />
                 </div>
                 <div className="col-span-2">
-                  {i === 0 && <label className="block text-xs text-gray-500 mb-1">Unit Price</label>}
-                  <input required type="number" step="0.01" min={0} value={item.unitPrice || ''}
+                  {i === 0 && <label htmlFor="bill-item-unitprice-0" className="block text-xs text-gray-500 mb-1">Unit Price</label>}
+                  <input id={i === 0 ? 'bill-item-unitprice-0' : undefined} required type="number" step="0.01" min={0} value={item.unitPrice || ''}
                     onChange={(e) => updateItem(i, 'unitPrice', Number(e.target.value))}
                     placeholder="0.00" className={inp} />
                 </div>
@@ -307,6 +307,7 @@ export default function CreateBillPage() {
                   {i === 0 && <div className="h-5" />}
                   {items.length > 1 && (
                     <button type="button" onClick={() => setItems((p) => p.filter((_, idx) => idx !== i))}
+                      aria-label="Remove line item"
                       className="w-full text-red-400 hover:text-red-600 text-lg leading-none mt-1">×</button>
                   )}
                 </div>
@@ -361,7 +362,7 @@ export default function CreateBillPage() {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-800">Bill Templates</h3>
               <button onClick={() => { setShowTemplates(false); setTemplateSearch(''); }}
-                className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+                aria-label="Close" className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
             </div>
             <p className="text-xs text-gray-400 mb-3">Selecting a template appends its items to the current bill.</p>
             <input
@@ -411,7 +412,7 @@ export default function CreateBillPage() {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-800">Price Catalog</h3>
               <button onClick={() => { setShowCatalog(false); setCatalogSearch(''); }}
-                className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+                aria-label="Close" className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
             </div>
             <input
               type="text"
