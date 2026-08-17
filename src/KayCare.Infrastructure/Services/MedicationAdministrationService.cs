@@ -1,9 +1,11 @@
+using KayCare.Core.Constants;
 using KayCare.Core.DTOs.Nursing;
 using KayCare.Core.Entities;
 using KayCare.Core.Exceptions;
 using KayCare.Core.Interfaces;
 using KayCare.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace KayCare.Infrastructure.Services;
 
@@ -11,11 +13,19 @@ public class MedicationAdministrationService : IMedicationAdministrationService
 {
     private readonly AppDbContext        _db;
     private readonly ICurrentUserService _currentUser;
+    private readonly IAuditService       _audit;
+    private readonly ILogger<MedicationAdministrationService> _logger;
 
-    public MedicationAdministrationService(AppDbContext db, ICurrentUserService currentUser)
+    public MedicationAdministrationService(
+        AppDbContext db,
+        ICurrentUserService currentUser,
+        IAuditService audit,
+        ILogger<MedicationAdministrationService> logger)
     {
         _db          = db;
         _currentUser = currentUser;
+        _audit       = audit;
+        _logger      = logger;
     }
 
     public async Task<MAREntryResponse> RecordAsync(RecordAdministrationRequest req, CancellationToken ct = default)
@@ -44,6 +54,11 @@ public class MedicationAdministrationService : IMedicationAdministrationService
         };
         _db.MedicationAdministrations.Add(admin);
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.MedicationAdministrationRecord, nameof(MedicationAdministration), admin.MedicationAdministrationId, admin.PatientId,
+            details: $"PrescriptionItemId={admin.PrescriptionItemId}; Status={admin.Status}; DoseGiven={admin.DoseGiven}", ct: ct);
+        _logger.LogInformation("Medication administration {MedicationAdministrationId} recorded for patient {PatientId}: status {Status}",
+            admin.MedicationAdministrationId, admin.PatientId, admin.Status);
 
         var nurse = await _db.Users.AsNoTracking().FirstAsync(u => u.UserId == admin.AdministeredByUserId, ct);
         return ToEntryResponse(admin, item, $"{nurse.FirstName} {nurse.LastName}");

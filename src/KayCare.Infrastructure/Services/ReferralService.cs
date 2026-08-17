@@ -1,9 +1,11 @@
+using KayCare.Core.Constants;
 using KayCare.Core.DTOs.Referrals;
 using KayCare.Core.Entities;
 using KayCare.Core.Exceptions;
 using KayCare.Core.Interfaces;
 using KayCare.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace KayCare.Infrastructure.Services;
 
@@ -11,11 +13,15 @@ public class ReferralService : IReferralService
 {
     private readonly AppDbContext        _db;
     private readonly ICurrentUserService _currentUser;
+    private readonly IAuditService       _audit;
+    private readonly ILogger<ReferralService> _logger;
 
-    public ReferralService(AppDbContext db, ICurrentUserService currentUser)
+    public ReferralService(AppDbContext db, ICurrentUserService currentUser, IAuditService audit, ILogger<ReferralService> logger)
     {
         _db          = db;
         _currentUser = currentUser;
+        _audit       = audit;
+        _logger      = logger;
     }
 
     public async Task<IReadOnlyList<ReferralSummaryResponse>> GetAllAsync(string? status, CancellationToken ct)
@@ -99,6 +105,12 @@ public class ReferralService : IReferralService
 
         _db.Referrals.Add(referral);
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.ReferralCreate, nameof(Referral), referral.ReferralId, referral.PatientId,
+            details: $"ReferralNumber={referral.ReferralNumber}", ct: ct);
+        _logger.LogInformation("Referral {ReferralId} ({ReferralNumber}) created for patient {PatientId}",
+            referral.ReferralId, referral.ReferralNumber, referral.PatientId);
+
         await transaction.CommitAsync(ct);
 
         return ToDetail(await LoadOrThrow(referral.ReferralId, ct));
@@ -120,6 +132,10 @@ public class ReferralService : IReferralService
         referral.ClinicalNotes          = req.ClinicalNotes;
 
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.ReferralUpdate, nameof(Referral), id, referral.PatientId, ct: ct);
+        _logger.LogInformation("Referral {ReferralId} updated", id);
+
         return ToDetail(await LoadOrThrow(id, ct));
     }
 
@@ -132,6 +148,10 @@ public class ReferralService : IReferralService
 
         referral.Status = "Sent";
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.ReferralSend, nameof(Referral), id, referral.PatientId, ct: ct);
+        _logger.LogInformation("Referral {ReferralId} sent", id);
+
         return ToDetail(await LoadOrThrow(id, ct));
     }
 
@@ -152,6 +172,20 @@ public class ReferralService : IReferralService
 
         referral.ResponseNotes = req.ResponseNotes;
         await _db.SaveChangesAsync(ct);
+
+        string action;
+        if (req.Action == "Accept")        action = AuditActions.ReferralAccept;
+        else if (req.Action == "Complete") action = AuditActions.ReferralComplete;
+        else                                action = AuditActions.ReferralDecline; // only remaining valid value per validation above
+
+        await _audit.LogAsync(action, nameof(Referral), id, referral.PatientId,
+            details: $"Action={req.Action}; Status={referral.Status}", ct: ct);
+
+        if (req.Action == "Decline")
+            _logger.LogWarning("Referral {ReferralId} declined", id);
+        else
+            _logger.LogInformation("Referral {ReferralId} response recorded: {Action} -> {Status}", id, req.Action, referral.Status);
+
         return ToDetail(await LoadOrThrow(id, ct));
     }
 
@@ -164,6 +198,10 @@ public class ReferralService : IReferralService
 
         referral.Status = "Cancelled";
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.ReferralCancel, nameof(Referral), id, referral.PatientId, ct: ct);
+        _logger.LogWarning("Referral {ReferralId} cancelled", id);
+
         return ToDetail(await LoadOrThrow(id, ct));
     }
 

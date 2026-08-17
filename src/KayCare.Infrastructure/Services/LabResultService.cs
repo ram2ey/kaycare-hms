@@ -1,8 +1,10 @@
+using KayCare.Core.Constants;
 using KayCare.Core.DTOs.LabResults;
 using KayCare.Core.Entities;
 using KayCare.Core.Interfaces;
 using KayCare.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace KayCare.Infrastructure.Services;
 
@@ -10,11 +12,15 @@ public class LabResultService : ILabResultService
 {
     private readonly AppDbContext _db;
     private readonly ITenantContext _tenantContext;
+    private readonly IAuditService _audit;
+    private readonly ILogger<LabResultService> _logger;
 
-    public LabResultService(AppDbContext db, ITenantContext tenantContext)
+    public LabResultService(AppDbContext db, ITenantContext tenantContext, IAuditService audit, ILogger<LabResultService> logger)
     {
         _db = db;
         _tenantContext = tenantContext;
+        _audit = audit;
+        _logger = logger;
     }
 
     public async Task<IReadOnlyList<LabResultResponse>> GetByPatientAsync(
@@ -251,6 +257,16 @@ public class LabResultService : ILabResultService
             }
 
             await _db.SaveChangesAsync(ct);
+
+            await _audit.LogAsync(AuditActions.LabResultCreate, nameof(LabResult), result.LabResultId, result.PatientId,
+                details: $"AccessionNumber={result.AccessionNumber}; ObservationCount={result.Observations.Count}; Critical={hasCritical}", ct: ct);
+            if (hasCritical)
+                _logger.LogWarning("Lab result {LabResultId} received via HL7 for patient {PatientId} with CRITICAL observation(s), accession {AccessionNumber}",
+                    result.LabResultId, result.PatientId, result.AccessionNumber);
+            else
+                _logger.LogInformation("Lab result {LabResultId} received via HL7 for patient {PatientId}, accession {AccessionNumber}",
+                    result.LabResultId, result.PatientId, result.AccessionNumber);
+
             await transaction.CommitAsync(ct);
             return true;
         }

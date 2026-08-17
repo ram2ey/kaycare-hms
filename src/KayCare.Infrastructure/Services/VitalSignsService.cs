@@ -1,8 +1,10 @@
+using KayCare.Core.Constants;
 using KayCare.Core.DTOs.Nursing;
 using KayCare.Core.Entities;
 using KayCare.Core.Interfaces;
 using KayCare.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace KayCare.Infrastructure.Services;
 
@@ -10,11 +12,15 @@ public class VitalSignsService : IVitalSignsService
 {
     private readonly AppDbContext        _db;
     private readonly ICurrentUserService _currentUser;
+    private readonly IAuditService       _audit;
+    private readonly ILogger<VitalSignsService> _logger;
 
-    public VitalSignsService(AppDbContext db, ICurrentUserService currentUser)
+    public VitalSignsService(AppDbContext db, ICurrentUserService currentUser, IAuditService audit, ILogger<VitalSignsService> logger)
     {
         _db          = db;
         _currentUser = currentUser;
+        _audit       = audit;
+        _logger      = logger;
     }
 
     public async Task<VitalSignsResponse> RecordAsync(Guid patientId, RecordVitalSignsRequest req, CancellationToken ct = default)
@@ -39,6 +45,9 @@ public class VitalSignsService : IVitalSignsService
         };
         _db.VitalSigns.Add(vs);
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.VitalSignsRecord, nameof(VitalSigns), vs.VitalSignsId, vs.PatientId, ct: ct);
+        _logger.LogInformation("Vital signs {VitalSignsId} recorded for patient {PatientId}", vs.VitalSignsId, vs.PatientId);
 
         var recorder = await _db.Users.AsNoTracking().FirstAsync(u => u.UserId == vs.RecordedByUserId, ct);
         return ToResponse(vs, $"{recorder.FirstName} {recorder.LastName}");

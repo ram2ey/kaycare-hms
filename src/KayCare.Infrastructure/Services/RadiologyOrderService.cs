@@ -5,6 +5,7 @@ using KayCare.Core.Exceptions;
 using KayCare.Core.Interfaces;
 using KayCare.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,12 +19,21 @@ public class RadiologyOrderService : IRadiologyOrderService
     private readonly AppDbContext        _db;
     private readonly ITenantContext      _tenantContext;
     private readonly ICurrentUserService _currentUser;
+    private readonly IAuditService       _audit;
+    private readonly ILogger<RadiologyOrderService> _logger;
 
-    public RadiologyOrderService(AppDbContext db, ITenantContext tenantContext, ICurrentUserService currentUser)
+    public RadiologyOrderService(
+        AppDbContext db,
+        ITenantContext tenantContext,
+        ICurrentUserService currentUser,
+        IAuditService audit,
+        ILogger<RadiologyOrderService> logger)
     {
         _db            = db;
         _tenantContext = tenantContext;
         _currentUser   = currentUser;
+        _audit         = audit;
+        _logger        = logger;
     }
 
     public async Task<IReadOnlyList<ImagingProcedureResponse>> GetProcedureCatalogAsync(CancellationToken ct)
@@ -65,6 +75,11 @@ public class RadiologyOrderService : IRadiologyOrderService
         };
         _db.ImagingProcedures.Add(procedure);
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.ImagingProcedureCreate, nameof(ImagingProcedure), procedure.ImagingProcedureId, null,
+            details: $"ProcedureCode={procedure.ProcedureCode}; ProcedureName={procedure.ProcedureName}", ct: ct);
+        _logger.LogInformation("Imaging procedure {ImagingProcedureId} ({ProcedureCode}) created", procedure.ImagingProcedureId, procedure.ProcedureCode);
+
         return MapProcedure(procedure);
     }
 
@@ -82,6 +97,10 @@ public class RadiologyOrderService : IRadiologyOrderService
         procedure.IsActive      = request.IsActive;
 
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.ImagingProcedureUpdate, nameof(ImagingProcedure), procedure.ImagingProcedureId, null, ct: ct);
+        _logger.LogInformation("Imaging procedure {ImagingProcedureId} updated", procedure.ImagingProcedureId);
+
         return MapProcedure(procedure);
     }
 
@@ -92,6 +111,11 @@ public class RadiologyOrderService : IRadiologyOrderService
 
         procedure.IsActive = !procedure.IsActive;
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.ImagingProcedureToggleActive, nameof(ImagingProcedure), procedure.ImagingProcedureId, null,
+            details: $"IsActive={procedure.IsActive}", ct: ct);
+        _logger.LogInformation("Imaging procedure {ImagingProcedureId} active status set to {IsActive}", procedure.ImagingProcedureId, procedure.IsActive);
+
         return MapProcedure(procedure);
     }
 
@@ -164,6 +188,11 @@ public class RadiologyOrderService : IRadiologyOrderService
 
             order.Status = RadiologyOrderStatus.Scheduled;
             await _db.SaveChangesAsync(ct);
+
+            await _audit.LogAsync(AuditActions.RadiologyOrderPlace, nameof(RadiologyOrder), order.RadiologyOrderId, order.PatientId,
+                details: $"ItemCount={procedures.Count}", ct: ct);
+            _logger.LogInformation("Radiology order {RadiologyOrderId} placed for patient {PatientId} with {ItemCount} procedure(s)",
+                order.RadiologyOrderId, order.PatientId, procedures.Count);
 
             await transaction.CommitAsync(ct);
 
@@ -278,6 +307,10 @@ public class RadiologyOrderService : IRadiologyOrderService
         }
         await _db.SaveChangesAsync(ct);
         await UpdateOrderStatusAsync(item.RadiologyOrderId, ct);
+
+        await _audit.LogAsync(AuditActions.RadiologyOrderItemMarkAcquired, nameof(RadiologyOrderItem), item.RadiologyOrderItemId, null, ct: ct);
+        _logger.LogInformation("Radiology order item {RadiologyOrderItemId} marked acquired", item.RadiologyOrderItemId);
+
         return MapItem(item, null);
     }
 
@@ -300,6 +333,12 @@ public class RadiologyOrderService : IRadiologyOrderService
 
         await _db.SaveChangesAsync(ct);
         await UpdateOrderStatusAsync(item.RadiologyOrderId, ct);
+
+        await _audit.LogAsync(AuditActions.RadiologyOrderItemEnterReport, nameof(RadiologyOrderItem), item.RadiologyOrderItemId, null,
+            details: $"ReportingDoctorUserId={item.ReportingDoctorUserId}", ct: ct);
+        _logger.LogInformation("Radiology order item {RadiologyOrderItemId} report entered by doctor {ReportingDoctorUserId}",
+            item.RadiologyOrderItemId, item.ReportingDoctorUserId);
+
         return MapItem(item, null);
     }
 
@@ -317,6 +356,10 @@ public class RadiologyOrderService : IRadiologyOrderService
 
         await _db.SaveChangesAsync(ct);
         await UpdateOrderStatusAsync(item.RadiologyOrderId, ct);
+
+        await _audit.LogAsync(AuditActions.RadiologyOrderItemSign, nameof(RadiologyOrderItem), item.RadiologyOrderItemId, null, ct: ct);
+        _logger.LogInformation("Radiology order item {RadiologyOrderItemId} signed by {SignedByUserId}", item.RadiologyOrderItemId, item.SignedByUserId);
+
         return MapItem(item, null);
     }
 

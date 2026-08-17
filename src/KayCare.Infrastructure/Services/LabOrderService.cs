@@ -5,6 +5,7 @@ using KayCare.Core.Exceptions;
 using KayCare.Core.Interfaces;
 using KayCare.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace KayCare.Infrastructure.Services;
 
@@ -13,12 +14,21 @@ public class LabOrderService : ILabOrderService
     private readonly AppDbContext          _db;
     private readonly ICurrentUserService   _currentUser;
     private readonly IChargeCaptureService _chargeCapture;
+    private readonly IAuditService         _audit;
+    private readonly ILogger<LabOrderService> _logger;
 
-    public LabOrderService(AppDbContext db, ICurrentUserService currentUser, IChargeCaptureService chargeCapture)
+    public LabOrderService(
+        AppDbContext db,
+        ICurrentUserService currentUser,
+        IChargeCaptureService chargeCapture,
+        IAuditService audit,
+        ILogger<LabOrderService> logger)
     {
         _db            = db;
         _currentUser   = currentUser;
         _chargeCapture = chargeCapture;
+        _audit         = audit;
+        _logger        = logger;
     }
 
     // ── Test catalog ─────────────────────────────────────────────────────────
@@ -66,6 +76,10 @@ public class LabOrderService : ILabOrderService
         _db.LabTestCatalog.Add(test);
         await _db.SaveChangesAsync(ct);
 
+        await _audit.LogAsync(AuditActions.LabTestCreate, nameof(LabTestCatalog), test.LabTestCatalogId, null,
+            details: $"TestCode={test.TestCode}; TestName={test.TestName}", ct: ct);
+        _logger.LogInformation("Lab test catalog entry {LabTestCatalogId} ({TestCode}) created", test.LabTestCatalogId, test.TestCode);
+
         return ToCatalogResponse(test);
     }
 
@@ -86,6 +100,10 @@ public class LabOrderService : ILabOrderService
         test.IsActive               = request.IsActive;
 
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.LabTestUpdate, nameof(LabTestCatalog), test.LabTestCatalogId, null, ct: ct);
+        _logger.LogInformation("Lab test catalog entry {LabTestCatalogId} updated", test.LabTestCatalogId);
+
         return ToCatalogResponse(test);
     }
 
@@ -97,6 +115,10 @@ public class LabOrderService : ILabOrderService
         test.IsActive = !test.IsActive;
 
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.LabTestToggleActive, nameof(LabTestCatalog), test.LabTestCatalogId, null,
+            details: $"IsActive={test.IsActive}", ct: ct);
+        _logger.LogInformation("Lab test catalog entry {LabTestCatalogId} active status set to {IsActive}", test.LabTestCatalogId, test.IsActive);
 
         return ToCatalogResponse(test);
     }
@@ -152,6 +174,11 @@ public class LabOrderService : ILabOrderService
         }
 
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.LabOrderPlace, nameof(LabOrder), order.LabOrderId, order.PatientId,
+            details: $"ItemCount={catalogItems.Count}", ct: ct);
+        _logger.LogInformation("Lab order {LabOrderId} placed for patient {PatientId} with {ItemCount} test(s)",
+            order.LabOrderId, order.PatientId, catalogItems.Count);
 
         await _chargeCapture.CaptureLabOrderChargesAsync(order.LabOrderId, ct);
 
@@ -251,6 +278,11 @@ public class LabOrderService : ILabOrderService
 
         await _db.SaveChangesAsync(ct);
 
+        await _audit.LogAsync(AuditActions.LabOrderItemReceiveSample, nameof(LabOrderItem), item.LabOrderItemId, item.LabOrder.PatientId,
+            details: $"AccessionNumber={item.AccessionNumber}", ct: ct);
+        _logger.LogInformation("Lab order item {LabOrderItemId} sample received, accession {AccessionNumber}",
+            item.LabOrderItemId, item.AccessionNumber);
+
         await transaction.CommitAsync(ct);
 
         return ToItemResponse(item);
@@ -290,6 +322,15 @@ public class LabOrderService : ILabOrderService
         UpdateOrderStatus(item.LabOrder);
         await _db.SaveChangesAsync(ct);
 
+        await _audit.LogAsync(AuditActions.LabOrderItemEnterResult, nameof(LabOrderItem), item.LabOrderItemId, item.LabOrder.PatientId,
+            details: $"Result={item.ManualResult}; Flag={item.ManualResultFlag}; Critical={item.IsCritical}", ct: ct);
+        if (item.IsCritical)
+            _logger.LogWarning("Lab order item {LabOrderItemId} result entered: {Result} {Unit} (CRITICAL, flag {Flag})",
+                item.LabOrderItemId, item.ManualResult, item.ManualResultUnit, item.ManualResultFlag);
+        else
+            _logger.LogInformation("Lab order item {LabOrderItemId} result entered: {Result} {Unit} (flag {Flag})",
+                item.LabOrderItemId, item.ManualResult, item.ManualResultUnit, item.ManualResultFlag);
+
         return ToItemResponse(item);
     }
 
@@ -312,6 +353,9 @@ public class LabOrderService : ILabOrderService
 
         UpdateOrderStatus(item.LabOrder);
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.LabOrderItemSign, nameof(LabOrderItem), item.LabOrderItemId, item.LabOrder.PatientId, ct: ct);
+        _logger.LogInformation("Lab order item {LabOrderItemId} signed by {SignedByUserId}", item.LabOrderItemId, item.SignedByUserId);
 
         return ToItemResponse(item);
     }
@@ -564,6 +608,11 @@ public class LabOrderService : ILabOrderService
         _db.CriticalCallLogs.Add(log);
         item.CriticalCallLogId = log.CriticalCallLogId;
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.LabOrderCriticalCallRecord, nameof(LabOrderItem), item.LabOrderItemId, null,
+            details: $"RecipientName={log.RecipientName}", ct: ct);
+        _logger.LogInformation("Critical call log recorded for lab order item {LabOrderItemId}, recipient {RecipientName}",
+            item.LabOrderItemId, log.RecipientName);
 
         return ToItemResponse(item);
     }

@@ -6,6 +6,7 @@ using KayCare.Core.Exceptions;
 using KayCare.Core.Interfaces;
 using KayCare.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace KayCare.Infrastructure.Services;
 
@@ -14,15 +15,24 @@ public class ConsultationService : IConsultationService
     private readonly AppDbContext          _db;
     private readonly ICurrentUserService   _currentUser;
     private readonly IChargeCaptureService _chargeCapture;
+    private readonly IAuditService         _audit;
+    private readonly ILogger<ConsultationService> _logger;
 
     private static readonly JsonSerializerOptions JsonOpts =
         new() { PropertyNameCaseInsensitive = true };
 
-    public ConsultationService(AppDbContext db, ICurrentUserService currentUser, IChargeCaptureService chargeCapture)
+    public ConsultationService(
+        AppDbContext db,
+        ICurrentUserService currentUser,
+        IChargeCaptureService chargeCapture,
+        IAuditService audit,
+        ILogger<ConsultationService> logger)
     {
         _db            = db;
         _currentUser   = currentUser;
         _chargeCapture = chargeCapture;
+        _audit         = audit;
+        _logger        = logger;
     }
 
     // ── Create ────────────────────────────────────────────────────────────────
@@ -57,6 +67,12 @@ public class ConsultationService : IConsultationService
             appointment.Status = AppointmentStatus.InProgress;
 
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.ConsultationCreate, nameof(Consultation), consultation.ConsultationId, consultation.PatientId,
+            details: $"AppointmentId={consultation.AppointmentId}", ct: ct);
+        _logger.LogInformation("Consultation {ConsultationId} created for patient {PatientId} (appointment {AppointmentId})",
+            consultation.ConsultationId, consultation.PatientId, consultation.AppointmentId);
+
         return await LoadDetailAsync(consultation.ConsultationId, ct);
     }
 
@@ -124,6 +140,10 @@ public class ConsultationService : IConsultationService
             consultation.SecondaryDiagnoses = JsonSerializer.Serialize(req.SecondaryDiagnoses, JsonOpts);
 
         await _db.SaveChangesAsync(ct);
+
+        await _audit.LogAsync(AuditActions.ConsultationUpdate, nameof(Consultation), consultationId, consultation.PatientId, ct: ct);
+        _logger.LogInformation("Consultation {ConsultationId} updated", consultationId);
+
         return await LoadDetailAsync(consultationId, ct);
     }
 
@@ -158,6 +178,9 @@ public class ConsultationService : IConsultationService
             await _db.SaveChangesAsync(ct);
 
             await _chargeCapture.CaptureConsultationChargeAsync(consultationId, ct);
+
+            await _audit.LogAsync(AuditActions.ConsultationSign, nameof(Consultation), consultationId, consultation.PatientId, ct: ct);
+            _logger.LogInformation("Consultation {ConsultationId} signed by doctor {DoctorUserId}", consultationId, consultation.DoctorUserId);
 
             await transaction.CommitAsync(ct);
 

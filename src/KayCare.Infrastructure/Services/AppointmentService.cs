@@ -5,6 +5,7 @@ using KayCare.Core.Exceptions;
 using KayCare.Core.Interfaces;
 using KayCare.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace KayCare.Infrastructure.Services;
 
@@ -12,11 +13,15 @@ public class AppointmentService : IAppointmentService
 {
     private readonly AppDbContext _db;
     private readonly ICurrentUserService _currentUser;
+    private readonly IAuditService _audit;
+    private readonly ILogger<AppointmentService> _logger;
 
-    public AppointmentService(AppDbContext db, ICurrentUserService currentUser)
+    public AppointmentService(AppDbContext db, ICurrentUserService currentUser, IAuditService audit, ILogger<AppointmentService> logger)
     {
         _db = db;
         _currentUser = currentUser;
+        _audit = audit;
+        _logger = logger;
     }
 
     // ── Create ────────────────────────────────────────────────────────────────
@@ -57,6 +62,11 @@ public class AppointmentService : IAppointmentService
 
             _db.Appointments.Add(appointment);
             await _db.SaveChangesAsync(ct);
+
+            await _audit.LogAsync(AuditActions.AppointmentCreate, nameof(Appointment), appointment.AppointmentId, appointment.PatientId,
+                details: $"DoctorUserId={appointment.DoctorUserId}; ScheduledAt={appointment.ScheduledAt:O}", ct: ct);
+            _logger.LogInformation("Appointment {AppointmentId} created for patient {PatientId} with doctor {DoctorUserId} at {ScheduledAt}",
+                appointment.AppointmentId, appointment.PatientId, appointment.DoctorUserId, appointment.ScheduledAt);
 
             await transaction.CommitAsync(ct);
 
@@ -112,6 +122,10 @@ public class AppointmentService : IAppointmentService
             if (req.Notes is not null)           appt.Notes           = req.Notes;
 
             await _db.SaveChangesAsync(ct);
+
+            await _audit.LogAsync(AuditActions.AppointmentUpdate, nameof(Appointment), appointmentId, appt.PatientId, ct: ct);
+            _logger.LogInformation("Appointment {AppointmentId} updated", appointmentId);
+
             await transaction.CommitAsync(ct);
 
             return await LoadDetailAsync(appointmentId, ct);
@@ -146,6 +160,22 @@ public class AppointmentService : IAppointmentService
         }
 
         await _db.SaveChangesAsync(ct);
+
+        var isCancel = targetStatus == AppointmentStatus.Cancelled;
+        var isNoShow = targetStatus == AppointmentStatus.NoShow;
+        var action = isCancel ? AuditActions.AppointmentCancel
+                   : isNoShow ? AuditActions.AppointmentNoShow
+                              : AuditActions.AppointmentStatusChange;
+
+        await _audit.LogAsync(action, nameof(Appointment), appointmentId, appt.PatientId,
+            details: $"Status={targetStatus}" + (reason is not null ? $"; Reason={reason}" : ""), ct: ct);
+
+        if (isCancel || isNoShow)
+            _logger.LogWarning("Appointment {AppointmentId} transitioned to {Status}{Reason}",
+                appointmentId, targetStatus, reason is not null ? $" ({reason})" : "");
+        else
+            _logger.LogInformation("Appointment {AppointmentId} transitioned to {Status}", appointmentId, targetStatus);
+
         return await LoadDetailAsync(appointmentId, ct);
     }
 
