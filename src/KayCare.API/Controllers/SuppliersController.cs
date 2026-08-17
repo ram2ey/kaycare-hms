@@ -1,3 +1,4 @@
+using KayCare.API.Extensions;
 using KayCare.Core.Constants;
 using KayCare.Core.DTOs.Pharmacy;
 using KayCare.Core.Interfaces;
@@ -22,7 +23,7 @@ public class SuppliersController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] bool? activeOnly = null, CancellationToken ct = default)
     {
-        var isAdmin = User.IsInRole(Roles.Admin) || User.IsInRole(Roles.SuperAdmin);
+        var isAdmin = User.IsAdminOrSuperAdmin();
         var filter  = isAdmin ? activeOnly : true;
         return Ok(await _suppliers.GetAllAsync(filter, ct));
     }

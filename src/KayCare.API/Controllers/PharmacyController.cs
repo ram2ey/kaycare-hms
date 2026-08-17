@@ -1,3 +1,4 @@
+using KayCare.API.Extensions;
 using KayCare.Core.Constants;
 using KayCare.Core.DTOs.Pharmacy;
 using KayCare.Core.Interfaces;
@@ -38,7 +39,7 @@ public class PharmacyController : ControllerBase
         [FromQuery] string? category     = null,
         CancellationToken   ct           = default)
     {
-        var isAdmin = User.IsInRole(Roles.Admin) || User.IsInRole(Roles.SuperAdmin);
+        var isAdmin = User.IsAdminOrSuperAdmin();
         if (!isAdmin) activeOnly = true;
 
         var result = await _drugs.GetAllAsync(activeOnly, lowStockOnly, category, ct);

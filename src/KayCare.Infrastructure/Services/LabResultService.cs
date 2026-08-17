@@ -203,12 +203,18 @@ public class LabResultService : ILabResultService
                 Observations         = new List<LabObservation>()
             };
 
+            // Batch the catalog lookup once for every observed test code instead of one query per
+            // observation — an HL7 message can carry dozens of results in a single ingest.
+            var testCodes = parsed.Observations.Select(o => o.TestCode).Distinct().ToList();
+            var catalogByCode = await _db.LabTestCatalog
+                .Where(t => testCodes.Contains(t.TestCode))
+                .ToDictionaryAsync(t => t.TestCode, ct);
+
             var hasCritical = false;
             foreach (var obs in parsed.Observations)
             {
                 var isObsCritical = false;
-                var catalogItem = await _db.LabTestCatalog
-                    .FirstOrDefaultAsync(t => t.TestCode == obs.TestCode, ct);
+                catalogByCode.TryGetValue(obs.TestCode, out var catalogItem);
                 if (catalogItem != null && !string.IsNullOrWhiteSpace(catalogItem.CriticalReferenceRange))
                 {
                     isObsCritical = LabOrderService.IsValueCritical(obs.Value, catalogItem.CriticalReferenceRange);

@@ -185,8 +185,11 @@ public class InpatientBillingService : IInpatientBillingService
         _db.InpatientCharges.AddRange(charges);
         await _db.SaveChangesAsync(ct);
 
+        // Every charge in this batch shares the same CreatedByUserId (the current request's
+        // user) — load it once instead of one query per charge.
+        var createdBy = await _db.Users.FirstAsync(u => u.UserId == _currentUser.UserId, ct);
         foreach (var c in charges)
-            await _db.Entry(c).Reference(x => x.CreatedBy).LoadAsync(ct);
+            c.CreatedBy = createdBy;
 
         return charges.Select(ToResponse).ToList();
     }

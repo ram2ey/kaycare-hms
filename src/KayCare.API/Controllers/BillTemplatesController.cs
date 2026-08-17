@@ -1,3 +1,4 @@
+using KayCare.API.Extensions;
 using KayCare.Core.Constants;
 using KayCare.Core.DTOs.Billing;
 using KayCare.Core.Interfaces;
@@ -25,7 +26,7 @@ public class BillTemplatesController : ControllerBase
         [FromQuery] string? category        = null,
         CancellationToken   ct              = default)
     {
-        var isAdmin = User.IsInRole(Roles.Admin) || User.IsInRole(Roles.SuperAdmin);
+        var isAdmin = User.IsAdminOrSuperAdmin();
         // Non-admins can only see active templates
         var result = await _templates.GetAllAsync(isAdmin && includeInactive, category, ct);
         return Ok(result);

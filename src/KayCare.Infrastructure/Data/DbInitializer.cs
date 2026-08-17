@@ -9,15 +9,30 @@ namespace KayCare.Infrastructure.Data;
 
 public static class DbInitializer
 {
-    /// <summary>Applies pending EF Core migrations. Always safe to run, in every environment.</summary>
+    private const string MigrationLockName = "KayCareMigrations";
+
+    /// <summary>
+    /// Applies pending EF Core migrations. Always safe to run, in every environment. Wrapped in a
+    /// session-level Postgres advisory lock so only one instance actually runs migrations if the
+    /// app is ever scaled to 2+ instances that all start up at once — the others block here until
+    /// the first finishes, then find nothing pending.
+    /// </summary>
     public static async Task MigrateAsync(IServiceProvider serviceProvider, ILogger logger)
     {
         using var scope = serviceProvider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        logger.LogInformation("Applying EF Core migrations...");
-        await db.Database.MigrateAsync();
-        logger.LogInformation("EF Core migrations applied successfully.");
+        await db.AcquireSessionAdvisoryLockAsync(MigrationLockName, default);
+        try
+        {
+            logger.LogInformation("Applying EF Core migrations...");
+            await db.Database.MigrateAsync();
+            logger.LogInformation("EF Core migrations applied successfully.");
+        }
+        finally
+        {
+            await db.ReleaseSessionAdvisoryLockAsync(MigrationLockName, default);
+        }
     }
 
     /// <summary>

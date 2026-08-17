@@ -86,19 +86,13 @@ public class PayerTariffService : IPayerTariffService
             {
                 PayerId = request.PayerId,
                 ServiceCatalogItemId = request.ServiceCatalogItemId,
-                TariffCode = request.TariffCode?.Trim(),
-                TariffPrice = request.TariffPrice,
-                EffectiveDate = request.EffectiveDate,
-                IsActive = request.IsActive
             };
+            ApplyFields(tariff, request);
             _db.PayerTariffs.Add(tariff);
         }
         else
         {
-            tariff.TariffCode = request.TariffCode?.Trim();
-            tariff.TariffPrice = request.TariffPrice;
-            tariff.EffectiveDate = request.EffectiveDate;
-            tariff.IsActive = request.IsActive;
+            ApplyFields(tariff, request);
         }
 
         await _db.SaveChangesAsync(ct);
@@ -119,13 +113,18 @@ public class PayerTariffService : IPayerTariffService
             .FirstOrDefaultAsync(t => t.PayerTariffId == id, ct)
             ?? throw new NotFoundException("PayerTariff", id);
 
+        ApplyFields(tariff, request);
+
+        await _db.SaveChangesAsync(ct);
+        return ToResponse(tariff);
+    }
+
+    private static void ApplyFields(PayerTariff tariff, SavePayerTariffRequest request)
+    {
         tariff.TariffCode = request.TariffCode?.Trim();
         tariff.TariffPrice = request.TariffPrice;
         tariff.EffectiveDate = request.EffectiveDate;
         tariff.IsActive = request.IsActive;
-
-        await _db.SaveChangesAsync(ct);
-        return ToResponse(tariff);
     }
 
     public async Task DeleteAsync(Guid id, CancellationToken ct = default)

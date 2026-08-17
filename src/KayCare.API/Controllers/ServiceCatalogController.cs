@@ -1,3 +1,4 @@
+using KayCare.API.Extensions;
 using KayCare.Core.Constants;
 using KayCare.Core.DTOs.Billing;
 using KayCare.Core.Interfaces;
@@ -23,7 +24,7 @@ public class ServiceCatalogController : ControllerBase
     public async Task<IActionResult> GetAll([FromQuery] bool activeOnly = true, CancellationToken ct = default)
     {
         // Non-admins can only see active items
-        var isAdmin = User.IsInRole(Roles.Admin) || User.IsInRole(Roles.SuperAdmin);
+        var isAdmin = User.IsAdminOrSuperAdmin();
         if (!isAdmin) activeOnly = true;
 
         var result = await _catalog.GetAllAsync(activeOnly, ct);

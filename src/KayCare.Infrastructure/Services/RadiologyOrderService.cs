@@ -134,9 +134,17 @@ public class RadiologyOrderService : IRadiologyOrderService
             _db.RadiologyOrders.Add(order);
             await _db.SaveChangesAsync(ct);
 
+            // Compute the starting sequence number once (one DB round-trip), then increment
+            // in-memory per item — previously re-queried the DB on every iteration even though,
+            // within this single advisory-locked order, the "last used accession" in the DB can't
+            // change between iterations.
+            var accessionPrefix = $"RAD-{DateTime.UtcNow.Year}-";
+            var nextAccessionSeq = await GetNextAccessionSequenceAsync(accessionPrefix, ct);
+
             foreach (var proc in procedures)
             {
-                var accession = await GenerateAccessionAsync(ct);
+                var accession = $"{accessionPrefix}{nextAccessionSeq:D5}";
+                nextAccessionSeq++;
                 var item = new RadiologyOrderItem
                 {
                     RadiologyOrderItemId = Guid.NewGuid(),
@@ -344,25 +352,16 @@ public class RadiologyOrderService : IRadiologyOrderService
         => await _db.RadiologyOrderItems.FirstOrDefaultAsync(i => i.RadiologyOrderItemId == itemId, ct)
             ?? throw new NotFoundException("RadiologyOrderItem", itemId);
 
-    private async Task<string> GenerateAccessionAsync(CancellationToken ct)
+    private async Task<int> GetNextAccessionSequenceAsync(string prefix, CancellationToken ct)
     {
-        var year   = DateTime.UtcNow.Year;
-        var prefix = $"RAD-{year}-";
         var last = await _db.RadiologyOrderItems
             .Where(i => i.AccessionNumber != null && i.AccessionNumber.StartsWith(prefix))
             .OrderByDescending(i => i.AccessionNumber)
             .Select(i => i.AccessionNumber!)
             .FirstOrDefaultAsync(ct);
-        var seq = 1;
         if (last is not null && int.TryParse(last[prefix.Length..], out var lastNum))
-            seq = lastNum + 1;
-        // Also incorporate any added items in the ChangeTracker to prevent collision in multi-item orders
-        var localCount = _db.ChangeTracker.Entries<RadiologyOrderItem>()
-            .Count(e => e.State == EntityState.Added 
-                && e.Entity.TenantId == _tenantContext.TenantId
-                && e.Entity.AccessionNumber != null 
-                && e.Entity.AccessionNumber.StartsWith(prefix));
-        return $"{prefix}{(seq + localCount):D5}";
+            return lastNum + 1;
+        return 1;
     }
 
     private static RadiologyOrderResponse MapSummary(RadiologyOrder o)

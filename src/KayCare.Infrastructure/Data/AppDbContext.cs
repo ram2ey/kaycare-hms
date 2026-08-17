@@ -169,7 +169,13 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<PayerTariff>()
             .HasQueryFilter(t => t.TenantId == _tenantContext.TenantId);
 
-        // SQL Server to PostgreSQL translation loop
+        // SQL Server → PostgreSQL translation loop. This app runs on Npgsql/Postgres only (see
+        // UseNpgsql in DependencyInjection.cs) — there is no SQL Server target — but every
+        // *Configuration.cs file still writes SQL Server-syntax default/computed-column SQL
+        // (HasDefaultValueSql("NEWSEQUENTIALID()"), bracket-quoted computed columns) rather than
+        // Postgres syntax directly, a holdover from before this app moved off SQL Server. Still
+        // load-bearing: without this loop, every entity using NEWSEQUENTIALID()/SYSUTCDATETIME()
+        // as its ID/timestamp default would fail against Postgres, which has neither function.
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
             foreach (var property in entityType.GetProperties())

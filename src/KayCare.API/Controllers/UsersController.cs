@@ -1,3 +1,4 @@
+using KayCare.API.Extensions;
 using KayCare.Core.DTOs.Users;
 using KayCare.Core.Interfaces;
 using KayCare.Infrastructure.Data;
@@ -28,7 +29,7 @@ public class UsersController : ControllerBase
         [FromQuery] bool includeInactive = false,
         CancellationToken ct = default)
     {
-        var isAdmin = User.IsInRole("Admin") || User.IsInRole("SuperAdmin");
+        var isAdmin = User.IsAdminOrSuperAdmin();
         if (!isAdmin)
         {
             var query = _db.Users

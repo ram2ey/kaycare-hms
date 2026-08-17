@@ -1,3 +1,4 @@
+using KayCare.API.Extensions;
 using KayCare.Core.Constants;
 using KayCare.Core.DTOs.Inpatient;
 using KayCare.Core.Interfaces;
@@ -20,7 +21,7 @@ public class WardsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetWards([FromQuery] bool? activeOnly = true, CancellationToken ct = default)
     {
-        var isAdmin = User.IsInRole(Roles.Admin) || User.IsInRole(Roles.SuperAdmin);
+        var isAdmin = User.IsAdminOrSuperAdmin();
         if (!isAdmin) activeOnly = true;
         return Ok(await _wards.GetAllAsync(activeOnly, ct));
     }
