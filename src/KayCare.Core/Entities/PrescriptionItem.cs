@@ -18,5 +18,11 @@ public class PrescriptionItem
     public int  QuantityDispensed    { get; set; }
     public bool IsFullyDispensed     { get; set; }
 
+    // F1.3/F6.1 — best-effort link to the catalog drug matching MedicationName at creation time.
+    // Nullable/optional: prescribing a non-stocked or custom-named medication remains allowed;
+    // this only lets dispense-time stock deduction match reliably instead of by name string.
+    public Guid?          DrugInventoryId { get; set; }
+    public DrugInventory? DrugInventory   { get; set; }
+
     public Prescription Prescription { get; set; } = null!;
 }

@@ -32,8 +32,9 @@ public static class AuditActions
 
     public const string ChargeCapture = "Charge.Capture";
 
-    public const string StockMovementRecord         = "StockMovement.Record";
-    public const string StockMovementDispenseDeduct = "StockMovement.DispenseDeduct";
+    public const string StockMovementRecord            = "StockMovement.Record";
+    public const string StockMovementDispenseDeduct    = "StockMovement.DispenseDeduct";
+    public const string StockMovementDispenseDeductSkipped = "StockMovement.DispenseDeductSkipped";
 
     public const string PrescriptionCreate          = "Prescription.Create";
     public const string PrescriptionDispense        = "Prescription.Dispense";

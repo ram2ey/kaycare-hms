@@ -151,21 +151,34 @@ public class StockMovementService : IStockMovementService
 
     public async Task DeductForDispenseAsync(
         Guid prescriptionId,
-        IEnumerable<(string MedicationName, int Quantity)> dispensedItems,
+        IEnumerable<(Guid? DrugInventoryId, string MedicationName, int Quantity)> dispensedItems,
         CancellationToken ct = default)
     {
         var now    = DateTime.UtcNow;
         var userId = _currentUser.UserId;
         var items  = dispensedItems.ToList();
 
-        // Batch-load matching drugs by name (case-insensitive) for this tenant
-        var names = items.Select(i => i.MedicationName.ToLower()).ToHashSet();
+        // Match by the linked DrugInventoryId when present; fall back to a case-insensitive
+        // name match for items prescribed before the link existed or with no catalog match.
+        var idsToMatch   = items.Where(i => i.DrugInventoryId.HasValue).Select(i => i.DrugInventoryId!.Value).ToHashSet();
+        var namesToMatch = items.Where(i => !i.DrugInventoryId.HasValue).Select(i => i.MedicationName.ToLower()).ToHashSet();
+
         var drugs = await _db.DrugInventory
-            .Where(d => d.IsActive && names.Contains(d.Name.ToLower()))
+            .Where(d => d.IsActive && (idsToMatch.Contains(d.DrugInventoryId) || namesToMatch.Contains(d.Name.ToLower())))
             .ToListAsync(ct);
 
         if (drugs.Count == 0)
-            return;  // nothing in inventory to deduct — do not block dispense
+        {
+            // Nothing in inventory to deduct — do not block dispense, but this is no longer
+            // silent: it's audit-worthy (F1.3/F6.1), since it usually means stock records are
+            // out of sync with what's actually being dispensed.
+            _logger.LogWarning(
+                "Stock deduction skipped for prescription {PrescriptionId}: none of {ItemCount} dispensed item(s) matched an active inventory drug.",
+                prescriptionId, items.Count);
+            await _audit.LogAsync(AuditActions.StockMovementDispenseDeductSkipped, "Prescription", prescriptionId, null,
+                details: $"No inventory match for any of {items.Count} dispensed item(s)", ct: ct);
+            return;
+        }
 
         var sortedDrugIds = drugs.Select(d => d.DrugInventoryId).OrderBy(id => id).ToList();
 
@@ -183,14 +196,28 @@ public class StockMovementService : IStockMovementService
                 .Where(d => sortedDrugIds.Contains(d.DrugInventoryId))
                 .ToListAsync(ct);
 
+            var drugById = lockedDrugs.ToDictionary(d => d.DrugInventoryId);
             var drugByName = lockedDrugs
                 .GroupBy(d => d.Name.ToLower())
                 .ToDictionary(g => g.Key, g => g.First());
 
-            foreach (var (medName, qty) in items)
+            foreach (var (drugInventoryId, medName, qty) in items)
             {
-                if (!drugByName.TryGetValue(medName.ToLower(), out var drug))
-                    continue;  // drug not in inventory — skip silently
+                DrugInventory? drug = null;
+                if (drugInventoryId.HasValue)
+                    drugById.TryGetValue(drugInventoryId.Value, out drug);
+                if (drug is null)
+                    drugByName.TryGetValue(medName.ToLower(), out drug);
+
+                if (drug is null)
+                {
+                    _logger.LogWarning(
+                        "Stock deduction skipped for prescription {PrescriptionId}: drug '{MedicationName}' not found in inventory.",
+                        prescriptionId, medName);
+                    await _audit.LogAsync(AuditActions.StockMovementDispenseDeductSkipped, "Prescription", prescriptionId, null,
+                        details: $"No inventory match for '{medName}'", ct: ct);
+                    continue;
+                }
 
                 var deduct = Math.Min(qty, drug.CurrentStock);  // never go below 0
                 if (deduct <= 0)

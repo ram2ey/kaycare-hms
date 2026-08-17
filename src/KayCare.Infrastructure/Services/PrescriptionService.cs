@@ -63,6 +63,14 @@ public class PrescriptionService : IPrescriptionService
         _db.Prescriptions.Add(prescription);
         await _db.SaveChangesAsync(ct); // flush to get PrescriptionId
 
+        // F1.3/F6.1 — best-effort link each item to a catalog drug by name (case-insensitive),
+        // same match StockMovementService uses at dispense time. Left null if there's no catalog
+        // match, so prescribing a non-stocked/custom-named medication still works unchanged.
+        var medicationNames = req.Items.Select(i => i.MedicationName.Trim().ToLower()).ToHashSet();
+        var matchingDrugIds = await _db.DrugInventory
+            .Where(d => d.IsActive && medicationNames.Contains(d.Name.ToLower()))
+            .ToDictionaryAsync(d => d.Name.ToLower(), d => d.DrugInventoryId, ct);
+
         var items = req.Items.Select(i => new PrescriptionItem
         {
             PrescriptionId        = prescription.PrescriptionId,
@@ -76,7 +84,8 @@ public class PrescriptionService : IPrescriptionService
             Quantity              = i.Quantity,
             Refills               = i.Refills,
             Instructions          = i.Instructions?.Trim(),
-            IsControlledSubstance = i.IsControlledSubstance
+            IsControlledSubstance = i.IsControlledSubstance,
+            DrugInventoryId       = matchingDrugIds.GetValueOrDefault(i.MedicationName.Trim().ToLower())
         }).ToList();
 
         _db.PrescriptionItems.AddRange(items);
@@ -198,7 +207,7 @@ public class PrescriptionService : IPrescriptionService
             await _db.SaveChangesAsync(ct);
 
             await _chargeCapture.CaptureDispenseChargesAsync(prescriptionId, dispenseEvent.DispenseEventId, ct);
-            await _stockMovement.DeductForDispenseAsync(prescriptionId, prescription.Items.Select(i => (i.MedicationName, i.Quantity)), ct);
+            await _stockMovement.DeductForDispenseAsync(prescriptionId, prescription.Items.Select(i => (i.DrugInventoryId, i.MedicationName, i.Quantity)), ct);
 
             await _audit.LogAsync(AuditActions.PrescriptionDispense, nameof(Prescription), prescriptionId, prescription.PatientId,
                 details: $"DispenseEventId={dispenseEvent.DispenseEventId}; ItemCount={dispenseEvent.Items.Count}", ct: ct);
@@ -294,7 +303,7 @@ public class PrescriptionService : IPrescriptionService
             await _db.SaveChangesAsync(ct);
 
             await _chargeCapture.CaptureDispenseChargesAsync(prescriptionId, dispenseEvent.DispenseEventId, ct);
-            await _stockMovement.DeductForDispenseAsync(prescriptionId, eventItems.Select(i => (itemMap[i.PrescriptionItemId].MedicationName, i.QuantityDispensed)), ct);
+            await _stockMovement.DeductForDispenseAsync(prescriptionId, eventItems.Select(i => (itemMap[i.PrescriptionItemId].DrugInventoryId, itemMap[i.PrescriptionItemId].MedicationName, i.QuantityDispensed)), ct);
 
             await _audit.LogAsync(AuditActions.PrescriptionPartialDispense, nameof(Prescription), prescriptionId, prescription.PatientId,
                 details: $"DispenseEventId={dispenseEvent.DispenseEventId}; ItemCount={eventItems.Count}; NewStatus={prescription.Status}", ct: ct);

@@ -8,9 +8,10 @@ public interface IStockMovementService
     Task<List<StockMovementResponse>> GetMovementsForDrugAsync(Guid drugInventoryId, CancellationToken ct = default);
 
     /// <summary>
-    /// Called automatically after a prescription dispense.
-    /// Matches medication names to inventory and deducts stock for each found entry.
-    /// Silently skips items not found in inventory so dispense is never blocked.
+    /// Called automatically after a prescription dispense. Matches each item to inventory —
+    /// preferring the linked DrugInventoryId when present, falling back to a case-insensitive
+    /// name match otherwise — and deducts stock for each match found. Items with no match never
+    /// block the dispense, but are logged and audited rather than silently skipped (F1.3/F6.1).
     /// </summary>
-    Task DeductForDispenseAsync(Guid prescriptionId, IEnumerable<(string MedicationName, int Quantity)> dispensedItems, CancellationToken ct = default);
+    Task DeductForDispenseAsync(Guid prescriptionId, IEnumerable<(Guid? DrugInventoryId, string MedicationName, int Quantity)> dispensedItems, CancellationToken ct = default);
 }

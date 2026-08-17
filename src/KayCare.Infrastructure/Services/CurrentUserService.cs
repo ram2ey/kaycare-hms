@@ -27,4 +27,12 @@ public class CurrentUserService : ICurrentUserService
                               ?? string.Empty;
     public string Role     => User?.FindFirstValue(ClaimTypes.Role) ?? string.Empty;
     public bool IsAuthenticated => User?.Identity?.IsAuthenticated ?? false;
+
+    public Guid? Jti =>
+        Guid.TryParse(User?.FindFirstValue(JwtRegisteredClaimNames.Jti), out var jti) ? jti : null;
+
+    public DateTime? TokenExpiresAt =>
+        long.TryParse(User?.FindFirstValue(JwtRegisteredClaimNames.Exp), out var exp)
+            ? DateTimeOffset.FromUnixTimeSeconds(exp).UtcDateTime
+            : null;
 }

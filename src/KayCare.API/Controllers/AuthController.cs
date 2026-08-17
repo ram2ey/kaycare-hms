@@ -15,16 +15,18 @@ public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
     private readonly ICurrentUserService _currentUser;
+    private readonly ITokenRevocationService _tokenRevocation;
     private readonly IAntiforgery _antiforgery;
     private readonly IWebHostEnvironment _env;
 
     public AuthController(IAuthService authService, ICurrentUserService currentUser,
-        IAntiforgery antiforgery, IWebHostEnvironment env)
+        ITokenRevocationService tokenRevocation, IAntiforgery antiforgery, IWebHostEnvironment env)
     {
-        _authService = authService;
-        _currentUser = currentUser;
-        _antiforgery = antiforgery;
-        _env         = env;
+        _authService     = authService;
+        _currentUser     = currentUser;
+        _tokenRevocation = tokenRevocation;
+        _antiforgery     = antiforgery;
+        _env             = env;
     }
 
     /// <summary>
@@ -68,11 +70,20 @@ public class AuthController : ControllerBase
         return Ok(me);
     }
 
-    /// <summary>Clears the auth cookie. Safe to call without an active session.</summary>
+    /// <summary>
+    /// Clears the auth cookie and revokes the current token server-side (if any), so a copy of
+    /// the cookie captured before logout can't keep authenticating. Safe to call without an
+    /// active session.
+    /// </summary>
     [HttpPost("logout")]
     [AllowAnonymous]
-    public IActionResult Logout()
+    public async Task<IActionResult> Logout(CancellationToken ct)
     {
+        if (_currentUser.IsAuthenticated && _currentUser.Jti.HasValue && _currentUser.TokenExpiresAt.HasValue)
+        {
+            await _tokenRevocation.RevokeAsync(_currentUser.Jti.Value, _currentUser.TokenExpiresAt.Value, ct);
+        }
+
         Response.Cookies.Append(AuthCookieNames.Token, string.Empty, AuthCookiePolicy.Build(_env, DateTimeOffset.UnixEpoch));
         return NoContent();
     }

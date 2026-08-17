@@ -66,6 +66,7 @@ public class AppDbContext : DbContext
     public DbSet<RadiologyOrderItem>      RadiologyOrderItems       => Set<RadiologyOrderItem>();
     public DbSet<CriticalCallLog>         CriticalCallLogs          => Set<CriticalCallLog>();
     public DbSet<PayerTariff>             PayerTariffs              => Set<PayerTariff>();
+    public DbSet<RevokedToken>            RevokedTokens             => Set<RevokedToken>();
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -169,6 +170,19 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<PayerTariff>()
             .HasQueryFilter(t => t.TenantId == _tenantContext.TenantId);
 
+        // F3.1 — optimistic concurrency for every TenantEntity. Postgres has no native
+        // rowversion/timestamp column type, so this uses the built-in `xmin` system column
+        // (auto-updated by Postgres on every row UPDATE) rather than an app-managed byte[]
+        // column — the latter would never actually change between writes without a DB trigger,
+        // silently defeating the whole point.
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            if (typeof(TenantEntity).IsAssignableFrom(entityType.ClrType))
+            {
+                modelBuilder.Entity(entityType.ClrType).UseXminAsConcurrencyToken();
+            }
+        }
+
         // SQL Server → PostgreSQL translation loop. This app runs on Npgsql/Postgres only (see
         // UseNpgsql in DependencyInjection.cs) — there is no SQL Server target — but every
         // *Configuration.cs file still writes SQL Server-syntax default/computed-column SQL
@@ -252,6 +266,18 @@ public class AppDbContext : DbContext
                 case EntityState.Modified:
                     entry.Entity.UpdatedAt = now;
                     break;
+            }
+
+            // DB6 — defense-in-depth against a bug that bypasses the query filters above (raw
+            // SQL, IgnoreQueryFilters(), a mistargeted insert): by the time a TenantEntity is
+            // saved it must belong to the request's own tenant. This is on top of, not instead
+            // of, the ~38 HasQueryFilter calls.
+            if ((entry.State == EntityState.Added || entry.State == EntityState.Modified) &&
+                entry.Entity.TenantId != _tenantContext.TenantId)
+            {
+                throw new InvalidOperationException(
+                    $"Tenant isolation violation: a {entry.Entity.GetType().Name} with TenantId={entry.Entity.TenantId} " +
+                    $"was about to be saved under request tenant {_tenantContext.TenantId}.");
             }
         }
 

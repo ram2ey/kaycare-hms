@@ -1,13 +1,17 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Text;
 using KayCare.API.Auth;
 using KayCare.Core.Constants;
 using KayCare.Core.Exceptions;
+using KayCare.Core.Interfaces;
 using KayCare.Infrastructure;
 using KayCare.Infrastructure.Middleware;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -70,6 +74,21 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                     context.Token = token;
                 }
                 return Task.CompletedTask;
+            },
+            // M3: reject a token whose jti was revoked (logout / password change) even though it
+            // still passes signature/expiry validation — closes the "stolen cookie stays valid
+            // until natural expiry" gap.
+            OnTokenValidated = async context =>
+            {
+                var jtiClaim = context.Principal?.FindFirstValue(JwtRegisteredClaimNames.Jti);
+                if (Guid.TryParse(jtiClaim, out var jti))
+                {
+                    var revocation = context.HttpContext.RequestServices.GetRequiredService<ITokenRevocationService>();
+                    if (await revocation.IsRevokedAsync(jti, context.HttpContext.RequestAborted))
+                    {
+                        context.Fail("Token has been revoked.");
+                    }
+                }
             }
         };
     });
@@ -231,6 +250,7 @@ app.UseExceptionHandler(errApp =>
         context.Response.StatusCode  = ex switch
         {
             AppException appEx => appEx.StatusCode,
+            DbUpdateConcurrencyException => 409,
             _                  => 500
         };
 
@@ -240,6 +260,7 @@ app.UseExceptionHandler(errApp =>
         var message = ex switch
         {
             AppException appEx => appEx.Message,
+            DbUpdateConcurrencyException => "This record was changed by someone else since it was loaded. Please refresh and try again.",
             _ when app.Environment.IsDevelopment() => ex?.Message ?? "An unexpected error occurred.",
             _ => "An unexpected error occurred."
         };

@@ -26,6 +26,12 @@ public class PrescriptionItemConfiguration : IEntityTypeConfiguration<Prescripti
             .HasForeignKey(i => i.PrescriptionId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        builder.HasOne(i => i.DrugInventory)
+            .WithMany()
+            .HasForeignKey(i => i.DrugInventoryId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.HasIndex(i => new { i.TenantId, i.PrescriptionId });
+        builder.HasIndex(i => new { i.TenantId, i.DrugInventoryId });
     }
 }

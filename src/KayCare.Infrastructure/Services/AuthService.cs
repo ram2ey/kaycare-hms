@@ -11,6 +11,8 @@ public class AuthService : IAuthService
     private readonly AppDbContext _db;
     private readonly ITokenService _tokenService;
     private readonly ITenantContext _tenantContext;
+    private readonly ICurrentUserService _currentUser;
+    private readonly ITokenRevocationService _tokenRevocation;
 
     // Computed once at process startup. Verified against on the not-found/inactive-user path below
     // so that path pays the same ~250-300ms BCrypt cost as a real user's wrong-password path —
@@ -18,11 +20,14 @@ public class AuthService : IAuthService
     private static readonly string DummyPasswordHash =
         BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString(), workFactor: 12);
 
-    public AuthService(AppDbContext db, ITokenService tokenService, ITenantContext tenantContext)
+    public AuthService(AppDbContext db, ITokenService tokenService, ITenantContext tenantContext,
+        ICurrentUserService currentUser, ITokenRevocationService tokenRevocation)
     {
         _db = db;
         _tokenService = tokenService;
         _tenantContext = tenantContext;
+        _currentUser = currentUser;
+        _tokenRevocation = tokenRevocation;
     }
 
     public async Task<LoginResponse> LoginAsync(LoginRequest request, CancellationToken ct = default)
@@ -95,6 +100,13 @@ public class AuthService : IAuthService
         user.LockedUntil        = null;
         user.UpdatedAt          = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
+
+        // Revoke the pre-change-password token so a cached/stolen copy of it can't keep
+        // authenticating after the password (and its MustChangePassword claim) has moved on.
+        if (_currentUser.Jti.HasValue && _currentUser.TokenExpiresAt.HasValue)
+        {
+            await _tokenRevocation.RevokeAsync(_currentUser.Jti.Value, _currentUser.TokenExpiresAt.Value, ct);
+        }
 
         // Reissue only after the save is confirmed — a failed save must never imply a token was
         // issued for a password change that didn't actually persist. The old token still carries

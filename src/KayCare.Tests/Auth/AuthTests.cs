@@ -174,4 +174,34 @@ public class AuthTests : IClassFixture<MediCloudWebAppFactory>
 
         Assert.Equal(HttpStatusCode.Locked, resp.StatusCode);
     }
+
+    // ── Logout / token revocation (M3) ────────────────────────────────────────
+
+    [Fact]
+    public async Task Logout_RevokesToken_SameTokenIsRejectedAfterwards()
+    {
+        var client = await _factory.CreateAdminClientAsync(_factory.TenantA);
+
+        // Token works before logout
+        var before = await client.GetAsync("/api/auth/me");
+        Assert.Equal(HttpStatusCode.OK, before.StatusCode);
+
+        var logout = await client.PostAsync("/api/auth/logout", null);
+        Assert.Equal(HttpStatusCode.NoContent, logout.StatusCode);
+
+        // Same token (still attached as the Bearer header) must no longer authenticate — a
+        // stolen/cached copy of it should not keep working after logout.
+        var after = await client.GetAsync("/api/auth/me");
+        Assert.Equal(HttpStatusCode.Unauthorized, after.StatusCode);
+    }
+
+    [Fact]
+    public async Task Logout_WithoutAnActiveSession_StillSucceeds()
+    {
+        var client = _factory.CreateAnonymousClientForTenant(_factory.TenantA);
+
+        var resp = await client.PostAsync("/api/auth/logout", null);
+
+        Assert.Equal(HttpStatusCode.NoContent, resp.StatusCode);
+    }
 }
