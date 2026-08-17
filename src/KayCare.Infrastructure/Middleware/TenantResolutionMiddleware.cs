@@ -20,16 +20,27 @@ public class TenantResolutionMiddleware
 
     public async Task InvokeAsync(HttpContext context, AppDbContext db, ITenantContext tenantContext)
     {
-        var identifier = ResolveIdentifier(context);
+        var isAuthenticated = context.User.Identity?.IsAuthenticated == true;
+        string? identifier;
         Guid? claimTenantId = null;
 
-        if (string.IsNullOrEmpty(identifier))
+        if (isAuthenticated)
         {
+            // Once a request is authenticated, the tenant is authoritatively determined by the
+            // JWT's tenantId claim. A client-supplied X-Tenant-Code header must never be able to
+            // override this — otherwise any authenticated user of any tenant could read or write
+            // another tenant's data simply by sending a different header. The header/subdomain
+            // path below is only for resolving a tenant before a JWT exists (e.g. login).
             var tenantIdClaim = context.User.FindFirst("tenantId")?.Value;
             if (Guid.TryParse(tenantIdClaim, out var parsedId))
             {
                 claimTenantId = parsedId;
             }
+            identifier = null;
+        }
+        else
+        {
+            identifier = ResolveIdentifier(context);
         }
 
         if (string.IsNullOrEmpty(identifier) && !claimTenantId.HasValue)

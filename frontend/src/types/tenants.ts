@@ -12,8 +12,13 @@ export interface TenantResponse {
   aiMonthlyQuota: number;
   aiRequestsThisMonth: number;
   allowedAiTiers: string;
-  customOpenRouterKey?: string;
+  hasCustomOpenRouterKey: boolean;
   createdAt: string;
+}
+
+export interface CreateTenantResponse extends TenantResponse {
+  /** Only present on the response to tenant creation — shown to the caller once. */
+  temporaryPassword: string;
 }
 
 export interface CreateTenantRequest {

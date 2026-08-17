@@ -1,11 +1,13 @@
 using System.Net;
 using System.Net.Sockets;
+using System.Security.Cryptography;
 using System.Text;
 using KayCare.Core.Constants;
 using KayCare.Core.Entities;
 using KayCare.Core.Interfaces;
 using KayCare.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -27,13 +29,22 @@ public sealed class MllpListenerService : BackgroundService
 
     private readonly ILogger<MllpListenerService> _logger;
     private readonly IServiceScopeFactory         _scopeFactory;
+    private readonly byte[]                       _sharedSecret;
 
     public MllpListenerService(
         ILogger<MllpListenerService> logger,
-        IServiceScopeFactory scopeFactory)
+        IServiceScopeFactory scopeFactory,
+        IConfiguration configuration)
     {
         _logger       = logger;
         _scopeFactory = scopeFactory;
+
+        var secret = configuration["Hl7:MllpSharedSecret"];
+        if (string.IsNullOrWhiteSpace(secret))
+        {
+            throw new InvalidOperationException("Hl7:MllpSharedSecret is not configured.");
+        }
+        _sharedSecret = Encoding.UTF8.GetBytes(secret);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -90,6 +101,13 @@ public sealed class MllpListenerService : BackgroundService
         try
         {
             var stream = client.GetStream();
+
+            if (!await AuthenticateAsync(stream, ct))
+            {
+                _logger.LogWarning("MLLP: connection from {Remote} rejected — shared secret mismatch or connection closed early", remote);
+                return;
+            }
+
             var raw    = await ReadMllpMessageAsync(stream, ct);
             if (raw == null)
             {
@@ -104,6 +122,26 @@ public sealed class MllpListenerService : BackgroundService
         {
             _logger.LogError(ex, "MLLP: unhandled error for client {Remote}", remote);
         }
+    }
+
+    // ── Shared-secret handshake ─────────────────────────────────────────────────
+    // Pragmatic stopgap, not equivalent to mTLS: every connecting client must send the
+    // configured shared secret as the very first bytes on the wire, before any MLLP framing.
+    // Lab analyzers / integration engines (e.g. Mirth Connect) must be configured to prefix
+    // each connection with this secret. Real network-level isolation (private networking,
+    // firewall rules, or true mTLS with client certs) remains the correct long-term fix.
+
+    private async Task<bool> AuthenticateAsync(NetworkStream stream, CancellationToken ct)
+    {
+        var buffer = new byte[_sharedSecret.Length];
+        var totalRead = 0;
+        while (totalRead < buffer.Length)
+        {
+            var read = await stream.ReadAsync(buffer.AsMemory(totalRead, buffer.Length - totalRead), ct);
+            if (read == 0) return false; // connection closed before sending the full secret
+            totalRead += read;
+        }
+        return CryptographicOperations.FixedTimeEquals(buffer, _sharedSecret);
     }
 
     // ── MLLP framing ─────────────────────────────────────────────────────────

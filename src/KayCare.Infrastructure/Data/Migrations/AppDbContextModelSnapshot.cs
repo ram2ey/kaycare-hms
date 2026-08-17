@@ -3303,6 +3303,36 @@ namespace KayCare.Infrastructure.Migrations
                             RoleId = 8,
                             Description = "Billing and revenue cycle staff",
                             RoleName = "BillingOfficer"
+                        },
+                        new
+                        {
+                            RoleId = 9,
+                            Description = "Head of Pharmacy / Chief Pharmacist",
+                            RoleName = "PharmacyManager"
+                        },
+                        new
+                        {
+                            RoleId = 10,
+                            Description = "Head of Billing & Revenue Management",
+                            RoleName = "BillingManager"
+                        },
+                        new
+                        {
+                            RoleId = 11,
+                            Description = "Head of Laboratory / Lab Director",
+                            RoleName = "LabManager"
+                        },
+                        new
+                        {
+                            RoleId = 12,
+                            Description = "Head of Radiology & Imaging",
+                            RoleName = "RadiologyManager"
+                        },
+                        new
+                        {
+                            RoleId = 13,
+                            Description = "Chief Nursing Officer / Matron",
+                            RoleName = "NurseManager"
                         });
                 });
 

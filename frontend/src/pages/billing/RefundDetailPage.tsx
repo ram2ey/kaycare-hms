@@ -5,6 +5,7 @@ import type { RefundResponse } from '../../types/refunds';
 import { REFUND_METHOD_LABELS } from '../../types/refunds';
 import { useAuth } from '../../contexts/AuthContext';
 import { Roles } from '../../types';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 
 const STATUS_COLORS: Record<string, string> = {
   Pending:   'bg-yellow-100 text-yellow-700',
@@ -27,6 +28,7 @@ export default function RefundDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState('');
   const [busy, setBusy]       = useState(false);
+  const [confirmAction, setConfirmAction] = useState<null | { message: string; run: () => void }>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -63,9 +65,9 @@ export default function RefundDetailPage() {
 
         {isAdmin && refund.status === 'Pending' && (
           <div className="flex gap-2">
-            <button onClick={() => confirm('Mark this refund as processed?') && handle(() => processRefund(id!))} disabled={busy}
+            <button onClick={() => setConfirmAction({ message: `Mark refund ${refund.refundNumber} (${fmt(refund.amount)}) as processed?`, run: () => handle(() => processRefund(id!)) })} disabled={busy}
               className={`${btn} bg-green-600 text-white hover:bg-green-700`}>Mark Processed</button>
-            <button onClick={() => confirm('Cancel this refund?') && handle(() => cancelRefund(id!))} disabled={busy}
+            <button onClick={() => setConfirmAction({ message: `Cancel refund ${refund.refundNumber} (${fmt(refund.amount)})?`, run: () => handle(() => cancelRefund(id!)) })} disabled={busy}
               className={`${btn} bg-white border border-gray-300 text-gray-600 hover:bg-gray-50`}>Cancel</button>
           </div>
         )}
@@ -129,6 +131,15 @@ export default function RefundDetailPage() {
           <p className="text-gray-700 text-sm">{refund.notes}</p>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!confirmAction}
+        title="Confirm"
+        message={confirmAction?.message ?? ''}
+        busy={busy}
+        onConfirm={() => { confirmAction?.run(); setConfirmAction(null); }}
+        onCancel={() => setConfirmAction(null)}
+      />
     </div>
   );
 }

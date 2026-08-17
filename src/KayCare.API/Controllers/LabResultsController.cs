@@ -7,6 +7,8 @@ using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -73,10 +75,9 @@ public class LabResultsController : ControllerBase
     [ProducesResponseType(400)]
     public async Task<IActionResult> ReceiveHl7Webhook(CancellationToken ct)
     {
-        // 1. Verify Api Key in X-HL7-Key header
-        if (!Request.Headers.TryGetValue("X-HL7-Key", out var apiKeyHeader) ||
-            string.IsNullOrWhiteSpace(apiKeyHeader.ToString()) ||
-            apiKeyHeader.ToString() != _configuration["Hl7:WebhookApiKey"])
+        // 1. Verify Api Key in X-HL7-Key header (constant-time compare — this key gates
+        // unauthenticated write access to patient lab results, so a timing side-channel matters).
+        if (!Request.Headers.TryGetValue("X-HL7-Key", out var apiKeyHeader) || !IsValidWebhookKey(apiKeyHeader.ToString()))
         {
             return Unauthorized(new { error = "Invalid or missing HL7 webhook API key." });
         }
@@ -97,5 +98,19 @@ public class LabResultsController : ControllerBase
         }
 
         return Ok(new { success = true });
+    }
+
+    private bool IsValidWebhookKey(string? provided)
+    {
+        var expected = _configuration["Hl7:WebhookApiKey"];
+        if (string.IsNullOrWhiteSpace(provided) || string.IsNullOrWhiteSpace(expected))
+        {
+            return false;
+        }
+
+        var providedBytes = Encoding.UTF8.GetBytes(provided);
+        var expectedBytes = Encoding.UTF8.GetBytes(expected);
+        return providedBytes.Length == expectedBytes.Length
+            && CryptographicOperations.FixedTimeEquals(providedBytes, expectedBytes);
     }
 }

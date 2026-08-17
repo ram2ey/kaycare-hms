@@ -14,7 +14,7 @@ services:
     name: kaycare-hms-api
     runtime: docker
     plan: free
-    healthCheckPath: /swagger/index.html
+    healthCheckPath: /health
     dockerfilePath: ./Dockerfile
     envVars:
       - key: ASPNETCORE_ENVIRONMENT
@@ -48,6 +48,18 @@ services:
       # e.g. https://kaycare-hms-frontend.onrender.com
       - key: Cors__AllowedOrigins__0
         sync: false
+
+      # HL7 — set in Render dashboard. Startup refuses to run if either is left as the
+      # appsettings.json placeholder value.
+      - key: Hl7__WebhookApiKey
+        sync: false
+      - key: Hl7__MllpSharedSecret
+        sync: false
+
+      # Demo/sales data seeding — leave "false" for real tenant deployments. Only flip to
+      # "true" for a deliberately-provisioned demo/sales instance.
+      - key: Seeding__EnableDemoData
+        value: "false"
 
   # ── React / Vite Frontend (Static Site) ───────────────────────────────────
   - type: web

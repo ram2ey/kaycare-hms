@@ -4,33 +4,16 @@ import { getLabOrderById, receiveSample, enterManualResult, signItem, downloadLa
 import type { LabOrderDetail, LabOrderItemResponse, LabOrderItem } from '../../types/labOrders';
 import { ITEM_STATUS_COLORS, ORDER_STATUS_COLORS } from '../../types/labOrders';
 import { safeArray } from '../../utils/array';
-
-
+import { printLabel } from '../../utils/printLabel';
 
 function printBarcode(item: LabOrderItem, patientName: string, patientMrn: string) {
-  const win = window.open('', '_blank', 'width=400,height=300');
-  if (!win) return;
-  win.document.write(`
-    <html><head><title>Label</title>
-    <style>
-      body { font-family: monospace; margin: 10px; }
-      .label { border: 1px dashed #333; padding: 10px; width: 280px; }
-      h3 { margin: 0 0 4px; font-size: 13px; }
-      p { margin: 2px 0; font-size: 11px; }
-      .acc { font-size: 20px; font-weight: bold; letter-spacing: 4px; margin: 8px 0; }
-    </style></head>
-    <body onload="window.print();window.close()">
-      <div class="label">
-        <h3>${patientName}</h3>
-        <p>MRN: ${patientMrn}</p>
-        <p>Test: ${item.testName}</p>
-        <p>Dept: ${item.department}</p>
-        <div class="acc">|||  ${item.accessionNumber}  |||</div>
-        <p>${item.accessionNumber}</p>
-        <p>${new Date().toLocaleDateString()}</p>
-      </div>
-    </body></html>
-  `);
+  printLabel({
+    patientName,
+    patientMrn,
+    testName: item.testName,
+    department: item.department,
+    accessionNumber: item.accessionNumber,
+  });
 }
 
 export default function LabOrderDetailPage() {

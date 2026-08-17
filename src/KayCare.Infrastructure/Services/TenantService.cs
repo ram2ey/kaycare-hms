@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
 using KayCare.Core.DTOs.Tenants;
 using KayCare.Core.Entities;
@@ -30,7 +32,7 @@ public class TenantService(AppDbContext db) : ITenantService
         return ToResponse(tenant, userCount);
     }
 
-    public async Task<TenantResponse> CreateAsync(CreateTenantRequest req, CancellationToken ct = default)
+    public async Task<CreateTenantResponse> CreateAsync(CreateTenantRequest req, CancellationToken ct = default)
     {
         var code = req.TenantCode.Trim().ToUpperInvariant();
         if (await db.Tenants.AnyAsync(t => t.TenantCode == code, ct))
@@ -62,7 +64,7 @@ public class TenantService(AppDbContext db) : ITenantService
             UpdatedAt            = now,
         };
 
-        var tempPassword = $"Welcome@{DateTime.UtcNow.Year}!";
+        var tempPassword = GenerateSecureTempPassword();
         var hash         = BCrypt.Net.BCrypt.HashPassword(tempPassword, 12);
 
         var adminUser = new
@@ -88,7 +90,26 @@ public class TenantService(AppDbContext db) : ITenantService
                {adminUser.PasswordHash}, {adminUser.FirstName}, {adminUser.LastName},
                {1}, {1}, {0}, {now}, {now})", ct);
 
-        return ToResponse(tenant, 1);
+        var response = ToResponse(tenant, 1);
+        return new CreateTenantResponse
+        {
+            TenantId              = response.TenantId,
+            TenantCode            = response.TenantCode,
+            TenantName            = response.TenantName,
+            Subdomain             = response.Subdomain,
+            SubscriptionPlan      = response.SubscriptionPlan,
+            IsActive              = response.IsActive,
+            MaxUsers              = response.MaxUsers,
+            StorageQuotaGB        = response.StorageQuotaGB,
+            UserCount             = response.UserCount,
+            IsAiEnabled           = response.IsAiEnabled,
+            AiMonthlyQuota        = response.AiMonthlyQuota,
+            AiRequestsThisMonth   = response.AiRequestsThisMonth,
+            AllowedAiTiers        = response.AllowedAiTiers,
+            HasCustomOpenRouterKey = response.HasCustomOpenRouterKey,
+            CreatedAt             = response.CreatedAt,
+            TemporaryPassword     = tempPassword,
+        };
     }
 
     public async Task<TenantResponse> UpdateAsync(Guid id, UpdateTenantRequest req, CancellationToken ct = default)
@@ -103,7 +124,13 @@ public class TenantService(AppDbContext db) : ITenantService
         tenant.IsAiEnabled          = req.IsAiEnabled;
         tenant.AiMonthlyQuota       = req.AiMonthlyQuota;
         tenant.AllowedAiTiers       = req.AllowedAiTiers;
-        tenant.CustomOpenRouterKey = req.CustomOpenRouterKey;
+        // Only overwrite the stored key when a new, non-blank value is submitted — the client
+        // never has the real key to send back (see ToResponse), so a blank field always means
+        // "leave the existing key untouched," not "clear it."
+        if (!string.IsNullOrWhiteSpace(req.CustomOpenRouterKey))
+        {
+            tenant.CustomOpenRouterKey = req.CustomOpenRouterKey;
+        }
         tenant.UpdatedAt            = DateTime.UtcNow;
 
         await db.SaveChangesAsync(ct);
@@ -149,7 +176,19 @@ public class TenantService(AppDbContext db) : ITenantService
         AiMonthlyQuota       = t.AiMonthlyQuota,
         AiRequestsThisMonth  = t.AiRequestsThisMonth,
         AllowedAiTiers       = t.AllowedAiTiers,
-        CustomOpenRouterKey = t.CustomOpenRouterKey,
+        HasCustomOpenRouterKey = !string.IsNullOrEmpty(t.CustomOpenRouterKey),
         CreatedAt            = t.CreatedAt,
     };
+
+    private static string GenerateSecureTempPassword()
+    {
+        const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*";
+        var bytes = RandomNumberGenerator.GetBytes(16);
+        var sb = new StringBuilder(bytes.Length);
+        foreach (var b in bytes)
+        {
+            sb.Append(chars[b % chars.Length]);
+        }
+        return sb.ToString();
+    }
 }

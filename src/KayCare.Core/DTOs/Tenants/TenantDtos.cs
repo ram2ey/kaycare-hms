@@ -15,8 +15,20 @@ public class TenantResponse
     public int    AiMonthlyQuota       { get; set; } = 500;
     public int    AiRequestsThisMonth  { get; set; } = 0;
     public string AllowedAiTiers       { get; set; } = "Standard";
-    public string? CustomOpenRouterKey { get; set; }
+    // Never round-trip the real key to the client — it's a live, billable third-party
+    // credential. Callers only need to know whether one is configured.
+    public bool   HasCustomOpenRouterKey { get; set; }
     public DateTime CreatedAt          { get; set; }
+}
+
+/// <summary>
+/// Returned only from tenant creation. Carries the randomly-generated temporary admin
+/// password — this is the only time it's ever surfaced, since it isn't stored in plaintext
+/// and the seed account can't otherwise be logged into.
+/// </summary>
+public class CreateTenantResponse : TenantResponse
+{
+    public string TemporaryPassword { get; set; } = string.Empty;
 }
 
 public class CreateTenantRequest

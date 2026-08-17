@@ -9,6 +9,9 @@ interface CriticalAlertsWidgetProps {
 export function CriticalAlertsWidget({ onAlertResolved }: CriticalAlertsWidgetProps) {
   const [alerts, setAlerts] = useState<LabOrderItemResponse[]>([])
   const [loading, setLoading] = useState(true)
+  // Distinct from `error` below (the call-log submit error) so a background polling failure
+  // can never be masked by, or mask, that form's own error state.
+  const [fetchError, setFetchError] = useState(false)
   const [selectedItem, setSelectedItem] = useState<LabOrderItemResponse | null>(null)
   const [recipientName, setRecipientName] = useState('')
   const [notes, setNotes] = useState('')
@@ -22,8 +25,9 @@ export function CriticalAlertsWidget({ onAlertResolved }: CriticalAlertsWidgetPr
         // Only show alerts that haven't been resolved with a call log yet
         const unlogged = data.filter((item) => !item.criticalCallLogId)
         setAlerts(unlogged)
+        setFetchError(false)
       })
-      .catch(() => {})
+      .catch(() => setFetchError(true))
       .finally(() => setLoading(false))
   }
 
@@ -78,6 +82,25 @@ export function CriticalAlertsWidget({ onAlertResolved }: CriticalAlertsWidgetPr
     return (
       <div className="bg-white/80 backdrop-blur-md border border-gray-100 rounded-2xl p-6 text-center text-gray-400 text-xs font-semibold shadow-sm">
         Checking for critical alerts...
+      </div>
+    )
+  }
+
+  // A failed fetch must never look identical to "no critical alerts" — this widget surfaces
+  // panic lab values requiring urgent clinician callback, so a silent failure here is a
+  // patient-safety gap, not just a UX nit.
+  if (fetchError && alerts.length === 0) {
+    return (
+      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between gap-3 text-xs">
+        <span className="font-semibold text-amber-800">
+          ⚠️ Couldn't check for critical lab alerts. There may be unseen panic values.
+        </span>
+        <button
+          onClick={fetchAlerts}
+          className="bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold px-2.5 py-1 rounded-lg transition-colors shrink-0"
+        >
+          Retry
+        </button>
       </div>
     )
   }

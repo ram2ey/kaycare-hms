@@ -101,21 +101,21 @@ export default function App() {
               <Route path="appointments/:id" element={<AppointmentDetailPage />} />
 
               {/* Consultations */}
-              <Route element={<ProtectedRoute allowedRoles={[Roles.Doctor, Roles.Nurse]} />}>
+              <Route element={<ProtectedRoute allowedRoles={[Roles.Doctor, Roles.Nurse, Roles.NurseManager]} />}>
                 <Route path="consultations" element={<ConsultationsPage />} />
                 <Route path="consultations/new" element={<CreateConsultationPage />} />
                 <Route path="consultations/:id" element={<ConsultationDetailPage />} />
               </Route>
 
               {/* Prescriptions */}
-              <Route element={<ProtectedRoute allowedRoles={[Roles.Doctor, Roles.Nurse, Roles.Pharmacist, Roles.Admin, Roles.SuperAdmin]} />}>
+              <Route element={<ProtectedRoute allowedRoles={[Roles.Doctor, Roles.Nurse, Roles.NurseManager, Roles.Pharmacist, Roles.PharmacyManager, Roles.Admin, Roles.SuperAdmin]} />}>
                 <Route path="prescriptions" element={<PrescriptionsPage />} />
                 <Route path="prescriptions/new" element={<CreatePrescriptionPage />} />
                 <Route path="prescriptions/:id" element={<PrescriptionDetailPage />} />
               </Route>
 
               {/* Rx Templates */}
-              <Route element={<ProtectedRoute allowedRoles={[Roles.Doctor, Roles.Admin, Roles.SuperAdmin]} />}>
+              <Route element={<ProtectedRoute allowedRoles={[Roles.Doctor, Roles.PharmacyManager, Roles.Admin, Roles.SuperAdmin]} />}>
                 <Route path="prescriptions/templates" element={<TemplatesPage />} />
                 <Route path="prescriptions/templates/new" element={<CreateEditTemplatePage mode="create" />} />
                 <Route path="prescriptions/templates/:id/edit" element={<CreateEditTemplatePage mode="edit" />} />
@@ -153,8 +153,8 @@ export default function App() {
                 <Route path="pharmacy/cs-register" element={<CSRegisterPage />} />
               </Route>
 
-              {/* Inpatient (Wards, Beds, Admissions), Nursing, Referrals & Documents (Doctor, Nurse, Receptionist, Admin, SuperAdmin) */}
-              <Route element={<ProtectedRoute allowedRoles={[Roles.Doctor, Roles.Nurse, Roles.Receptionist, Roles.Admin, Roles.SuperAdmin]} />}>
+              {/* Inpatient (Wards, Beds, Admissions), Nursing, Referrals & Documents (Doctor, Nurse, NurseManager, Receptionist, Admin, SuperAdmin) */}
+              <Route element={<ProtectedRoute allowedRoles={[Roles.Doctor, Roles.Nurse, Roles.NurseManager, Roles.Receptionist, Roles.Admin, Roles.SuperAdmin]} />}>
                 <Route path="inpatient/wards" element={<WardsPage />} />
                 <Route path="inpatient/wards/:id" element={<WardDetailPage />} />
                 <Route path="inpatient/admissions" element={<AdmissionsPage />} />
@@ -170,29 +170,33 @@ export default function App() {
                 <Route path="documents" element={<DocumentsPage />} />
               </Route>
 
-              {/* Lab Results (Visible to Doctors, Nurses, Lab Techs, and Admins) */}
-              <Route element={<ProtectedRoute allowedRoles={[Roles.Doctor, Roles.Nurse, Roles.LabTechnician, Roles.Admin, Roles.SuperAdmin]} />}>
+              {/* Lab Results (Visible to Doctors, Nurses, Lab Techs, LabManager, and Admins) */}
+              <Route element={<ProtectedRoute allowedRoles={[Roles.Doctor, Roles.Nurse, Roles.LabTechnician, Roles.LabManager, Roles.Admin, Roles.SuperAdmin]} />}>
                 <Route path="lab-results" element={<LabResultsPage />} />
                 <Route path="lab-results/:id" element={<LabResultDetailPage />} />
               </Route>
 
-              {/* Lab & Radiology Worklists (Doctors, Lab Techs, and Admins) */}
-              <Route element={<ProtectedRoute allowedRoles={[Roles.Doctor, Roles.LabTechnician, Roles.Admin, Roles.SuperAdmin]} />}>
+              {/* Lab Worklist (Doctors, Lab Techs, LabManager, and Admins) */}
+              <Route element={<ProtectedRoute allowedRoles={[Roles.Doctor, Roles.LabTechnician, Roles.LabManager, Roles.Admin, Roles.SuperAdmin]} />}>
                 <Route path="lab-orders" element={<LabWaitingListPage />} />
                 <Route path="lab-orders/new" element={<PlaceLabOrderPage />} />
                 <Route path="lab-orders/:id" element={<LabOrderDetailPage />} />
+              </Route>
+
+              {/* Radiology Worklist (Doctors, Lab Techs, RadiologyManager, and Admins) */}
+              <Route element={<ProtectedRoute allowedRoles={[Roles.Doctor, Roles.LabTechnician, Roles.RadiologyManager, Roles.Admin, Roles.SuperAdmin]} />}>
                 <Route path="radiology" element={<RadiologyOrdersPage />} />
                 <Route path="radiology/new" element={<NewRadiologyOrderPage />} />
                 <Route path="radiology/:id" element={<RadiologyOrderDetailPage />} />
               </Route>
 
-              {/* HL7 Message Inbox (Lab Techs and Admins only) */}
-              <Route element={<ProtectedRoute allowedRoles={[Roles.LabTechnician, Roles.Admin, Roles.SuperAdmin]} />}>
+              {/* HL7 Message Inbox (Lab Techs, LabManager, and Admins only) */}
+              <Route element={<ProtectedRoute allowedRoles={[Roles.LabTechnician, Roles.LabManager, Roles.Admin, Roles.SuperAdmin]} />}>
                 <Route path="lab-orders/hl7-inbox" element={<Hl7InboxPage />} />
               </Route>
 
               {/* General Reports */}
-              <Route element={<ProtectedRoute allowedRoles={[Roles.Admin, Roles.SuperAdmin, Roles.Doctor]} />}>
+              <Route element={<ProtectedRoute allowedRoles={[Roles.Admin, Roles.SuperAdmin, Roles.Doctor, Roles.BillingManager]} />}>
                 <Route path="reports" element={<ReportsPage />} />
               </Route>
 
@@ -202,11 +206,19 @@ export default function App() {
                 <Route path="admin/users" element={<UsersPage />} />
                 <Route path="admin/departments" element={<DepartmentsPage />} />
                 <Route path="admin/settings" element={<FacilitySettingsPage />} />
-                <Route path="admin/lab-catalog" element={<LabCatalogPage />} />
-                <Route path="admin/imaging-catalog" element={<ImagingCatalogPage />} />
                 <Route path="admin/wards" element={<WardSetupPage />} />
                 <Route path="admin/drug-formulary" element={<DrugFormularyPage />} />
                 <Route path="admin/payer-tariffs" element={<PayerTariffsPage />} />
+              </Route>
+
+              {/* Lab Test Catalog (SuperAdmin, Admin, LabManager) */}
+              <Route element={<ProtectedRoute allowedRoles={[Roles.SuperAdmin, Roles.Admin, Roles.LabManager]} />}>
+                <Route path="admin/lab-catalog" element={<LabCatalogPage />} />
+              </Route>
+
+              {/* Imaging Catalog (SuperAdmin, Admin, RadiologyManager) */}
+              <Route element={<ProtectedRoute allowedRoles={[Roles.SuperAdmin, Roles.Admin, Roles.RadiologyManager]} />}>
+                <Route path="admin/imaging-catalog" element={<ImagingCatalogPage />} />
               </Route>
 
               <Route path="change-password" element={<ChangePasswordPage />} />

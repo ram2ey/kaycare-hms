@@ -5,6 +5,7 @@ import type { CreditNoteResponse } from '../../types/creditNotes';
 import { CREDIT_NOTE_STATUS_LABELS } from '../../types/creditNotes';
 import { useAuth } from '../../contexts/AuthContext';
 import { Roles } from '../../types';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 
 const STATUS_COLORS: Record<string, string> = {
   Draft:    'bg-gray-100 text-gray-700',
@@ -28,6 +29,7 @@ export default function CreditNoteDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState('');
   const [busy, setBusy]       = useState(false);
+  const [confirmAction, setConfirmAction] = useState<null | { message: string; run: () => void }>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -68,15 +70,15 @@ export default function CreditNoteDetailPage() {
               <>
                 <button onClick={() => handle(() => approveCreditNote(id!))} disabled={busy}
                   className={`${btn} bg-blue-600 text-white hover:bg-blue-700`}>Approve</button>
-                <button onClick={() => confirm('Void this credit note?') && handle(() => voidCreditNote(id!))} disabled={busy}
+                <button onClick={() => setConfirmAction({ message: `Void credit note ${cn.creditNoteNumber} for ${fmt(cn.amount)}?`, run: () => handle(() => voidCreditNote(id!)) })} disabled={busy}
                   className={`${btn} bg-white border border-gray-300 text-gray-600 hover:bg-gray-50`}>Void</button>
               </>
             )}
             {cn.status === 'Approved' && (
               <>
-                <button onClick={() => confirm('Apply this credit note to the bill?') && handle(() => applyCreditNote(id!))} disabled={busy}
+                <button onClick={() => setConfirmAction({ message: `Apply credit of ${fmt(cn.amount)} to invoice ${cn.billNumber}?`, run: () => handle(() => applyCreditNote(id!)) })} disabled={busy}
                   className={`${btn} bg-green-600 text-white hover:bg-green-700`}>Apply to Bill</button>
-                <button onClick={() => confirm('Void this credit note?') && handle(() => voidCreditNote(id!))} disabled={busy}
+                <button onClick={() => setConfirmAction({ message: `Void credit note ${cn.creditNoteNumber} for ${fmt(cn.amount)}?`, run: () => handle(() => voidCreditNote(id!)) })} disabled={busy}
                   className={`${btn} bg-white border border-gray-300 text-gray-600 hover:bg-gray-50`}>Void</button>
               </>
             )}
@@ -142,6 +144,15 @@ export default function CreditNoteDetailPage() {
           <Link to={`/billing/${cn.billId}`} className="font-semibold underline">{cn.billNumber}</Link>.
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!confirmAction}
+        title="Confirm"
+        message={confirmAction?.message ?? ''}
+        busy={busy}
+        onConfirm={() => { confirmAction?.run(); setConfirmAction(null); }}
+        onCancel={() => setConfirmAction(null)}
+      />
     </div>
   );
 }
