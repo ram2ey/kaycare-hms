@@ -79,6 +79,16 @@ public class ServiceCatalogController : ControllerBase
     [ProducesResponseType(404)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
+        // F7.1: same category restriction as Create/Update - a PharmacyManager with no other
+        // elevated role could otherwise delete a catalog item of any category despite only being
+        // allowed to create/update Pharmacy-category ones.
+        if (User.IsInRole(Roles.PharmacyManager) && !User.IsInRole(Roles.BillingManager) && !User.IsInRole(Roles.Admin) && !User.IsInRole(Roles.SuperAdmin))
+        {
+            var existing = await _catalog.GetByIdAsync(id, ct);
+            if (existing is not null && !string.Equals(existing.Category, "Pharmacy", StringComparison.OrdinalIgnoreCase))
+                return Forbid();
+        }
+
         await _catalog.DeleteAsync(id, ct);
         return NoContent();
     }

@@ -1,4 +1,5 @@
 using KayCare.API.Extensions;
+using KayCare.Core.Constants;
 using KayCare.Core.DTOs.Users;
 using KayCare.Core.Interfaces;
 using KayCare.Infrastructure.Data;
@@ -60,13 +61,13 @@ public class UsersController : ControllerBase
 
     /// <summary>Get a single user by ID (Admin/SuperAdmin).</summary>
     [HttpGet("{id:guid}")]
-    [Authorize(Roles = "Admin,SuperAdmin")]
+    [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
         => Ok(await _users.GetByIdAsync(id, ct));
 
     /// <summary>Create a new staff user (Admin/SuperAdmin).</summary>
     [HttpPost]
-    [Authorize(Roles = "Admin,SuperAdmin")]
+    [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
     public async Task<IActionResult> Create([FromBody] CreateUserRequest request, CancellationToken ct)
     {
         var user = await _users.CreateAsync(request, ct);
@@ -75,13 +76,13 @@ public class UsersController : ControllerBase
 
     /// <summary>Update a user's profile and role (Admin/SuperAdmin).</summary>
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = "Admin,SuperAdmin")]
+    [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateUserRequest request, CancellationToken ct)
         => Ok(await _users.UpdateAsync(id, request, ct));
 
     /// <summary>Deactivate a user (Admin/SuperAdmin).</summary>
     [HttpPut("{id:guid}/deactivate")]
-    [Authorize(Roles = "Admin,SuperAdmin")]
+    [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
     public async Task<IActionResult> Deactivate(Guid id, CancellationToken ct)
     {
         await _users.DeactivateAsync(id, ct);
@@ -90,7 +91,7 @@ public class UsersController : ControllerBase
 
     /// <summary>Reactivate a user (Admin/SuperAdmin).</summary>
     [HttpPut("{id:guid}/reactivate")]
-    [Authorize(Roles = "Admin,SuperAdmin")]
+    [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
     public async Task<IActionResult> Reactivate(Guid id, CancellationToken ct)
     {
         await _users.ReactivateAsync(id, ct);
@@ -99,7 +100,7 @@ public class UsersController : ControllerBase
 
     /// <summary>Reset a user's password and force change on next login (Admin/SuperAdmin).</summary>
     [HttpPut("{id:guid}/reset-password")]
-    [Authorize(Roles = "Admin,SuperAdmin")]
+    [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
     public async Task<IActionResult> ResetPassword(Guid id, [FromBody] ResetPasswordRequest request, CancellationToken ct)
     {
         await _users.ResetPasswordAsync(id, request, ct);
@@ -108,13 +109,13 @@ public class UsersController : ControllerBase
 
     /// <summary>List all departments in use, with staff count (Admin/SuperAdmin).</summary>
     [HttpGet("departments")]
-    [Authorize(Roles = "Admin,SuperAdmin")]
+    [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
     public async Task<IActionResult> GetDepartments(CancellationToken ct)
         => Ok(await _users.GetDepartmentsAsync(ct));
 
     /// <summary>Rename a department across all users (Admin/SuperAdmin).</summary>
     [HttpPut("departments/rename")]
-    [Authorize(Roles = "Admin,SuperAdmin")]
+    [Authorize(Roles = $"{Roles.Admin},{Roles.SuperAdmin}")]
     public async Task<IActionResult> RenameDepartment([FromBody] RenameDepartmentRequest request, CancellationToken ct)
     {
         await _users.RenameDepartmentAsync(request, ct);
