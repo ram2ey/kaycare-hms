@@ -1,6 +1,16 @@
 import axios from 'axios';
 import { getCsrfToken } from './csrfToken';
 
+// Opt-out for the global 401 redirect below. Only set this on silent background polls that
+// already render their own failure state (e.g. CriticalAlertsWidget) - a transient failure on
+// one of those must never be able to force-navigate the whole app away from foreground work
+// just because that one call happened to 401.
+declare module 'axios' {
+  export interface AxiosRequestConfig {
+    skipAuthRedirect?: boolean;
+  }
+}
+
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? '/api',
   withCredentials: true,
@@ -23,7 +33,8 @@ apiClient.interceptors.request.use((config) => {
 apiClient.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err.response?.status === 401 && !window.location.pathname.includes('/login')) {
+    const skipRedirect = err.config?.skipAuthRedirect === true;
+    if (!skipRedirect && err.response?.status === 401 && !window.location.pathname.includes('/login')) {
       window.location.href = '/login';
     }
     return Promise.reject(err);
