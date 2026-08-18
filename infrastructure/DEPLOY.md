@@ -312,3 +312,5 @@ Bucket names must be lowercase, letters/digits/hyphens, 3–63 chars. The existi
 
 ### MLLP Listener (HL7 port 2575)
 The MLLP background service runs on TCP port 2575. Render Web Services only expose one public HTTP port. The MLLP port is internal only — lab equipment must reach the service via a VPN or private network tunnel. This is the expected hospital network topology.
+
+**Disabled by default on Render** via `Mllp__Enabled=false` in `render.yaml`: having the listener open a second TCP port made Render's Docker port auto-detection ambiguous (`Detected service running on port 10000 with additional ports TCP:2575`) and was observed to time the deploy out entirely, not just leave the port unreachable. Once a real VPN/private network tunnel exists so lab equipment can actually reach port 2575, set `Mllp__Enabled=true` in the Render dashboard to turn the listener back on.
