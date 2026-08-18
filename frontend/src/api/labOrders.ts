@@ -52,8 +52,11 @@ export const signItem = (itemId: string) =>
 
 export const getLabOrder = getLabOrderById;
 
+// Polled every 10s by CriticalAlertsWidget in the background - skipAuthRedirect keeps a
+// transient failure on this one call from force-navigating the whole app to /login while the
+// widget's own fetchError state handles showing (and letting the user retry) the failure.
 export const getCriticalAlerts = () =>
-  client.get<LabOrderItemResponse[]>('/lab-orders/critical-alerts').then(r => r.data);
+  client.get<LabOrderItemResponse[]>('/lab-orders/critical-alerts', { skipAuthRedirect: true }).then(r => r.data);
 
 export const recordCriticalCallLog = (itemId: string, req: { recipientName: string; notes?: string }) =>
   client.post<LabOrderItemResponse>(`/lab-orders/items/${itemId}/critical-log`, req).then(r => r.data);
