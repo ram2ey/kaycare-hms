@@ -98,8 +98,15 @@ public static class DependencyInjection
         services.AddScoped<IBillingPdfService, BillingPdfService>();
         services.AddScoped<IAuditService, AuditService>();
 
-        // MLLP TCP listener — runs for the lifetime of the application
-        services.AddHostedService<MllpListenerService>();
+        // MLLP TCP listener — runs for the lifetime of the application. Opt-out via config
+        // (defaults on) because a second open TCP port makes Render's Docker port auto-detection
+        // ambiguous and has been observed to time out the deploy outright; Render also only routes
+        // one public port anyway, so the listener is unreachable there until a VPN/private tunnel
+        // exists. Real on-prem/self-hosted Docker deployments keep today's default-on behavior.
+        if (config.GetValue("Mllp:Enabled", true))
+        {
+            services.AddHostedService<MllpListenerService>();
+        }
 
         return services;
     }

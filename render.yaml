@@ -68,6 +68,14 @@ services:
       - key: Seeding__EnableDemoData
         value: "false"
 
+      # MLLP TCP listener (port 2575) disabled on Render: it's a second open port that makes
+      # Render's Docker port auto-detection ambiguous and has been observed to time out the
+      # deploy. Render only routes one public port anyway, so real lab equipment can't reach
+      # 2575 from here until a VPN/private network tunnel exists — see infrastructure/DEPLOY.md.
+      # Flip to "true" once that network path exists and this becomes actually reachable.
+      - key: Mllp__Enabled
+        value: "false"
+
   # ── React / Vite Frontend (Static Site) ───────────────────────────────────
   - type: web
     name: kaycare-hms-frontend
