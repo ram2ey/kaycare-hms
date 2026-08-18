@@ -20,6 +20,16 @@ public class TenantResolutionMiddleware
 
     public async Task InvokeAsync(HttpContext context, AppDbContext db, ITenantContext tenantContext)
     {
+        // Health checks (Render, load balancers) hit this over the platform's own *.onrender.com
+        // hostname, which ResolveIdentifier below would otherwise parse as a 3-part
+        // subdomain.domain.tld and treat as a tenant code lookup - failing it and returning 404
+        // instead of ever reaching the health endpoint. This must always pass through untouched.
+        if (context.Request.Path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase))
+        {
+            await _next(context);
+            return;
+        }
+
         var isAuthenticated = context.User.Identity?.IsAuthenticated == true;
         string? identifier;
         Guid? claimTenantId = null;
