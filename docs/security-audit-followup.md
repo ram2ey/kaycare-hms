@@ -9,7 +9,7 @@ Full original writeup with exploit scenarios and per-finding fixes: the publishe
 `Artifact action: list` if the link is lost). This file tracks status only — treat the artifact as
 the source of truth for *why* each remaining item matters.
 
-Last updated: 2026-08-17.
+Last updated: 2026-08-18.
 
 ---
 
@@ -244,6 +244,19 @@ bounded, no open design question) was completed and verified this session (`dotn
 design decision this session deliberately didn't make unilaterally — see "Suggested next pass"
 below for how to pick these up.
 
+**Update 2026-08-18**: most of Part 3 Tier 2 is now also done — the local dev environment (SDK,
+Postgres, npm) is fully capable of this work without a live deployment, so "needs deployment" was
+never actually the blocker for these; the design-decision items were resolved by scoping
+conversations before starting each one. Completed this session, in commits `b25e567` (DB6, F3.1,
+M3, F1.3/F6.1), `2b96a80` + `bc1804c` (UI §3, UI §5), `159c80b` + `27a36df` + `c24b981` (F9.1/F9.3,
+all 3 batches, now fully complete across 26 services), `27b7f56` (L5, M7 partial), `ce5bd03` (F7.1),
+`f311f28` (DB17/DB18 partial). `dotnet build` 0 errors, `dotnet test` 37/37, `npm run build` 0 TS
+errors throughout. Still open: F2.4 (pagination), UI §1/§2/§4/§8 (shared component library), UI
+§11 (MAR co-sign), F10.1/DB21 (AI quota reset), DB15 (structured audit details), DB6's already-done
+but F3.1's line-item-entity second wave, and the searched/unique-indexed PII fields (Name, Phone,
+NationalId, DateOfBirth) that DB17 deliberately left plaintext — each still needs the kind of
+scoping conversation or larger design work described inline below and in "Suggested next pass."
+
 ### Backend security
 - [x] **M1** — Rate limiting added: .NET 8 built-in `Microsoft.AspNetCore.RateLimiting`, global
       100/min per-IP plus a stricter 10/min policy on `/api/auth/login`.
@@ -256,29 +269,57 @@ below for how to pick these up.
       in `DocumentsController.Upload`.
 - [x] **L2** — `[Required]`/`[Range]` added to `CreateBillRequest`, `AddPaymentRequest`,
       `BillItemRequest` (previously zero data-annotations on any of these).
-- [ ] **M3** — No token revocation/logout — Tier 2, design decision (blocklist store).
-- [ ] **M7** — Patient PHI sent to third-party AI models with no de-identification — Tier 2,
-      compliance-shaped design work.
+- [x] **M3** — Token revocation: new `RevokedTokens` table (`Jti` unique index), checked via a new
+      `OnTokenValidated` JWT bearer event; logout and change-password both revoke the current jti
+      through a new `ITokenRevocationService`. Opportunistic cleanup of expired rows on every
+      revoke, no scheduled job. Verified end-to-end: a new test proves a token is actually rejected
+      after logout, not just that the endpoints return the expected status codes.
+- [x] **M7** (partial) — De-identification for the AI endpoints: of the 8 `AiController` actions,
+      only 4 (LabInterpreter, DischargeSummary, InsuranceAppeal, TriageScore) carry a structured
+      patient-identifier field (`PatientName`, plus `Mrn` for DischargeSummary). Those now
+      interpolate a placeholder token into the prompt instead of the real value and substitute it
+      back into the model's response afterward — the third-party AI provider never sees the real
+      identifier, the document returned to the clinician still reads naturally. The other 4
+      endpoints have no structured identifier field to redact (pure free text or no patient fields
+      at all). `PrescriptionOcr`'s image payload isn't covered — would need image-level redaction.
+      Free-text clinical narrative may still incidentally mention identifying details inline — full
+      narrative de-identification needs NLP, out of scope. See also DB17 below for the data-at-rest
+      half of this finding.
 - [x] **L3** — Same fix as DB16 below (Postgres trigger, DB-enforced append-only).
 - [x] **L4** — `RequireRealSecret` extended to cover `Jwt:Key` (previously only the two HL7
       secrets), plus a new 32-byte minimum length check. Also generalized the placeholder-string
       check itself (was an exact match against one literal that would never have caught `Jwt:Key`'s
       actual placeholder text).
-- [ ] **L5** — AI provider key fallback chain "confusing" — Tier 2, vague/subjective, needs a
-      closer read before scoping, low priority.
+- [x] **L5** — Turned out to be genuinely broken, not just confusing: the `Gemini:ApiKey`/
+      `GEMINI_API_KEY` fallback could never actually authenticate against OpenRouter (a Gemini key
+      isn't a valid OpenRouter bearer token) — dropped it entirely, now logs a clear warning when no
+      valid key resolves instead of an opaque generic 503. Also extracted the duplicated key/model
+      resolution logic (previously copy-pasted in both `CallOpenRouterAsync` and
+      `CallOpenRouterMultimodalAsync`) into one shared `ResolveApiKey`/`ResolveModels`.
 - [x] **L6** — `AuthService.LoginAsync` now runs a dummy BCrypt verify on the not-found/inactive
       path so it costs the same ~250-300ms as a real wrong-password attempt.
 
 ### Backend architecture
-- [ ] **F9.1 (partial)** — Still only the 8 billing/dispensing/admission services from Part 2;
-      the other ~39 (appointments, consultations, lab, radiology, referrals, users, tenants,
-      reports, etc.) are still silent — Tier 2, needs triage of which actually need audit trail vs.
-      just logging before treating as one uniform extension.
-- [ ] **F1.3 / F6.1** — Stock deduction silent no-op — Tier 2, real fix is a schema change
-      (`PrescriptionItem`→`DrugInventory` FK) that also touches prescription creation UI/API.
+- [x] **F9.1 (full)** — Extended to all remaining applicable services across 3 batches: clinical
+      (Appointment, Consultation, LabOrder, LabResult, MedicationAdministration, NursingNote,
+      VitalSigns, RadiologyOrder, Referral), admin/catalog/inventory (Payer, PayerTariff,
+      ServiceCatalog, Supplier, DrugInventory, PurchaseOrder, PrescriptionTemplate, BillTemplate,
+      FacilitySettings, Ward), and identity/tenant/infra (UserManagement, Tenant, Auth, Document,
+      InpatientBilling, MllpListener, plus a missing `ILogger` added to `PatientService`, which
+      already had `IAuditService`). `IcdCodeService` and `CSRegisterService` confirmed read-only
+      (no mutating methods) and correctly left untouched. `MllpListenerService` is a singleton
+      `BackgroundService` — `IAuditService` is Scoped, so it's resolved from the existing
+      per-message `IServiceScopeFactory` scope rather than constructor-injected (would have been a
+      captive-dependency error). 92 new `AuditActions` constants added across the 3 batches.
+- [x] **F1.3 / F6.1** — `PrescriptionItem` gained a nullable `DrugInventoryId` FK, best-effort
+      linked to a catalog drug by name at prescription-creation time (same match
+      `StockMovementService` already used at dispense time) — additive, prescribing a
+      non-stocked/custom medication is unchanged. Dispense-time deduction now prefers the linked ID,
+      falls back to name match, and replaced its two silent-skip branches with a logged warning +
+      audit entry instead of doing nothing.
 - [x] **F2.1** — `LabResultService` batches the lab-catalog lookup once per HL7 message instead of
       once per observation.
-- [ ] **F9.3 (partial)** — Same status as F9.1 above — Tier 2.
+- [x] **F9.3 (full)** — Same status as F9.1 above.
 - [x] **F11.1** — `DbInitializer.MigrateAsync` wrapped in a new session-level Postgres advisory
       lock (`pg_advisory_lock`, not the existing transaction-scoped helper, since `MigrateAsync`
       manages its own internal per-migration transactions).
@@ -300,13 +341,28 @@ below for how to pick these up.
       `ApplyFields` helper.
 - [x] **F6.4** — Documented (confirmed still load-bearing — every `*Configuration.cs` file still
       writes SQL Server-syntax default-value SQL, not dead code).
-- [ ] **F7.1** — Mixed authorization style — Tier 2, design decision, touches 31 controllers (found
-      3 distinct patterns in play, not just 2).
+- [x] **F7.1** — Reviewed all 36 controllers in full (not sampled). Turned out most of the "3
+      patterns" mixing is justified, not a real inconsistency: bare-class-`[Authorize]`-with-
+      per-action-overrides vs. controller-level-blanket are both legitimate declarative styles: the
+      choice just reflects whether a controller's actions share one role requirement or vary. The
+      manual in-body checks almost all do something an attribute genuinely can't express (silently
+      narrowing a list query for non-admins, not rejecting) rather than duplicating an existing
+      attribute — converting those would remove real behavior, not just tidy style. Two genuine,
+      safe fixes found and applied: `UsersController` used literal `"Admin,SuperAdmin"` strings
+      instead of the `Roles` constant interpolation every other controller uses (cosmetic, no
+      behavior change), and `ServiceCatalogController.Delete` was missing the same PharmacyManager
+      category restriction `Create`/`Update` already enforce — a real enforcement gap, closed.
 - [ ] **F10.1** — `AiQuotaResetDate` bad default is a symptom; the actual monthly-quota-reset logic
       doesn't exist anywhere in the app yet (also DB21) — Tier 2, really a small feature not a bug
       fix, fixing just the default alone is low-value.
-- [ ] **F3.1 (partial)** — General absence of `RowVersion`/optimistic-concurrency tokens — Tier 2,
-      large, Bill/Bed's practical races are already closed via advisory locks.
+- [x] **F3.1 (partial)** — Optimistic concurrency via Postgres's built-in `xmin` system column
+      (`UseXminAsConcurrencyToken`), not an app-managed `byte[] RowVersion` column — Postgres has no
+      native rowversion type, and a plain byte[] column never actually changes between writes
+      without a DB trigger, which would have silently made the check a no-op. Covers all 30
+      `TenantEntity`-derived entities in one model-level loop, no per-entity work. Global exception
+      handler now maps `DbUpdateConcurrencyException` to 409. Line-item entities that don't inherit
+      `TenantEntity` (`PrescriptionItem`, `DispenseEvent`, `StockMovement`, `BillItem`, etc.) are a
+      separate, smaller follow-on wave — not included.
 
 ### Frontend security
 - [x] **10** — Real client-side MIME/size checks (not just the cosmetic `accept=` attribute) added
@@ -321,21 +377,32 @@ below for how to pick these up.
 ### Frontend UI/UX
 - [ ] **§1** — No shared UI primitive library — Tier 2, large, explicitly design-decision-heavy.
 - [ ] **§2** — No semantic color tokens — Tier 2, tied to §1.
-- [ ] **§3** — 17+ files (recount — more than the original "12+") silently swallow fetch errors —
-      Tier 2, mechanical (same pattern as the completed UI §9) but a large standalone lift, offered
-      as an opt-in add-on rather than bundled by default.
+- [x] **§3** — All 17 confirmed files converted to the `actionError`/red-banner pattern already
+      established in `BillDetailPage.tsx` — each catch now surfaces a specific, user-facing message
+      instead of failing silently, reusing each file's existing error-state name where one already
+      existed. (One additional file, `ARAgingPage.tsx`, was found with the same pattern outside the
+      original 17-file list — not yet fixed, noted for a future pass.)
 - [ ] **§4** — Inconsistent form conventions — Tier 2, tied to §1.
-- [x] **§5 (partial)** — `ConfirmDialog.tsx` (used across ~30+ pages) now has `role="dialog"`,
-      `aria-modal`, `aria-labelledby`, an Escape-key handler, and a minimal focus trap. The broader
-      `aria-label`/`htmlFor` sweep across ~77 individual pages remains — Tier 2, large.
+- [x] **§5 (near-complete)** — `ConfirmDialog.tsx` already had `role="dialog"`, `aria-modal`,
+      `aria-labelledby`, an Escape-key handler, and a minimal focus trap from an earlier pass. The
+      broader sweep is now done too: `id`/`htmlFor` pairing between labels and inputs, and
+      `aria-label` on icon-only buttons, across ~55 of ~82 pages that actually had something to fix
+      (many pages reviewed had no unlinked labels or icon buttons at all). Button-groups that label
+      a set of toggle buttons rather than one input (discharge type, bed status, note type, etc.)
+      use `role="group"` + `aria-labelledby` instead of `htmlFor`. Residual, explicitly out of this
+      pass's scope: a handful of inputs have only a placeholder and no visible `<label>` at all to
+      pair — a distinct gap from "link existing labels," worth a future pass.
 - [ ] **§6** — Responsive gaps — Tier 2, design decision.
 - [ ] **§8** — No shared Table component — Tier 2, large, design-heavy like §1.
 - [x] **§10** — Dead code (`pages/Placeholder.tsx`) deleted — confirmed never imported.
 - [ ] **§11 (partial)** — MAR secondary-review-step — Tier 2, feature design work.
 
 ### Database & migrations
-- [ ] **DB6** — Tenant-scoped entities need a DB-level `TenantId` safety net — Tier 2, design
-      decision (SaveChanges interceptor vs. Postgres RLS).
+- [x] **DB6** — Extended the existing `SaveChangesAsync` override (already used for
+      `CreatedAt`/`UpdatedAt` stamping) rather than a new interceptor or Postgres RLS: throws if a
+      `TenantEntity` being Added/Modified has a `TenantId` that doesn't match the request's tenant.
+      Defense-in-depth on top of, not instead of, the ~38 existing `HasQueryFilter` calls — catches
+      a bug that bypasses them (raw SQL, `IgnoreQueryFilters()`, a mistargeted insert).
 - [x] **DB7-9** — Composite `(TenantId, FK-column)` indexes added to `BillItem`, `PrescriptionItem`,
       `BillTemplateItem`.
 - [x] **DB10** — `Bill.AdmissionId` now has a real FK constraint (`Restrict`), plus the
@@ -354,9 +421,24 @@ below for how to pick these up.
       bundled with the F9.1/F9.3 extension since it touches the same call sites.
 - [x] **DB16** — Postgres trigger (`prevent_auditlog_modification`) now rejects `UPDATE`/`DELETE`
       on `AuditLogs` at the DB level. New `AuditLogTests.cs` verifies both directions.
-- [ ] **DB17** — Patient PII stored unencrypted — Tier 2, compliance-shaped, needs a key-management
-      design.
-- [ ] **DB18** — `Tenant.CustomOpenRouterKey` column still plaintext — Tier 2, bundle with DB17.
+- [x] **DB17 (partial)** — 13 Patient fields encrypted at rest via a new `FieldEncryptionService`
+      (AES-256-GCM, EF Core value converter, transparent to all existing code): `Email`,
+      `AddressLine1/2`, `City`, `State`, `PostalCode`, `EmergencyContactName/Phone/Relation`,
+      `NhisNumber`, `InsurancePolicyNumber`, `InsuranceGroupNumber`, `BloodType`. Key management
+      follows the exact `Jwt:Key` convention (placeholder + `RequireRealSecret` + `Encryption__Key`
+      via Render, `sync: false`). Deliberately left plaintext: `FirstName`/`MiddleName`/`LastName`/
+      `PhoneNumber`/`AlternatePhone` (live `.Contains()` search), `NationalId` (unique index), and
+      `DateOfBirth` — found only during implementation to have an exact-match `WHERE` clause in
+      `PatientService`'s search that the original scoping conversation didn't catch. All of these
+      need a deterministic blind-index redesign before they can be encrypted without breaking
+      search/uniqueness — a real follow-on, not done here. **Before this ships to any environment
+      with existing patient data**: the migration only widens columns (`varchar`→`text`), it does
+      **not** re-encrypt existing plaintext rows — those would fail to decrypt after this change.
+      Not a concern today (zero production data, app not deployed), but a required pre-deploy step
+      whenever that changes. Verified with a test that reads the raw stored bytes directly via
+      ADO.NET (bypassing the value converter) to confirm actual ciphertext on disk, not just that
+      round-tripping through the API happens to work.
+- [x] **DB18** — `Tenant.CustomOpenRouterKey` encrypted the same way as DB17, same migration.
 - [x] **DB19** — Composite indexes added to `DispenseEventItem`/`LabOrderItem`'s order-lookup path.
 - [x] **DB20** — Stale `docs/schema.sql` deleted (confirmed nothing referenced it outside this
       tracker).
@@ -367,37 +449,25 @@ below for how to pick these up.
 ## Suggested next pass, if/when picked back up
 
 Roughly in order of bang-for-buck:
-1. ~~**DB4 + DB5**~~ — done. Needs migration generation, see Part 1.
-2. ~~**F9.1 + F9.3** (billing/dispensing/admission)~~ — done for the 8 named services. Remaining:
-   extend the same `ILogger<T>` + `IAuditService` pattern to the other ~39 services (appointments,
-   consultations, lab/radiology orders, referrals, user management, tenant admin, reports) —
-   **needs triage first** (see Part 3 note) since some of those ~39 are read-only report/PDF
-   generators or infra plumbing where "audit trail" doesn't obviously apply the same way; not a
-   uniform mechanical extension the way it looked before actually reading all 39.
-3. ~~**UI §9**~~ — done, all 30 files / 79 call sites converted. **UI §1** (shared component library:
-   no shared Input/Card/Button primitives, styles copy-pasted 100+ times across 44-66 files) is
-   still open — genuinely large, design-decision-heavy work, not a mechanical extension.
-4. ~~**1 (JWT in localStorage)**~~ — done via a full plan-mode design pass (JWT moved to an httpOnly
-   cookie, CSRF protection added from scratch, CORS tightened as a side effect). **Verified**:
-   `dotnet build`/`dotnet test` (34/34) pass as of 2026-08-17 — see Part 1. Still outstanding before
-   Production: the Render config checks (`Cors:AllowedOrigins`, `ASPNETCORE_ENVIRONMENT=Production`)
-   and the manual browser/Safari pass, neither of which can be done from this dev environment.
-5. ~~**Part 3 Tier 1**~~ — done, 2026-08-17. All ~31 mechanical/bounded Part 3 findings (rate
-   limiting, password policy, CSP, sequence-number dedup, missing indexes/FKs, audit-log
-   append-only enforcement, etc.) — see the checkboxes above for the full per-item list. One
-   correction found along the way: DB13 was stale, no work needed. Everything verified via
-   `dotnet build`/`dotnet test`/`npm run build`, plus a real headless-browser check for the CSP
-   change specifically. All pushed to `origin/main`.
-6. **DB17 + M7** (PII/PHI encryption at rest, AI data handling) — compliance-shaped, worth doing
-   before any real patient data goes into a production instance. Tier 2 — needs a key-management
-   design decision, not mechanical.
-7. **M3** (token revocation/logout) — natural follow-on to the JWT-cookie migration; today logout
-   only stops the current browser, a stolen cookie/token is still valid until natural expiry.
-   Tier 2 — needs a revocation-store design decision.
-8. **UI §1/§2/§4/§8** (shared component library, color tokens, form conventions, shared Table) —
-   all explicitly Tier 2, large and design-decision-heavy, best done as one coordinated pass since
+1. ~~**DB4 + DB5**~~, ~~**F9.1 + F9.3**~~, ~~**UI §9**~~, ~~**1 (JWT in localStorage)**~~,
+   ~~**Part 3 Tier 1**~~, ~~**DB17 (partial) + M7 (partial)**~~, ~~**M3**~~, ~~**F7.1**~~,
+   ~~**UI §3**~~, ~~**UI §5**~~, ~~**DB6**~~, ~~**F3.1 (partial)**~~, ~~**F1.3/F6.1**~~, ~~**L5**~~
+   — all done, see the checkboxes above for per-item detail. `dotnet build`/`dotnet test` (37/37)/
+   `npm run build` all clean throughout. Not yet pushed to `origin/main` this session — confirm
+   with the user before pushing (10 commits from 2026-08-18 sitting on top of the 2026-08-17 work).
+2. **DB17 (remaining) + F3.1 (remaining)** — the two "partial" items above share the same shape:
+   a blind-index/deterministic-encryption redesign would let DB17 cover `Name`/`Phone`/`NationalId`/
+   `DateOfBirth` too, and a second smaller wave of `RowVersion`/`xmin` work would cover the
+   line-item entities that don't inherit `TenantEntity` (`PrescriptionItem`, `DispenseEvent`,
+   `StockMovement`, `BillItem`, etc.). Neither is urgent while there's no real patient data anywhere.
+3. **UI §1/§2/§4/§8** (shared component library, color tokens, form conventions, shared Table) —
+   still explicitly Tier 2, large and design-decision-heavy, best done as one coordinated pass since
    they're interdependent (a Table component needs the same design-token decisions as everything
    else).
-9. **F7.1** (standardize authorization style) and **F2.4** (pagination convention) — both Tier 2,
-   each needs one upfront design decision before touching the ~30-46 files they'd otherwise touch
-   mechanically once decided.
+4. **F2.4** (pagination convention, ~46 services) — Tier 2, needs one upfront design decision
+   (a `PagedResult<T>` convention) before touching the files mechanically once decided.
+5. **UI §11 (MAR co-sign)** — Tier 2, a real clinical-workflow decision (who can co-sign, mandatory
+   for which meds), not a mechanical fix.
+6. **F10.1 / DB21** (AI quota reset) — small feature, not a bug fix; low priority.
+7. **DB15** (structured audit-log `Details`) — naturally bundled with any future F9.1/F9.3 revisit,
+   since it touches the same call sites.
