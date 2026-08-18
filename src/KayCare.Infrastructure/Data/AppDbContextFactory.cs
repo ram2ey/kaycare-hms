@@ -50,6 +50,18 @@ public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
 
         // TenantContext with empty Guid is fine at design time —
         // global query filters are not evaluated during migrations.
-        return new AppDbContext(options, new TenantContext());
+        //
+        // FieldEncryptionService needs a valid-shaped key to construct, but migrations never
+        // actually invoke Encrypt/Decrypt (only the converter's CLR/provider types matter for
+        // building column definitions) — a fixed dummy key avoids requiring the real
+        // Encryption__Key secret just to run `dotnet ef migrations add`.
+        var encryptionConfig = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Encryption:Key"] = "ZGVzaWduLXRpbWUtb25seS1kdW1teS1rZXktMzJieXQ="
+            })
+            .Build();
+
+        return new AppDbContext(options, new TenantContext(), new FieldEncryptionService(encryptionConfig));
     }
 }

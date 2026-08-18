@@ -16,28 +16,23 @@ public class PatientConfiguration : IEntityTypeConfiguration<Patient>
         builder.Property(p => p.MiddleName).HasMaxLength(100);
         builder.Property(p => p.LastName).HasMaxLength(100).IsRequired();
         builder.Property(p => p.Gender).HasMaxLength(20).IsRequired();
-        builder.Property(p => p.BloodType).HasMaxLength(5);
+        // BloodType is encrypted (DB17) - unbounded "text" column since ciphertext is longer than
+        // plaintext (base64 of nonce+ciphertext+tag); a fixed MaxLength here would risk truncation.
         builder.Property(p => p.NationalId).HasMaxLength(50);
 
-        builder.Property(p => p.Email).HasMaxLength(256);
+        // Email is encrypted (DB17) - unbounded, see BloodType note above.
         builder.Property(p => p.PhoneNumber).HasMaxLength(20);
         builder.Property(p => p.AlternatePhone).HasMaxLength(20);
 
-        builder.Property(p => p.AddressLine1).HasMaxLength(200);
-        builder.Property(p => p.AddressLine2).HasMaxLength(200);
-        builder.Property(p => p.City).HasMaxLength(100);
-        builder.Property(p => p.State).HasMaxLength(100);
-        builder.Property(p => p.PostalCode).HasMaxLength(20);
+        // AddressLine1/2, City, State, PostalCode are encrypted (DB17) - unbounded, see above.
         builder.Property(p => p.Country).HasMaxLength(100).HasDefaultValue("GH");
 
-        builder.Property(p => p.EmergencyContactName).HasMaxLength(200);
-        builder.Property(p => p.EmergencyContactPhone).HasMaxLength(20);
-        builder.Property(p => p.EmergencyContactRelation).HasMaxLength(50);
+        // EmergencyContactName/Phone/Relation are encrypted (DB17) - unbounded, see above.
 
-        builder.Property(p => p.NhisNumber).HasMaxLength(20);
+        // NhisNumber, InsurancePolicyNumber, InsuranceGroupNumber are encrypted (DB18) - unbounded,
+        // see above. InsuranceProvider (the payer/insurer name, e.g. "NHIS") stays plaintext - a
+        // shared category value across many patients, not personally identifying on its own.
         builder.Property(p => p.InsuranceProvider).HasMaxLength(200);
-        builder.Property(p => p.InsurancePolicyNumber).HasMaxLength(100);
-        builder.Property(p => p.InsuranceGroupNumber).HasMaxLength(100);
 
         // CreatedAt from TenantEntity maps to RegisteredAt column in DB
         builder.Property(p => p.CreatedAt)

@@ -21,6 +21,9 @@ public class MediCloudWebAppFactory : WebApplicationFactory<Program>, IAsyncLife
     /// <summary>Known JWT signing key used by all tests.</summary>
     public const string TestJwtKey = "test-signing-key-kaycare-integration-!!";
 
+    /// <summary>Base64 of a fixed 32-byte value ("test-encryption-key-32-bytes-001") - AES-256 key used by all tests.</summary>
+    public const string TestEncryptionKey = "dGVzdC1lbmNyeXB0aW9uLWtleS0zMi1ieXRlcy0wMDE=";
+
     /// <summary>Password used for every seeded test user.</summary>
     public const string TestPassword = "TestPass123!";
 
@@ -48,6 +51,7 @@ public class MediCloudWebAppFactory : WebApplicationFactory<Program>, IAsyncLife
                 ["Jwt:Issuer"]      = "KayCare",
                 ["Jwt:Audience"]    = "KayCare",
                 ["Jwt:ExpiryHours"] = "8",
+                ["Encryption:Key"]  = TestEncryptionKey,
                 ["Hl7:WebhookApiKey"]    = "test-hl7-webhook-key-kaycare-integration",
                 ["Hl7:MllpSharedSecret"] = "test-hl7-mllp-secret-kaycare-integration",
                 // Azurite dev connection string — blob operations not tested here

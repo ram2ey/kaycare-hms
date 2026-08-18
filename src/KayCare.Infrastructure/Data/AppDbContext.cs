@@ -7,11 +7,13 @@ namespace KayCare.Infrastructure.Data;
 public class AppDbContext : DbContext
 {
     private readonly ITenantContext _tenantContext;
+    private readonly IFieldEncryptionService _encryption;
 
-    public AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext tenantContext)
+    public AppDbContext(DbContextOptions<AppDbContext> options, ITenantContext tenantContext, IFieldEncryptionService encryption)
         : base(options)
     {
         _tenantContext = tenantContext;
+        _encryption = encryption;
     }
 
     public DbSet<Tenant>           Tenants           => Set<Tenant>();
@@ -169,6 +171,32 @@ public class AppDbContext : DbContext
             .HasQueryFilter(c => c.TenantId == _tenantContext.TenantId);
         modelBuilder.Entity<PayerTariff>()
             .HasQueryFilter(t => t.TenantId == _tenantContext.TenantId);
+
+        // DB17/DB18 — encrypt PII/PHI fields that are never used in a SQL WHERE/ORDER BY. Name,
+        // Phone, NationalId, and DateOfBirth are deliberately excluded here even though they're
+        // PII too: NationalId has a unique index, Name/Phone are used in PatientService's live
+        // .Contains() search, and DateOfBirth is used in an exact-match filter - encrypting any of
+        // those needs a deterministic blind-index redesign, not just a value converter (see the
+        // tracker for details). Same non-deterministic AES-GCM converter for every field below;
+        // the encryption is per-value (random nonce each time), never compared/sorted in SQL.
+        var encryptedString = new Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<string?, string?>(
+            v => v == null ? null : _encryption.Encrypt(v),
+            v => v == null ? null : _encryption.Decrypt(v));
+
+        modelBuilder.Entity<Patient>().Property(p => p.Email).HasConversion(encryptedString);
+        modelBuilder.Entity<Patient>().Property(p => p.AddressLine1).HasConversion(encryptedString);
+        modelBuilder.Entity<Patient>().Property(p => p.AddressLine2).HasConversion(encryptedString);
+        modelBuilder.Entity<Patient>().Property(p => p.City).HasConversion(encryptedString);
+        modelBuilder.Entity<Patient>().Property(p => p.State).HasConversion(encryptedString);
+        modelBuilder.Entity<Patient>().Property(p => p.PostalCode).HasConversion(encryptedString);
+        modelBuilder.Entity<Patient>().Property(p => p.EmergencyContactName).HasConversion(encryptedString);
+        modelBuilder.Entity<Patient>().Property(p => p.EmergencyContactPhone).HasConversion(encryptedString);
+        modelBuilder.Entity<Patient>().Property(p => p.EmergencyContactRelation).HasConversion(encryptedString);
+        modelBuilder.Entity<Patient>().Property(p => p.NhisNumber).HasConversion(encryptedString);
+        modelBuilder.Entity<Patient>().Property(p => p.InsurancePolicyNumber).HasConversion(encryptedString);
+        modelBuilder.Entity<Patient>().Property(p => p.InsuranceGroupNumber).HasConversion(encryptedString);
+        modelBuilder.Entity<Patient>().Property(p => p.BloodType).HasConversion(encryptedString);
+        modelBuilder.Entity<Tenant>().Property(t => t.CustomOpenRouterKey).HasConversion(encryptedString);
 
         // F3.1 — optimistic concurrency for every TenantEntity. Postgres has no native
         // rowversion/timestamp column type, so this uses the built-in `xmin` system column

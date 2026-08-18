@@ -56,6 +56,13 @@ services:
       - key: Hl7__MllpSharedSecret
         sync: false
 
+      # Field-level PII encryption key (DB17/DB18) — base64-encoded, must decode to exactly 32
+      # bytes (AES-256). Startup refuses to run if left as the appsettings.json placeholder value
+      # or if it doesn't decode to 32 bytes. Generate with e.g.
+      # `openssl rand -base64 32` in a real deployment.
+      - key: Encryption__Key
+        sync: false
+
       # Demo/sales data seeding — leave "false" for real tenant deployments. Only flip to
       # "true" for a deliberately-provisioned demo/sales instance.
       - key: Seeding__EnableDemoData

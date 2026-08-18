@@ -1,7 +1,10 @@
 using System.Net;
 using System.Text.Json;
 using KayCare.Core.DTOs.Patients;
+using KayCare.Infrastructure.Data;
 using KayCare.Tests.Infrastructure;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace KayCare.Tests.Patients;
 
@@ -145,6 +148,70 @@ public class PatientTests : IClassFixture<MediCloudWebAppFactory>
         var first    = items[0];
         var fullName = first.GetProperty("fullName").GetString();
         Assert.Contains(uniqueName, fullName);
+    }
+
+    // ── PII encryption at rest (DB17) ────────────────────────────────────────
+
+    [Fact]
+    public async Task RegisterPatient_EncryptsPiiFieldsAtRest()
+    {
+        var client = await _factory.CreateAdminClientAsync(_factory.TenantA);
+
+        const string email     = "encryption-test@example.com";
+        const string bloodType = "O+";
+
+        var resp = await client.PostAsJsonAsync("/api/patients", new CreatePatientRequest
+        {
+            FirstName   = "Encryption",
+            LastName    = "TestSubject",
+            DateOfBirth = new DateOnly(1988, 4, 12),
+            Gender      = "Female",
+            Email       = email,
+            BloodType   = bloodType,
+        });
+        Assert.Equal(HttpStatusCode.Created, resp.StatusCode);
+
+        var created   = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        var patientId = Guid.Parse(created.GetProperty("patientId").GetString()!);
+
+        // Read the raw stored bytes directly, bypassing EF's value converter entirely, to prove
+        // the plaintext never reaches the database — not just that round-tripping via the API works.
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await db.Database.OpenConnectionAsync();
+        try
+        {
+            await using var cmd = db.Database.GetDbConnection().CreateCommand();
+            cmd.CommandText = "SELECT \"Email\", \"BloodType\" FROM \"Patients\" WHERE \"PatientId\" = @id";
+            var param = cmd.CreateParameter();
+            param.ParameterName = "id";
+            param.Value = patientId;
+            cmd.Parameters.Add(param);
+
+            await using var reader = await cmd.ExecuteReaderAsync();
+            Assert.True(await reader.ReadAsync());
+
+            var rawEmail     = reader.GetString(0);
+            var rawBloodType = reader.GetString(1);
+
+            Assert.NotEqual(email, rawEmail);
+            Assert.NotEqual(bloodType, rawBloodType);
+
+            // Ciphertext is base64(nonce[12] + ciphertext + tag[16]) — confirm it decodes to at
+            // least that minimum length rather than plaintext leaking through unencrypted.
+            var rawBytes = Convert.FromBase64String(rawEmail);
+            Assert.True(rawBytes.Length >= 12 + 16);
+        }
+        finally
+        {
+            await db.Database.CloseConnectionAsync();
+        }
+
+        // Confirm the API still returns the correctly decrypted value on read.
+        var getResp = await client.GetAsync($"/api/patients/{patientId}");
+        var body    = await getResp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(email, body.GetProperty("email").GetString());
+        Assert.Equal(bloodType, body.GetProperty("bloodType").GetString());
     }
 
     // ── Authorization ─────────────────────────────────────────────────────────

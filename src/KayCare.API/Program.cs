@@ -223,6 +223,7 @@ static void RequireRealSecret(string configKey, string? value)
 RequireRealSecret("Hl7:WebhookApiKey", app.Configuration["Hl7:WebhookApiKey"]);
 RequireRealSecret("Hl7:MllpSharedSecret", app.Configuration["Hl7:MllpSharedSecret"]);
 RequireRealSecret("Jwt:Key", app.Configuration["Jwt:Key"]);
+RequireRealSecret("Encryption:Key", app.Configuration["Encryption:Key"]);
 
 // HS256 (used above for JWT signing) wants a key of at least 256 bits per RFC 7518 §3.2 — a
 // short key is brute-forceable regardless of whether it's the documented placeholder.
@@ -231,6 +232,23 @@ if (jwtKeyBytes < 32)
 {
     throw new InvalidOperationException(
         $"Jwt:Key is only {jwtKeyBytes} bytes; HS256 requires at least 32 (256 bits).");
+}
+
+// AES-256 requires exactly 32 key bytes, not "at least" - FieldEncryptionService would throw the
+// same check lazily on first use, but failing here means a bad key is caught at startup instead
+// of on the first request that touches an encrypted field.
+try
+{
+    var encryptionKeyBytes = Convert.FromBase64String(app.Configuration["Encryption:Key"]!);
+    if (encryptionKeyBytes.Length != 32)
+    {
+        throw new InvalidOperationException(
+            $"Encryption:Key must decode to exactly 32 bytes (AES-256); got {encryptionKeyBytes.Length}.");
+    }
+}
+catch (FormatException ex)
+{
+    throw new InvalidOperationException("Encryption:Key is not valid base64.", ex);
 }
 
 // ── Global exception handler ──────────────────────────────────────────────────

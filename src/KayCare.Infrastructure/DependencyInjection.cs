@@ -21,6 +21,11 @@ public static class DependencyInjection
         // Per-request tenant context (populated by TenantResolutionMiddleware)
         services.AddScoped<ITenantContext, TenantContext>();
 
+        // Singleton: the encryption key is fixed process-wide config, not per-request state, and
+        // AppDbContext's OnModelCreating captures this instance in its value-converter closures —
+        // it must stay the same instance/key for every DbContext instance's model to stay valid.
+        services.AddSingleton<IFieldEncryptionService, FieldEncryptionService>();
+
         services.AddDbContext<AppDbContext>((serviceProvider, options) =>
         {
             var rawConn = config.GetConnectionString("DefaultConnection")
